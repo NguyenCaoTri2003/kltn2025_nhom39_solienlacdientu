@@ -1,0 +1,21 @@
+{
+  "name": "projectkltn",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev:web-api": "turbo run dev --filter=web --filter=api --parallel",
+    "dev:mobile": "pnpm --filter mobile dev"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "turbo": "^2.5.6"
+  },
+  "dependencies": {
+    "next": "^15.5.3"
+  },
+  "packageManager": "pnpm@9.12.3"
+}
