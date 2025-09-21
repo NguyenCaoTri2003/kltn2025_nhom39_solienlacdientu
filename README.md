@@ -1,5 +1,5 @@
 
-# IUHEdu - Ứng dụng sổ liên lạc điện từ
+# IUHEdu - Ứng dụng sổ liên lạc điện tử
 
 ## 🚀 Bắt đầu
 
@@ -14,7 +14,7 @@
 
     ```bash
     git clone https://github.com/NguyenCaoTri2003/KLTNIUHEDU.git
-    cd PROJECTKLTN
+    cd KLTNIUHEDU
     ```
 
 2.  **Cài đặt các dependency:**
