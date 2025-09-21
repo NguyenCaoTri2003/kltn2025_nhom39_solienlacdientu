@@ -36,4 +36,30 @@
     pnpm dev:mobile
     ```
 
+### Setup .env.local
+
+* Thêm vào api
+
+```
+NEXT_PUBLIC_SUPABASE_URL=https://ceocmvtxpdqgmremuqgb.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNlb2NtdnR4cGRxZ21yZW11cWdiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUwNzc4NDYsImV4cCI6MjA3MDY1Mzg0Nn0._TewLybeTBvwJRFHTLldjiR5HJhvVZnLsZ3UTiAaeds
+PORT=3000
+```
+
+* Thêm vào mobile
+
+```
+NEXT_PUBLIC_API_URL=http://192.168.1.10:3000 
+```
+
+vào cmd gõ ipconfig lấy link ở đây
+  IPv4 Address. . . . . . . . . . . : 192.168.1.10
+
+* Thêm vào web
+
+```
+PORT=3001
+NEXT_PUBLIC_API_URL=http://localhost:3000
+```
+
 _Tài liệu này sẽ được cập nhật liên tục để phản ánh những thay đổi mới nhất của dự án._
