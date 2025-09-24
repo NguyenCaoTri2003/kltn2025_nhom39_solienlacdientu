@@ -59,6 +59,8 @@ export class UserRepository {
       .eq("student_code", studentCode)
       .single<StudentWithUser>();
 
+    console.log("findByStudentCode data:", data, "error:", error);
+
     if (error) return null;
     return data.users as User;
   }

@@ -14,6 +14,6 @@ export interface Student {
 }
 
 export interface StudentWithUser {
-  id: number;
+  id: string;
   users: User;
 }
