@@ -2,8 +2,9 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
-      "@school/core/*": ["packages/core/*"],
-      "@school/data/*": ["packages/data/*"]
-    }
+      "@/*": ["packages/*"]
+    },
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true
   }
 }
