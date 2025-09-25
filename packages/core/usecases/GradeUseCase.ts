@@ -1,5 +1,6 @@
 import { GradeRepository } from "@/data/repositories/GradeRepository";
 import { GradeGroup } from "../entities/Grade";
+import { AuthorizationService } from "../services/authorization/AuthorizationService";
 
 export class GradeUseCase {
   private gradeRepo: GradeRepository;
@@ -8,17 +9,34 @@ export class GradeUseCase {
     this.gradeRepo = gradeRepo;
   }
 
-  /**
-   * Lấy tất cả điểm của sinh viên (gom theo học phần)
-   */
-  async getGradesByStudent(student_id: string): Promise<GradeGroup[]> {
-    return await this.gradeRepo.getGradesByStudent(student_id);
+  async getStudentGrades(studentId: number, user: any) {
+    if (!(await AuthorizationService.canViewStudent(user, studentId))) {
+      throw new Error("Forbidden");
+    }
+
+    return this.gradeRepo.getGradesByStudent(studentId);
   }
 
-  /**
-   * Lấy điểm chi tiết của sinh viên trong 1 học phần
-   */
-  async getGradesByOffering(student_id: string, offering_id: number) {
-    return await this.gradeRepo.getGradesByOffering(student_id, offering_id);
+  async getGradesByOffering(studentId: number, offeringId: number, user: any) {
+    if (!(await AuthorizationService.canViewStudent(user, studentId))) {
+      throw new Error("Forbidden");
+    }
+    return this.gradeRepo.getGradesByOffering(studentId, offeringId);
   }
+
+  async getOfferingGrades(offeringId: number, user: any) {
+  if (!(await AuthorizationService.canViewOfferingGrades(user, offeringId))) {
+    throw new Error("Forbidden");
+  }
+
+  return this.gradeRepo.getAllGradesByOffering(offeringId);
+}
+
+async getStudentGradesInOffering(studentId: number, offeringId: number, user: any) {
+  if (!(await AuthorizationService.canViewOfferingGrades(user, offeringId))) {
+    throw new Error("Forbidden");
+  }
+
+  return this.gradeRepo.getStudentGradesInOffering(studentId, offeringId);
+}
 }
