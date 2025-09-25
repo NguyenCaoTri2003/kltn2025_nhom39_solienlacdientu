@@ -21,4 +21,19 @@ export class ScheduleUseCase {
     }
     return this.repo.getStudentOfferingSchedule(studentId, offeringId);
   }
+
+  async getStudentSchedulesByDate(studentId: number, startDate: string, endDate: string, user: any) {
+    if (!(await AuthorizationService.canViewStudent(user, studentId))) {
+      throw new Error("Forbidden");
+    }
+    return this.repo.getStudentSchedulesByDate(studentId, startDate, endDate);
+  }
+
+  async getStudentOfferingScheduleByDate(studentId: number, offeringId: number, user: any, startDate: string, endDate: string) {
+    if (!(await AuthorizationService.canViewStudent(user, studentId))) {
+      throw new Error("Forbidden");
+    }
+    return this.repo.getStudentSchedulesOfferingByDate(studentId, offeringId, startDate, endDate);
+  }
+
 }
