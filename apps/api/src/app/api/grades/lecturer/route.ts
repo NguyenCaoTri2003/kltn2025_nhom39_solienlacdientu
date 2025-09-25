@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
 
     const { searchParams } = new URL(req.url);
     const offering_id = Number(searchParams.get("offering_id"));
-    const student_id = searchParams.get("student_id");
+    const student_id = Number(searchParams.get("student_id"));
 
     if (!offering_id) {
       return NextResponse.json({ error: "Missing offering_id" }, { status: 400 });

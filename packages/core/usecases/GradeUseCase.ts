@@ -9,34 +9,34 @@ export class GradeUseCase {
     this.gradeRepo = gradeRepo;
   }
 
-  async getStudentGrades(studentId: string, user: any) {
-    if (!(await AuthorizationService.canViewStudentGrades(user, studentId))) {
+  async getStudentGrades(studentId: number, user: any) {
+    if (!(await AuthorizationService.canViewStudent(user, studentId))) {
       throw new Error("Forbidden");
     }
 
     return this.gradeRepo.getGradesByStudent(studentId);
   }
 
-  async getGradesByOffering(studentId: string, offeringId: number, user: any) {
-    if (!(await AuthorizationService.canViewStudentGrades(user, studentId))) {
+  async getGradesByOffering(studentId: number, offeringId: number, user: any) {
+    if (!(await AuthorizationService.canViewStudent(user, studentId))) {
       throw new Error("Forbidden");
     }
     return this.gradeRepo.getGradesByOffering(studentId, offeringId);
   }
 
   async getOfferingGrades(offeringId: number, user: any) {
-    if (!(await AuthorizationService.canViewOfferingGrades(user, offeringId))) {
-      throw new Error("Forbidden");
-    }
-
-    return this.gradeRepo.getAllGradesByOffering(offeringId);
+  if (!(await AuthorizationService.canViewOfferingGrades(user, offeringId))) {
+    throw new Error("Forbidden");
   }
 
-  async getStudentGradesInOffering(studentId: string, offeringId: number, user: any) {
-    if (!(await AuthorizationService.canViewOfferingGrades(user, offeringId))) {
-      throw new Error("Forbidden");
-    }
+  return this.gradeRepo.getAllGradesByOffering(offeringId);
+}
 
-    return this.gradeRepo.getStudentGradesInOffering(studentId, offeringId);
+async getStudentGradesInOffering(studentId: number, offeringId: number, user: any) {
+  if (!(await AuthorizationService.canViewOfferingGrades(user, offeringId))) {
+    throw new Error("Forbidden");
   }
+
+  return this.gradeRepo.getStudentGradesInOffering(studentId, offeringId);
+}
 }

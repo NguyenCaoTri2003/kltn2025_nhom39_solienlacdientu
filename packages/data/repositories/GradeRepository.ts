@@ -2,7 +2,7 @@ import { Grade, GradeGroup } from "@/core/entities/Grade";
 import { supabase } from "../supabaseClient";
 
 export class GradeRepository {
-  async getGradesByStudent(student_id: string) {
+  async getGradesByStudent(student_id: number) {
     const { data: theoryGrades, error: theoryError } = await supabase
       .from("grades")
       .select(`
@@ -115,7 +115,7 @@ export class GradeRepository {
     return Object.values(grouped);
   }
 
-  async getGradesByOffering(student_id: string, offering_id: number) {
+  async getGradesByOffering(student_id: number, offering_id: number) {
     const { data: theoryData, error: theoryError } = await supabase
       .from("grades")
       .select(`
@@ -297,7 +297,7 @@ export class GradeRepository {
     return Object.values(grouped);
   }
 
-  async getStudentGradesInOffering(studentId: string, offeringId: number) {
+  async getStudentGradesInOffering(studentId: number, offeringId: number) {
     const { data: theoryGrades, error: theoryError } = await supabase
       .from("grades")
       .select(`

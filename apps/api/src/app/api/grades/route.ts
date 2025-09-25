@@ -9,8 +9,8 @@ const usecase = new GradeUseCase(repo);
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
-    const student_id = searchParams.get("student_id");
-    const offering_id = searchParams.get("offering_id");
+    const student_id = Number(searchParams.get("student_id"));
+    const offering_id = Number(searchParams.get("offering_id"));
 
     if (!student_id) {
       return NextResponse.json({ error: "Missing student_id" }, { status: 400 });
@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
     const user = authenticate(req);
 
     if (offering_id) {
-      const grades = await usecase.getGradesByOffering(student_id, Number(offering_id), user);
+      const grades = await usecase.getGradesByOffering(student_id, offering_id, user);
       return NextResponse.json(grades);
     } else {
       const grades = await usecase.getStudentGrades(student_id, user);
@@ -32,25 +32,3 @@ export async function GET(req: NextRequest) {
     );
   }
 }
-
-// export async function GET(req: NextRequest) {
-//   try {
-//     const { searchParams } = new URL(req.url);
-//     const student_id = searchParams.get("student_id");
-//     const offering_id = searchParams.get("offering_id");
-
-//     if (!student_id) {
-//       return NextResponse.json({ error: "Missing student_id" }, { status: 400 });
-//     }
-
-//     if (offering_id) {
-//       const grades = await usecase.getGradesByOffering(student_id, Number(offering_id));
-//       return NextResponse.json(grades);
-//     } else {
-//       const grades = await usecase.getGradesByStudent(student_id);
-//       return NextResponse.json(grades);
-//     }
-//   } catch (e: any) {
-//     return NextResponse.json({ error: e.message }, { status: 500 });
-//   }
-// }

@@ -1,9 +1,9 @@
 import { supabase } from "@/data/supabaseClient";
 
 export class AuthorizationService {
-    static async canViewStudentGrades(user: any, studentId: string): Promise<boolean> {
+    static async canViewStudent(user: any, studentId: number): Promise<boolean> {
         if (user.role === "student") {
-            return String(user.id) === String(studentId);
+            return user.id === studentId;
         }
 
         if (user.role === "parent") {
