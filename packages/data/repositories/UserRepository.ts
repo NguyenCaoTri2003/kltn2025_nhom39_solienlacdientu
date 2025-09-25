@@ -20,7 +20,7 @@ export class UserRepository {
       .single();
     if (userError || !user) return null;
 
-    if (user.role === "STUDENT") {
+    if (user.role === "student") {
       const { data: student, error: studentError } = await supabase
         .from("students")
         .select("*")
@@ -29,7 +29,7 @@ export class UserRepository {
       if (!studentError && student) {
         return { ...user, student };
       }
-    } else if (user.role === "LECTURER") {
+    } else if (user.role === "lecturer") {
       const { data: lecturer, error: lecturerError } = await supabase
         .from("lecturers")
         .select("*")
@@ -38,7 +38,7 @@ export class UserRepository {
       if (!lecturerError && lecturer) {
         return { ...user, lecturer };
       }
-    } else if (user.role === "PARENT") {
+    } else if (user.role === "parent") {
       const { data: parent, error: parentError } = await supabase
         .from("parents")
         .select("*")
@@ -121,13 +121,13 @@ export class UserRepository {
 
     if (!userRoleData) throw new Error("User not found");
 
-    if (userRoleData.role === "STUDENT" && student) {
+    if (userRoleData.role === "student" && student) {
       await supabase.from("students").update(student).eq("id", id);
     }
-    if (userRoleData.role === "PARENT" && parent) {
+    if (userRoleData.role === "parent" && parent) {
       await supabase.from("parents").update(parent).eq("id", id);
     }
-    if (userRoleData.role === "LECTURER" && lecturer) {
+    if (userRoleData.role === "lecturer" && lecturer) {
       await supabase.from("lecturers").update(lecturer).eq("id", id);
     }
 

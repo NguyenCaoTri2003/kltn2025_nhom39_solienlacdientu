@@ -1,11 +1,8 @@
+import { Grade, GradeGroup } from "@/core/entities/Grade";
 import { supabase } from "../supabaseClient";
 
 export class GradeRepository {
-  /**
-   * Lấy tất cả điểm của 1 sinh viên (cả lý thuyết & thực hành)
-   */
   async getGradesByStudent(student_id: string) {
-    // --- Điểm lý thuyết ---
     const { data: theoryGrades, error: theoryError } = await supabase
       .from("grades")
       .select(`
@@ -35,7 +32,6 @@ export class GradeRepository {
 
     if (theoryError) throw theoryError;
 
-    // --- Điểm thực hành ---
     const { data: practiceGrades, error: practiceError } = await supabase
       .from("grades")
       .select(`
@@ -73,10 +69,8 @@ export class GradeRepository {
 
     if (practiceError) throw practiceError;
 
-    // --- Gom nhóm theo lớp ---
-    const grouped: Record<string, any> = {};
+    const grouped: Record<string, GradeGroup> = {};
 
-    // Lý thuyết
     theoryGrades?.forEach((g: any) => {
       const offering = g.enrollment?.course_offerings;
       if (!offering) return;
@@ -96,7 +90,6 @@ export class GradeRepository {
       grouped[offeringId].theoryScores.push(g);
     });
 
-    // Thực hành
     practiceGrades?.forEach((g: any) => {
       const offering = g.practice_enrollment?.enrollment?.course_offerings;
       if (!offering) return;
@@ -123,11 +116,7 @@ export class GradeRepository {
   }
 
 
-  /**
-   * Lấy điểm của 1 sinh viên trong 1 học phần cụ thể
-   */
   async getGradesByOffering(student_id: string, offering_id: number) {
-    // ---- Lý thuyết ----
     const { data: theoryData, error: theoryError } = await supabase
       .from("grades")
       .select(`
@@ -146,7 +135,6 @@ export class GradeRepository {
 
     if (theoryError) throw theoryError;
 
-    // ---- Thực hành ----
     const { data: practiceData, error: practiceError } = await supabase
       .from("grades")
       .select(`

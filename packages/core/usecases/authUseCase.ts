@@ -17,11 +17,11 @@ export class AuthUseCase {
   async login(identifier: string, password: string, role: string): Promise<{ user: User; token: string }> {
     let user: User | null = null;
 
-    if (role === "STUDENT") {
+    if (role === "student") {
       user = await this.userRepo.findByStudentCode(identifier);
-    } else if (role === "PARENT") {
+    } else if (role === "parent") {
       user = await this.userRepo.findByPhone(identifier);
-    } else if (role === "LECTURER") {
+    } else if (role === "lecturer") {
       user = await this.userRepo.findByLecturerCode(identifier);
     } else {
       throw new Error("Invalid role");
