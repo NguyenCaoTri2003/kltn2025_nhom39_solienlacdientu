@@ -5,3 +5,4 @@ export async function getClassesByMajor(majorId: number) {
   return await repo.getClassesByMajor(majorId);
 }
 
+

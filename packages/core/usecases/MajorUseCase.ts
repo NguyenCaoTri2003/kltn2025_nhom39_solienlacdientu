@@ -5,4 +5,9 @@ export async function getMajorsByFaculty(facultyId: number) {
   return await repo.getMajorsByFaculty(facultyId);
 }
 
+export async function getMajorById(majorId: number) {
+  const repo = new MajorsRepository();
+  return await repo.getMajorById(majorId);
+}
+
 

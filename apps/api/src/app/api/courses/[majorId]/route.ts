@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
-import { getClassesByMajor } from "@/core/usecases/ClassesUseCase";
+import { getCoursesByMajor } from "@/core/usecases/CoursesUseCase";
 
-
-// http://localhost:3000/api/classes/[majorId]
+// http://localhost:3000/api/courses/[majorId]
 
 export async function GET(
   req: Request,
@@ -10,16 +9,16 @@ export async function GET(
 ) {
   try {
     const majorId = Number(params.majorId);
-    const classesList = await getClassesByMajor(majorId);
+    const courses = await getCoursesByMajor(majorId);
 
-    if (!classesList || (Array.isArray(classesList) && classesList.length === 0)) {
+    if (!courses || (Array.isArray(courses) && courses.length === 0)) {
       return NextResponse.json(
-        { returnCode: 1, message: "Classes not found", data: null },
+        { returnCode: 1, message: "Courses not found", data: null },
         { status: 404 }
       );
     }
 
-    return NextResponse.json({ returnCode: 0, message: "OK", data: classesList });
+    return NextResponse.json({ returnCode: 0, message: "OK", data: courses });
   } catch (err: unknown) {
     if (err instanceof Error) {
       return NextResponse.json(
