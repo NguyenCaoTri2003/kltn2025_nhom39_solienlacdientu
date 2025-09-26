@@ -39,7 +39,7 @@ export class ScheduleUseCase {
     endDate: string,
     user: any
   ) {
-    if (user.role !== "lecturer" && user.role !== "admin") {
+    if (user.id !== lecturerId && user.role !== "admin") {
       throw new Error("Forbidden");
     }
     return this.repo.getLecturerSchedulesByDate(lecturerId, startDate, endDate);
@@ -52,7 +52,7 @@ export class ScheduleUseCase {
     endDate: string,
     user: any
   ) {
-    if (user.role !== "lecturer" && user.role !== "admin") {
+    if (user.id !== lecturerId && user.role !== "admin") {
       throw new Error("Forbidden");
     }
     return this.repo.getLecturerSchedulesOfferingByDate(
