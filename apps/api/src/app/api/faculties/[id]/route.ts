@@ -20,7 +20,7 @@
 
 
 import { NextResponse } from "next/server";
-import { getFaculties } from "../../../../../../../packages/core/usecases/getFaculties";
+import { getFacultyById } from "../../../../../../../packages/core/usecases/FacultiesUseCase";
 
 // http://localhost:3000/api/faculties/[id]
 
@@ -30,16 +30,16 @@ export async function GET(
 ) {
   try {
     const id = Number(params.id);
-    const faculties = await getFaculties(id);
+    const faculty = await getFacultyById(id);
 
-    if (!faculties || (Array.isArray(faculties) && faculties.length === 0)) {
+    if (!faculty) {
       return NextResponse.json(
         { returnCode: 1, message: "Faculty not found", data: null },
         { status: 404 }
       );
     }
 
-    return NextResponse.json({ returnCode: 0, message: "OK", data: faculties });
+    return NextResponse.json({ returnCode: 0, message: "OK", data: faculty });
   } catch (err: unknown) {
     if (err instanceof Error) {
       return NextResponse.json(

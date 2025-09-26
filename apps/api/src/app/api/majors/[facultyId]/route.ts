@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { getMajorsByFaculty } from "../../../../../../../packages/core/usecases/getMajorsByFaculty";
-import { getFaculties } from "../../../../../../../packages/core/usecases/getFaculties";
+import { getMajorsByFaculty } from "@/core/usecases/MajorUseCase";
+import { getFacultyById } from "@/core/usecases/FacultiesUseCase";
 
 // http://localhost:3000/api/majors/[facultyId]
 
@@ -10,12 +10,10 @@ export async function GET(
 ) {
   try {
     const facultyId = Number(params.facultyId);
-    const [majors, faculties] = await Promise.all([
+    const [majors, faculty] = await Promise.all([
       getMajorsByFaculty(facultyId),
-      getFaculties(facultyId),
+      getFacultyById(facultyId),
     ]);
-
-    const faculty = Array.isArray(faculties) ? faculties[0] : faculties;
 
     if (!faculty) {
       return NextResponse.json(
