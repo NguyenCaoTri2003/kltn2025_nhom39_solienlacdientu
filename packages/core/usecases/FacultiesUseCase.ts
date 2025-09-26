@@ -9,3 +9,5 @@ export async function getAllFaculties() {
   const repo = new FacultiesRepository();
   return await repo.getAllFaculties();
 }
+
+
