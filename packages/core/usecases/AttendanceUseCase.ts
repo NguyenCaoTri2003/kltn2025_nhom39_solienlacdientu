@@ -1,11 +1,12 @@
 import { AttendanceRepository } from "@/data/repositories/AttendanceRepository";
 import { supabase } from "@/data/supabaseClient";
+import { AuthorizationService } from "../services/authorization/AuthorizationService";
 
 export class AttendanceUseCase {
   constructor(private repo: AttendanceRepository) {}
 
   async getStudentAttendance(studentId: number, user: any, startDate?: string, endDate?: string) {
-    if (user.id !== studentId && user.role !== "admin") {
+    if (!(await AuthorizationService.canViewStudent(user, studentId))) {
         throw new Error("Forbidden");
     }
     return this.repo.getStudentAttendance(studentId, startDate, endDate);
