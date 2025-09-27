@@ -8,7 +8,7 @@ const usecase = new AttendanceUseCase(repo);
 
 export async function GET(req: NextRequest) {
   try {
-    const user = authenticate(req); // user.role, user.id
+    const user = authenticate(req); 
     const { searchParams } = new URL(req.url);
 
     const studentId = searchParams.get("student_id")
@@ -29,7 +29,8 @@ export async function GET(req: NextRequest) {
         studentId,
         user,
         startDate,
-        endDate
+        endDate,
+        offeringId
       );
       return NextResponse.json(result);
     }

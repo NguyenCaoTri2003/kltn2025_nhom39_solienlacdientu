@@ -5,11 +5,28 @@ import { AuthorizationService } from "../services/authorization/AuthorizationSer
 export class AttendanceUseCase {
   constructor(private repo: AttendanceRepository) {}
 
-  async getStudentAttendance(studentId: number, user: any, startDate?: string, endDate?: string) {
+  async getStudentAttendance(studentId: number, user: any, startDate?: string, endDate?: string, offeringId?: number) {
     if (!(await AuthorizationService.canViewStudent(user, studentId))) {
         throw new Error("Forbidden");
     }
-    return this.repo.getStudentAttendance(studentId, startDate, endDate);
+
+    if (offeringId) {
+    const { data: enrollment, error } = await supabase
+      .from("enrollment")
+      .select("id")
+      .eq("student_id", studentId)
+      .eq("offering_id", offeringId)
+      .maybeSingle();
+    
+    console.log(enrollment, error);
+
+    if (error) throw error;
+    if (!enrollment) {
+      throw new Error("Forbidden"); 
+    }
+  }
+
+    return this.repo.getStudentAttendance(studentId, startDate, endDate, offeringId);
   }
 
   async getOfferingAttendance(
