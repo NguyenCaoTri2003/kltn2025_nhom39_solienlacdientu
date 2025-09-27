@@ -2,19 +2,27 @@ import { supabase } from "../supabaseClient";
 
 export class AttendanceRepository {
     // Sinh viên xem lịch sử điểm danh
-    async getStudentAttendance(studentId: number, startDate?: string, endDate?: string) {
-        // Lấy tất cả enrollment_id của sinh viên
-        const { data: enrollments, error: enrollError } = await supabase
+    async getStudentAttendance(
+        studentId: number,
+        startDate?: string,
+        endDate?: string,
+        offeringId?: number
+    ) {
+        let enrollmentQuery = supabase
             .from("enrollment")
-            .select("id")
+            .select("id, offering_id")
             .eq("student_id", studentId);
 
-        if (enrollError) throw enrollError;
+        if (offeringId) {
+            enrollmentQuery = enrollmentQuery.eq("offering_id", offeringId);
+        }
+
+        const { data: enrollments, error: enrollErr } = await enrollmentQuery;
+        if (enrollErr) throw enrollErr;
         if (!enrollments || enrollments.length === 0) return [];
 
         const enrollmentIds = enrollments.map(e => e.id);
 
-        // Lấy attendance theo enrollment_id
         let query = supabase
             .from("attendance")
             .select(`
@@ -25,7 +33,9 @@ export class AttendanceRepository {
         offering_id
       )
     `)
-            .in("enrollment_id", enrollmentIds);
+            .in("enrollment_id", enrollmentIds)
+            // .order("attendance_date", { ascending: true })
+            .order("type", { ascending: true });
 
         if (startDate) query = query.gte("attendance_date", startDate);
         if (endDate) query = query.lte("attendance_date", endDate);
