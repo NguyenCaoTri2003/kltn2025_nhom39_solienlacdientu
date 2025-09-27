@@ -14,9 +14,9 @@ export class AppointmentRepository {
     async getAppointmentsByUser(userId: number, role: string) {
         let query = supabase.from("appointments").select(`
       *,
-      lecturer:lecturer_id (id, full_name),
-      parent:parent_id (id, full_name),
-      student:student_id (id, full_name)
+      lecturer:lecturer_id (id, users (full_name)),
+      parent:parent_id (id, users (full_name)),
+      student:student_id (id, users (full_name))
     `);
 
         if (role === "lecturer") {
