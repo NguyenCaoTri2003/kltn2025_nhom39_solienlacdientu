@@ -59,33 +59,34 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const user = authenticate(req);
+    if (user.role !== "lecturer") {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
     const body = await req.json();
 
-    const {
-      lecturerId,
-      offeringId,
-      enrollment_id,
-      practice_group_id,
-      attendance_date,
-      type,
-      status,
-      note,
-    } = body;
+    const offeringId = body.offeringId ?? body.offering_id;
+    const enrollment_id = body.enrollmentId ?? body.enrollment_id;
+    const practice_group_id = body.practiceGroupId ?? body.practice_group_id ?? null;
+    const attendance_date = body.attendanceDate ?? body.attendance_date;
+    const type = body.type;
+    const status = body.status;
+    const note = body.note ?? null;
 
-    if (!lecturerId || !offeringId || !enrollment_id || !attendance_date || !type || !status) {
+    if (!offeringId || !enrollment_id || !attendance_date || !type || !status) {
       return NextResponse.json(
         { error: "Missing required fields" },
         { status: 400 }
       );
     }
 
-    const result = await usecase.createAttendance(lecturerId, offeringId, {
+    const result = await usecase.createAttendance(user.id, offeringId, {
       enrollment_id,
       practice_group_id,
       attendance_date,
       type,
       status,
-      note
+      note,
     });
 
     return NextResponse.json(result, { status: 201 });
@@ -100,22 +101,28 @@ export async function POST(req: NextRequest) {
 export async function PATCH(req: NextRequest) {
   try {
     const user = authenticate(req);
+    if (user.role !== "lecturer") {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
     const body = await req.json();
 
-    const { lecturerId, offeringId, id, status, note } = body;
-    if (!lecturerId || !offeringId || !id || !status) {
+    const offeringId = body.offeringId ?? body.offering_id;
+    const id = body.id;
+    const status = body.status;
+    const note = body.note ?? null;
+
+    if (!offeringId || !id || !status) {
       return NextResponse.json(
         { error: "Missing required fields" },
         { status: 400 }
       );
     }
 
-    const result = await usecase.updateAttendance(
-      lecturerId,
-      offeringId,
-      id,
-      { status, note }
-    );
+    const result = await usecase.updateAttendance(user.id, offeringId, id, {
+      status,
+      note,
+    });
 
     return NextResponse.json(result);
   } catch (e: any) {
@@ -129,11 +136,12 @@ export async function PATCH(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   try {
     const user = authenticate(req);
+    if (user.role !== "lecturer") {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
     const { searchParams } = new URL(req.url);
 
-    const lecturerId = searchParams.get("lecturer_id")
-      ? Number(searchParams.get("lecturer_id"))
-      : undefined;
     const offeringId = searchParams.get("offering_id")
       ? Number(searchParams.get("offering_id"))
       : undefined;
@@ -141,11 +149,11 @@ export async function DELETE(req: NextRequest) {
       ? Number(searchParams.get("id"))
       : undefined;
 
-    if (!lecturerId || !offeringId || !attendanceId) {
+    if (!offeringId || !attendanceId) {
       return NextResponse.json({ error: "Missing params" }, { status: 400 });
     }
 
-    await usecase.deleteAttendance(lecturerId, offeringId, attendanceId);
+    await usecase.deleteAttendance(user.id, offeringId, attendanceId);
     return NextResponse.json({ success: true });
   } catch (e: any) {
     return NextResponse.json(
