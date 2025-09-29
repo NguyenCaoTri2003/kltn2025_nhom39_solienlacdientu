@@ -81,6 +81,17 @@ export class UserRepository {
     return data.users as User;
   }
 
+  async findByEmailAdmin(email: string): Promise<User | null> {
+    const { data, error } = await supabase
+      .from("users")
+      .select("*")
+      .eq("email", email)
+      .eq("role", "admin") 
+      .single();
+    if (error) return null;
+    return data as User;
+  }
+
   async updateUser(id: number, updates: Partial<User>): Promise<User> {
     const { data, error } = await supabase
       .from("users")

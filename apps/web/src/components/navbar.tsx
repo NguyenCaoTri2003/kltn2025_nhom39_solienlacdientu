@@ -1,0 +1,13 @@
+import NavbarClient from "./navbar-client";
+import { cookies } from "next/headers";
+
+export default async function Navbar() {
+  const cookieStore = await cookies();
+  const token = cookieStore.get("token")?.value;
+  const user = cookieStore.get("user")?.value ? JSON.parse(cookieStore.get("user")!.value) : null;
+
+  const userRole: "admin" | "teacher" | null = user?.role === "admin" ? "admin" : user?.role === "lecturer" ? "teacher" : null;
+  const userName: string = user?.name || "";
+
+  return <NavbarClient userRole={userRole} userName={userName} />;
+}
