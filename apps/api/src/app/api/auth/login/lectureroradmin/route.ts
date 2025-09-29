@@ -10,9 +10,23 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { identifier, password, role } = body;
 
-    const { user, token } = await authUseCase.login(identifier, password, role);
+    const { user, token } = await authUseCase.loginLecturerOrAdmin(identifier, password);
 
-    return NextResponse.json({ user, token });
+     const res = NextResponse.json({ user });
+      res.cookies.set("token", token, {
+        httpOnly: true,
+        path: "/",
+        maxAge: 60 * 60 * 24, 
+        sameSite: "lax",
+      });
+      res.cookies.set("user", JSON.stringify(user), {
+        httpOnly: false, 
+        path: "/",
+        maxAge: 60 * 60 * 24,
+        sameSite: "lax",
+      });
+
+    return res;
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 400 });
   }

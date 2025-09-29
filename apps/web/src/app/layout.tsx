@@ -16,7 +16,7 @@ export const metadata: Metadata = {
   title: "Sổ liên lạc điện tử",
   description: "Ứng dụng sổ liên lạc điện tử cho sinh viên, giảng viên và phụ huynh.",
   icons: {
-    icon: "/logo_iuh_64.png",
+    icon: "/logo-iuh-64.png",
   },
 };
 
