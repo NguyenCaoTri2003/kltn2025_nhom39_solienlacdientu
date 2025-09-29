@@ -5,8 +5,6 @@ import { User } from "../../core/entities/Users";
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
-console.log("JWT_SECRET:", JWT_SECRET);
-
 export class AuthUseCase {
   private userRepo: UserRepository;
 
@@ -23,6 +21,8 @@ export class AuthUseCase {
       user = await this.userRepo.findByPhone(identifier);
     } else if (role === "lecturer") {
       user = await this.userRepo.findByLecturerCode(identifier);
+    } else if (role === "admin") {
+      user = await this.userRepo.findByEmailAdmin(identifier);
     } else {
       throw new Error("Invalid role");
     }
