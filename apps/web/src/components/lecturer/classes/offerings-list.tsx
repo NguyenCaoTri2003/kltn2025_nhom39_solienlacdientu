@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import WeeklyScheduleList from "./weekly-schedule-list";
 
 interface Offering {
+  practice_group_count: number;
   id: number;
   name: string;
   class_code: string;
@@ -16,6 +17,7 @@ interface Offering {
   semester_name?: string;
   year?: string;
   courses: {
+    course_code: any;
     credit?: number;
   };
   student_count?: number;
@@ -102,51 +104,71 @@ export default function OfferingsList() {
               <h2 className="text-xl font-semibold text-foreground">{key}</h2>
             </div>
 
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
               {list.map((o) => (
                 <motion.div
                   key={o.id}
                   whileHover={{ scale: 1.03 }}
                   transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                  className="h-full"
                 >
                   <Card
-                    className="p-5 rounded-2xl border border-border/50 bg-gradient-to-br from-card/95 to-card/70 shadow-md 
-                    hover:shadow-xl hover:-translate-y-1 transition-all backdrop-blur-sm"
+                    className="h-full flex flex-col justify-between p-5 rounded-2xl border border-border/50 
+                      bg-gradient-to-br from-card/95 to-card/70 shadow-md hover:shadow-xl 
+                      hover:-translate-y-1 transition-all backdrop-blur-sm"
                   >
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex items-center gap-2">
-                        <BookOpen className="w-5 h-5 text-primary" />
-                        <h3 className="font-semibold text-foreground line-clamp-1">
-                          {o.name}
-                        </h3>
+                    <div className="flex flex-col flex-1 justify-between space-y-2">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <BookOpen className="w-5 h-5 text-primary" />
+                          <h3 className="font-semibold text-foreground line-clamp-1">
+                            {o.name}
+                          </h3>
+                        </div>
+
+                        {o.practice_group_count > 0 && (
+                          <p className="text-xs text-muted-foreground ml-7 mt-0.5">
+                            ({o.practice_group_count} nhóm thực hành)
+                          </p>
+                        )}
                       </div>
-                    </div>
 
-                    <p className="text-sm text-muted-foreground mb-1">
-                      Mã lớp: <span className="font-medium text-foreground">{o.class_code}</span>
-                    </p>
-                    {o.course_code && (
-                      <p className="text-sm text-muted-foreground mb-1">
-                        Mã học phần:{" "}
-                        <span className="font-medium text-foreground">{o.course_code}</span>
-                      </p>
-                    )}
-
-                    <WeeklyScheduleList schedules={o.weekly_schedules} filterType="theory"/>
-
-                    <div className="flex justify-between text-sm mt-3 text-muted-foreground">
-                      <div className="flex items-center gap-1">
-                        <GraduationCap className="w-4 h-4 text-primary" />
-                        {o.courses.credit || "?"} tín chỉ
+                      <div className="space-y-0.5">
+                        <p className="text-sm text-muted-foreground">
+                          Mã lớp:{" "}
+                          <span className="font-medium text-foreground">
+                            {o.class_code}
+                          </span>
+                        </p>
+                        {o.courses?.course_code && (
+                          <p className="text-sm text-muted-foreground">
+                            Mã học phần:{" "}
+                            <span className="font-medium text-foreground">
+                              {o.courses.course_code}
+                            </span>
+                          </p>
+                        )}
                       </div>
-                      <div className="flex items-center gap-1">
-                        <Users className="w-4 h-4 text-primary" />
-                        {o.registered || 0}/{o.capacity || 0} SV
+
+                      <WeeklyScheduleList
+                        schedules={o.weekly_schedules}
+                        filterType="theory"
+                      />
+
+                      <div className="flex justify-between text-sm text-muted-foreground pt-1">
+                        <div className="flex items-center gap-1">
+                          <GraduationCap className="w-4 h-4 text-primary" />
+                          {o.courses?.credit || "?"} tín chỉ
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Users className="w-4 h-4 text-primary" />
+                          {o.registered || 0}/{o.capacity || 0} SV
+                        </div>
                       </div>
                     </div>
 
                     {o.description && (
-                      <p className="text-xs text-muted-foreground mt-3 flex items-start gap-1">
+                      <p className="text-xs text-muted-foreground mt-2 flex items-start gap-1">
                         <Info className="w-3.5 h-3.5 text-primary mt-0.5" />
                         <span className="line-clamp-2">{o.description}</span>
                       </p>

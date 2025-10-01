@@ -2,14 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { getOfferingsByLecturer } from "@/core/usecases/OfferingsUseCase";
 import { authenticate } from "@/utils/auth";
 
-// http://localhost:3000/api/offerings/lecturer
-
 export async function GET(req: NextRequest) {
   try {
-    // Xác thực người dùng
     const user = authenticate(req);
-    
-    // Kiểm tra quyền truy cập - chỉ cho phép lecturer và admin
+
     if (user.role !== "lecturer" && user.role !== "admin") {
       return NextResponse.json(
         { returnCode: 1, message: "Forbidden", data: null },
@@ -17,30 +13,28 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // Lấy danh sách lớp học phần của giảng viên hiện tại
-    const offerings = await getOfferingsByLecturer(user.id);
+    const { searchParams } = new URL(req.url);
+    const semesterIdParam = searchParams.get("semester_id");
+    const semesterId = semesterIdParam ? Number(semesterIdParam) : undefined;
 
-    if (!offerings || (Array.isArray(offerings) && offerings.length === 0)) {
+    const offerings = await getOfferingsByLecturer(user.id, semesterId);
+
+    if (!offerings || offerings.length === 0) {
       return NextResponse.json(
-        { returnCode: 1, message: "No course offerings found for this lecturer", data: null },
+        { returnCode: 1, message: "No course offerings found", data: null },
         { status: 404 }
       );
     }
 
-    return NextResponse.json({ 
-      returnCode: 0, 
-      message: "OK", 
-      data: offerings 
+    return NextResponse.json({
+      returnCode: 0,
+      message: "OK",
+      data: offerings,
     });
   } catch (err: unknown) {
-    if (err instanceof Error) {
-      return NextResponse.json(
-        { returnCode: 1, message: err.message, data: null },
-        { status: 500 }
-      );
-    }
+    const message = err instanceof Error ? err.message : "Unknown error";
     return NextResponse.json(
-      { returnCode: 1, message: "Unknown error", data: null },
+      { returnCode: 1, message, data: null },
       { status: 500 }
     );
   }

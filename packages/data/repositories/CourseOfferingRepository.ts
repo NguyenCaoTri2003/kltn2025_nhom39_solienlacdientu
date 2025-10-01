@@ -24,17 +24,18 @@ export class CourseOfferingRepository {
           classroom,
           building,
           type
-        )
+        ),
       `)
       .eq("course_id", courseId)
+      
       .order("day_of_week", { foreignTable: "weekly_schedules" });
 
     if (error) throw error;
     return data ?? [];
   }
 
-  async getOfferingsByLecturer(lecturerId: number) {
-    const { data, error } = await supabase
+  async getOfferingsByLecturer(lecturerId: number, semesterId?: number) {
+    let query = supabase
       .from("course_offerings")
       .select(`
         id,
@@ -57,12 +58,22 @@ export class CourseOfferingRepository {
           building,
           type
         ),
-        courses (*)
+        courses (*),
+        practice_groups (id)
       `)
       .eq("lecturer_id", lecturerId)
       .order("day_of_week", { foreignTable: "weekly_schedules" });
 
+    if (semesterId) {
+      query = query.eq("semester_id", semesterId);
+    }
+
+    const { data, error } = await query;
     if (error) throw error;
-    return data ?? [];
+
+    return data.map(offering => ({
+      ...offering,
+      practice_group_count: offering.practice_groups?.length ?? 0
+    }));
   }
 }
