@@ -12,7 +12,6 @@ export default async function ClassesPage() {
           <p className="text-muted-foreground">Điểm danh, theo dõi và đánh giá sinh viên</p>
         </div>
 
-        {/* Client component */}
         <OfferingsList />
       </div>
     </div>

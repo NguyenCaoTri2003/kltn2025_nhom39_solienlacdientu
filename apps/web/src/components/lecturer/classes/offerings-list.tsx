@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { motion } from "framer-motion";
 import {
   GraduationCap,
@@ -12,11 +12,11 @@ import {
   X,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
 import WeeklyScheduleList from "./weekly-schedule-list";
 import SemesterSelector, { Semester } from "@/components/lecturer/classes/semester-selector";
 import { Input } from "@/components/ui/input";
 import CourseOfferingSkeleton from "@/components/skeleton/course-offering-skeleton";
+import Pagination from "@/components/pagination";
 
 interface Offering {
   practice_group_count: number;
@@ -49,6 +49,9 @@ export default function OfferingsList() {
   const [selectedSemester, setSelectedSemester] = useState<Semester | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [page, setPage] = useState(1);
+  const pageSize = 12;
+  const topRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (!selectedSemester?.id) return;
@@ -76,6 +79,10 @@ export default function OfferingsList() {
     fetchOfferings();
   }, [selectedSemester]);
 
+  useEffect(() => {
+    setPage(1);
+  }, [selectedSemester?.id, searchTerm]);
+
   function normalizeText(str: string) {
     return str
       .normalize("NFD")
@@ -87,18 +94,28 @@ export default function OfferingsList() {
   const filteredOfferings = useMemo(() => {
     const term = normalizeText(searchTerm);
     if (!term) return offerings;
-
     return offerings.filter((o) => {
       const name = normalizeText(o.name || "");
       const classCode = normalizeText(o.class_code || "");
       const courseCode = normalizeText(o.courses?.course_code || "");
-      return (
-        name.includes(term) ||
-        classCode.includes(term) ||
-        courseCode.includes(term)
-      );
+      return name.includes(term) || classCode.includes(term) || courseCode.includes(term);
     });
   }, [offerings, searchTerm]);
+
+  const totalItems = filteredOfferings.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+
+  const pagedOfferings = useMemo(() => {
+    const start = (page - 1) * pageSize;
+    return filteredOfferings.slice(start, start + pageSize);
+  }, [filteredOfferings, page]);
+
+  const handlePageChange = (newPage: number) => {
+    const clamped = Math.max(1, Math.min(totalPages, newPage));
+    setPage(clamped);
+    if (topRef.current) topRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    else window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   return (
     <div className="space-y-10">
@@ -133,21 +150,19 @@ export default function OfferingsList() {
           Không có lớp học phần nào trong học kỳ này.
         </div>
       ) : (
-        <section>
+        <section ref={topRef}>
           {selectedSemester && (
             <div className="flex items-center gap-2 mb-4">
               <CalendarDays className="w-5 h-5 text-primary" />
               <h2 className="text-xl font-semibold text-foreground">
                 {selectedSemester.name}{" "}
-                {selectedSemester.academic_year
-                  ? `(${selectedSemester.academic_year})`
-                  : ""}
+                {selectedSemester.academic_year ? `(${selectedSemester.academic_year})` : ""}
               </h2>
             </div>
           )}
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
-            {filteredOfferings.map((o) => (
+            {pagedOfferings.map((o) => (
               <motion.div
                 key={o.id}
                 whileHover={{ scale: 1.03 }}
@@ -180,24 +195,17 @@ export default function OfferingsList() {
                     <div className="space-y-0.5">
                       <p className="text-sm text-muted-foreground">
                         Mã lớp:{" "}
-                        <span className="font-medium text-foreground">
-                          {o.class_code}
-                        </span>
+                        <span className="font-medium text-foreground">{o.class_code}</span>
                       </p>
                       {o.courses?.course_code && (
                         <p className="text-sm text-muted-foreground">
                           Mã học phần:{" "}
-                          <span className="font-medium text-foreground">
-                            {o.courses.course_code}
-                          </span>
+                          <span className="font-medium text-foreground">{o.courses.course_code}</span>
                         </p>
                       )}
                     </div>
 
-                    <WeeklyScheduleList
-                      schedules={o.weekly_schedules}
-                      filterType="theory"
-                    />
+                    <WeeklyScheduleList schedules={o.weekly_schedules} filterType="theory" />
 
                     <div className="flex justify-between text-sm text-muted-foreground pt-1">
                       <div className="flex items-center gap-1">
@@ -214,6 +222,13 @@ export default function OfferingsList() {
               </motion.div>
             ))}
           </div>
+
+          <Pagination
+            totalItems={totalItems}
+            pageSize={pageSize}
+            currentPage={page}
+            onChange={handlePageChange}
+          />
         </section>
       )}
     </div>
