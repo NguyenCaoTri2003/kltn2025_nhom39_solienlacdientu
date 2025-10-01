@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -15,14 +15,23 @@ import {
   LogOut,
   Menu,
   X,
+  KeyRound,
 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 
 interface NavbarProps {
   userRole: "admin" | "teacher" | null;
   userName: string;
+  avatarUrl?: string | null;
 }
 
-export default function NavbarClient({ userRole, userName }: NavbarProps) {
+export default function NavbarClient({ userRole, userName, avatarUrl }: NavbarProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
@@ -48,8 +57,7 @@ export default function NavbarClient({ userRole, userName }: NavbarProps) {
     { icon: Users, label: "Lớp học", href: "/lecturer/classes" },
     { icon: Calendar, label: "Lịch hẹn", href: "/lecturer/appointments" },
     { icon: MessageSquare, label: "Tương tác", href: "/lecturer/communications" },
-    { icon: BarChart3, label: "Thống kê", href: "/lecturer/statistics" },
-    { icon: User, label: "Hồ sơ cá nhân", href: "/lecturer/profile" },
+    { icon: BarChart3, label: "Thống kê", href: "/lecturer/statistics" }
   ];
 
   const navItems = userRole === "admin" ? adminNavItems : teacherNavItems;
@@ -62,13 +70,36 @@ export default function NavbarClient({ userRole, userName }: NavbarProps) {
     return false;
   };
 
+  // 🔤 Lấy chữ cái đầu tên (ví dụ: Nguyễn Văn Tèo -> T)
+  const initial = useMemo(() => {
+    const parts = userName.trim().split(" ");
+    return parts[parts.length - 1]?.[0]?.toUpperCase() ?? "?";
+  }, [userName]);
+
+  // 🎨 Random màu từ tên (giữ ổn định)
+  const bgColor = useMemo(() => {
+    const colors = [
+      "bg-blue-500", "bg-green-500", "bg-amber-500", "bg-purple-500",
+      "bg-rose-500", "bg-cyan-500", "bg-lime-500", "bg-pink-500"
+    ];
+    let hash = 0;
+    for (let i = 0; i < userName.length; i++) {
+      hash = userName.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const index = Math.abs(hash) % colors.length;
+    return colors[index];
+  }, [userName]);
+
   return (
     <nav className="sticky top-0 z-50 bg-card border-b border-border">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           {/* Logo + Navigation */}
           <div className="flex items-center space-x-4">
-            <button onClick={() => router.push("/lecturer")} className="flex items-center cursor-pointer">
+            <button
+              onClick={() => router.push(userRole === "admin" ? "/admin" : "/lecturer")}
+              className="flex items-center cursor-pointer"
+            >
               <Image
                 src="/logo-iuh-1.png"
                 alt="Logo IUH"
@@ -88,20 +119,19 @@ export default function NavbarClient({ userRole, userName }: NavbarProps) {
                     key={item.href}
                     onClick={() => router.push(item.href)}
                     className={`cursor-pointer group relative flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-all duration-300 backdrop-blur-md ${
-                        isActive
+                      isActive
                         ? "text-primary bg-gradient-to-r from-primary/20 to-blue-500/10 border border-primary/40 shadow-[0_4px_20px_rgba(59,130,246,0.2)] scale-[1.05]"
                         : "text-muted-foreground hover:text-foreground hover:bg-accent/30 hover:shadow-[0_2px_8px_rgba(0,0,0,0.1)]"
-                      }`}
+                    }`}
                   >
                     <item.icon
                       className={`w-4 h-4 mr-2 transition-transform duration-300 ${
                         isActive
                           ? "scale-110 text-primary"
                           : "group-hover:scale-110 group-hover:rotate-[8deg]"
-                        }`}
+                      }`}
                     />
                     {item.label}
-
                     {isActive && (
                       <span className="absolute inset-0 rounded-lg bg-gradient-to-r from-primary/10 to-blue-500/10 animate-pulse pointer-events-none"></span>
                     )}
@@ -113,17 +143,39 @@ export default function NavbarClient({ userRole, userName }: NavbarProps) {
 
           {/* User info + actions */}
           <div className="flex items-center space-x-4">
-            <span className="text-sm text-muted-foreground hidden sm:block">{userName}</span>
             <ThemeToggle />
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleLogout}
-              className="cursor-pointer text-muted-foreground hover:text-foreground"
-            >
-              <LogOut className="w-4 h-4 mr-2" />
-              Đăng xuất
-            </Button>
+
+            {/* Avatar Dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="cursor-pointer relative w-9 h-9 rounded-full overflow-hidden flex items-center justify-center text-white font-semibold border border-border hover:opacity-90 transition">
+                  {avatarUrl ? (
+                    <Image src={avatarUrl} alt={userName} fill className="object-cover" />
+                  ) : (
+                    <span className={`${bgColor} w-full h-full flex items-center justify-center`}>
+                      {initial}
+                    </span>
+                  )}
+                </button>
+              </DropdownMenuTrigger>
+
+              <DropdownMenuContent align="end" className="w-48">
+                <div className="px-3 py-2 text-sm font-medium text-foreground truncate">
+                  {userName}
+                </div>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => router.push("/lecturer/profile")}>
+                  <User className="w-4 h-4 mr-2" /> Thông tin cá nhân
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => router.push("/change-password")}>
+                  <KeyRound className="w-4 h-4 mr-2" /> Đổi mật khẩu
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleLogout}>
+                  <LogOut className="w-4 h-4 mr-2 text-destructive" /> Đăng xuất
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
 
             {/* Mobile toggle */}
             <div className="md:hidden">
@@ -152,10 +204,11 @@ export default function NavbarClient({ userRole, userName }: NavbarProps) {
                     router.push(item.href);
                     setIsMobileMenuOpen(false);
                   }}
-                  className={`flex items-center w-full px-3 py-2 text-sm font-medium rounded-md transition-colors ${isActive
+                  className={`flex items-center w-full px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                    isActive
                       ? "bg-accent text-foreground"
                       : "text-muted-foreground hover:text-foreground hover:bg-accent"
-                    }`}
+                  }`}
                 >
                   <item.icon className="w-4 h-4 mr-2" />
                   {item.label}

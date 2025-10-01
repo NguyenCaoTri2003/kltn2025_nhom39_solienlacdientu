@@ -7,7 +7,9 @@ export default async function Navbar() {
   const user = cookieStore.get("user")?.value ? JSON.parse(cookieStore.get("user")!.value) : null;
 
   const userRole: "admin" | "teacher" | null = user?.role === "admin" ? "admin" : user?.role === "lecturer" ? "teacher" : null;
-  const userName: string = user?.name || "";
+  const userName: string = user?.full_name || "";
+  const avatarUrl: string | null = user?.avatar_url || null;
+  console.log("User  in Navbar:", user);
 
-  return <NavbarClient userRole={userRole} userName={userName} />;
+  return <NavbarClient userRole={userRole} userName={userName} avatarUrl={avatarUrl} />;
 }
