@@ -3,7 +3,7 @@ import path from 'path';
 
 const nextConfig: NextConfig = {
   webpack: (config) => {
-    config.resolve.alias['@'] = path.resolve(__dirname, 'packages');
+    config.resolve.alias['@packages'] = path.resolve(__dirname, 'packages');
     return config;
   },
 };

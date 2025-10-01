@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { authenticate } from "@/utils/auth";
-import { AppointmentUseCase } from "@/core/usecases/AppointmentUseCase";
-import { AppointmentRepository } from "@/data/repositories/AppointmentRepository";
+import { authenticate } from "@packages/utils/auth";
+import { AppointmentUseCase } from "@packages/core/usecases/AppointmentUseCase";
+import { AppointmentRepository } from "@packages/data/repositories/AppointmentRepository";
 
 const usecase = new AppointmentUseCase(new AppointmentRepository());
 

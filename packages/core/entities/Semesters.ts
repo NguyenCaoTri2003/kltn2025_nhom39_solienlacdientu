@@ -1,6 +1,8 @@
 export interface Semester {
-    id: number; // bigserial -> number
-    name: string; // varchar(128) not null
-    academic_year: string; // varchar(20) not null
+    id: number; 
+    name: string;
+    academic_year: string;
+    start_date?: string;
+    end_date?: string;
 }
   

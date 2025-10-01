@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getOfferingsByLecturer } from "@/core/usecases/OfferingsUseCase";
-import { authenticate } from "@/utils/auth";
+import { getOfferingsByLecturer } from "@packages/core/usecases/OfferingsUseCase";
+import { authenticate } from "@packages/utils/auth";
 
 export async function GET(req: NextRequest) {
   try {

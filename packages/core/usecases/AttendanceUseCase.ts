@@ -1,5 +1,5 @@
-import { AttendanceRepository } from "@/data/repositories/AttendanceRepository";
-import { supabase } from "@/data/supabaseClient";
+import { AttendanceRepository } from "@packages/data/repositories/AttendanceRepository";
+import { supabase } from "@packages/data/supabaseClient";
 import { AuthorizationService } from "../services/authorization/AuthorizationService";
 
 export class AttendanceUseCase {

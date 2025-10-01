@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { authenticate } from "@/utils/auth";
-import { MessageRepository } from '@/data/repositories/MessageRepository';
-import { MessageUseCase } from "@/core/usecases/MessageUseCase";
+import { authenticate } from "@packages/utils/auth";
+import { MessageRepository } from '@packages/data/repositories/MessageRepository';
+import { MessageUseCase } from "@packages/core/usecases/MessageUseCase";
 
 const usecase = new MessageUseCase(new MessageRepository());
 

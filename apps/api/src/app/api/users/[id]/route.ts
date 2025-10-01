@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { UserRepository } from '@/data/repositories/UserRepository';
-import { authenticate } from "@/utils/auth";
+import { UserRepository } from '@packages/data/repositories/UserRepository';
+import { authenticate } from "@packages/utils/auth";
 
 const repo = new UserRepository();
 

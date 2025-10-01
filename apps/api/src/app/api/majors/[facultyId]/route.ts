@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { getMajorsByFaculty } from "@/core/usecases/MajorUseCase";
-import { getFacultyById } from "@/core/usecases/FacultiesUseCase";
+import { getMajorsByFaculty } from "@packages/core/usecases/MajorUseCase";
+import { getFacultyById } from "@packages/core/usecases/FacultiesUseCase";
 
 // http://localhost:3000/api/majors/[facultyId]
 

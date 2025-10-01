@@ -1,4 +1,4 @@
-import { supabase } from "@/data/supabaseClient";
+import { supabase } from "@packages/data/supabaseClient";
 
 export class AuthorizationService {
     static async canViewStudent(user: any, studentId: number): Promise<boolean> {

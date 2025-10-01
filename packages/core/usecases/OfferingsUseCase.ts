@@ -1,4 +1,4 @@
-import { CourseOfferingRepository } from "../../data/repositories/CourseOfferingRepository";
+import { CourseOfferingRepository } from "@packages/data/repositories/CourseOfferingRepository";
 
 export async function getOfferingsByCourse(courseId: number) {
   const repo = new CourseOfferingRepository();

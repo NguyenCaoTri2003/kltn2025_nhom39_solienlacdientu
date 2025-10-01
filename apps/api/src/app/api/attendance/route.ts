@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { AttendanceRepository } from "@/data/repositories/AttendanceRepository";
-import { AttendanceUseCase } from "@/core/usecases/AttendanceUseCase";
-import { authenticate } from "@/utils/auth";
+import { AttendanceRepository } from "@packages/data/repositories/AttendanceRepository";
+import { AttendanceUseCase } from "@packages/core/usecases/AttendanceUseCase";
+import { authenticate } from "@packages/utils/auth";
 
 const repo = new AttendanceRepository();
 const usecase = new AttendanceUseCase(repo);

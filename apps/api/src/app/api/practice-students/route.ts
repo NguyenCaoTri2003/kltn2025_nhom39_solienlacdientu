@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getStudentsByPracticeGroup } from "@/core/usecases/EnrollmentUseCase";
+import { getStudentsByPracticeGroup } from "@packages/core/usecases/EnrollmentUseCase";
 
 // http://localhost:3000/api/practice-students?group_id=1
 

@@ -1,5 +1,5 @@
-import { AppointmentRepository } from "@/data/repositories/AppointmentRepository";
-import { supabase } from "@/data/supabaseClient";
+import { AppointmentRepository } from "@packages/data/repositories/AppointmentRepository";
+import { supabase } from "@packages/data/supabaseClient";
 
 export class AppointmentUseCase {
     constructor(private repo: AppointmentRepository) { }

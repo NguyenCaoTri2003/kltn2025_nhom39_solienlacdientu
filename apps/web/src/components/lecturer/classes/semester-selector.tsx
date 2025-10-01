@@ -8,14 +8,7 @@ import {
   SelectItem,
   SelectValue,
 } from "@/components/ui/select";
-
-export interface Semester {
-  id: number;
-  name: string;
-  academic_year: string;
-  start_date?: string;
-  end_date?: string;
-}
+import { Semester } from "@packages/core/entities/Semesters";
 
 interface SemesterSelectorProps {
   onChange: (semester: Semester | null) => void;
@@ -75,7 +68,6 @@ export default function SemesterSelector({ onChange }: SemesterSelectorProps) {
 
   return (
     <div className="flex flex-wrap gap-4">
-      {/* Select Năm học */}
       <Select
         value={selectedYear || ""}
         onValueChange={(val: string) => {
@@ -109,7 +101,6 @@ export default function SemesterSelector({ onChange }: SemesterSelectorProps) {
         </SelectContent>
       </Select>
 
-      {/* Select Học kỳ */}
       <Select
         value={selectedSemesterId?.toString() || ""}
         onValueChange={(val: string) => {

@@ -1,4 +1,4 @@
-import { ScheduleRepository } from "@/data/repositories/ScheduleRepository";
+import { ScheduleRepository } from "@packages/data/repositories/ScheduleRepository";
 import { AuthorizationService } from "../services/authorization/AuthorizationService";
 
 export class ScheduleUseCase {

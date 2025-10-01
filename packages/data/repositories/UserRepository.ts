@@ -1,8 +1,8 @@
 import { supabase } from "../supabaseClient";
 import { User } from "../../core/entities/Users";
-import { Student, StudentWithUser } from "@/core/entities/Student";
-import { Lecturers } from "@/core/entities/Lecturers";
-import { Parent } from "@/core/entities/Parent";
+import { Student, StudentWithUser } from "@packages/core/entities/Student";
+import { Lecturers } from "@packages/core/entities/Lecturers";
+import { Parent } from "@packages/core/entities/Parent";
 
 type RoleSpecificData = {
   student?: Student;

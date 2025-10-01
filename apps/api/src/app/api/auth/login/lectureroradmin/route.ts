@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { UserRepository } from "@/data/repositories/UserRepository";
-import { AuthUseCase } from "@/core/usecases/authUseCase";
+import { UserRepository } from "@packages/data/repositories/UserRepository";
+import { AuthUseCase } from "@packages/core/usecases/authUseCase";
 
 const userRepo = new UserRepository();
 const authUseCase = new AuthUseCase(userRepo);

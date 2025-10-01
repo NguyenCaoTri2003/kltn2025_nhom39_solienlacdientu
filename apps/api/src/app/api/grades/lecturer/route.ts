@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { GradeUseCase } from "@/core/usecases/GradeUseCase";
-import { authenticate } from "@/utils/auth";
-import { GradeRepository } from "@/data/repositories/GradeRepository";
+import { GradeUseCase } from "@packages/core/usecases/GradeUseCase";
+import { authenticate } from "@packages/utils/auth";
+import { GradeRepository } from "@packages/data/repositories/GradeRepository";
 
 const repo = new GradeRepository();
 const usecase = new GradeUseCase(repo);

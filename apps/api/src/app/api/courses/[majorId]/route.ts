@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getCoursesByMajor } from "@/core/usecases/CoursesUseCase";
+import { getCoursesByMajor } from "@packages/core/usecases/CoursesUseCase";
 
 // http://localhost:3000/api/courses/[majorId]
 

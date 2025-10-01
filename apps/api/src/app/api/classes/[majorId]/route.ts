@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getClassesByMajor } from "@/core/usecases/ClassesUseCase";
-import { authenticate } from "@/utils/auth";
+import { getClassesByMajor } from "@packages/core/usecases/ClassesUseCase";
+import { authenticate } from "@packages/utils/auth";
 
 
 // http://localhost:3000/api/classes/[majorId]

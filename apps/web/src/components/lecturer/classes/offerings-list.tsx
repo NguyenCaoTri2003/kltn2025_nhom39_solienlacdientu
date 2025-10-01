@@ -13,36 +13,12 @@ import {
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import WeeklyScheduleList from "./weekly-schedule-list";
-import SemesterSelector, { Semester } from "@/components/lecturer/classes/semester-selector";
+import SemesterSelector from "@/components/lecturer/classes/semester-selector";
+import { Semester } from "@packages/core/entities/Semesters";
 import { Input } from "@/components/ui/input";
 import CourseOfferingSkeleton from "@/components/skeleton/course-offering-skeleton";
 import Pagination from "@/components/pagination";
-
-interface Offering {
-  practice_group_count: number;
-  id: number;
-  name: string;
-  class_code: string;
-  course_code?: string;
-  semester_name?: string;
-  year?: string;
-  courses: {
-    course_code: string;
-    credit?: number;
-  };
-  capacity?: number;
-  registered?: number;
-  schedule?: string;
-  description?: string;
-  weekly_schedules?: {
-    day_of_week: number;
-    start_period: number;
-    period_count: number;
-    classroom?: string | null;
-    building?: string | null;
-    type: string;
-  }[];
-}
+import { Offering } from "@packages/core/entities/CourseOffering";
 
 export default function OfferingsList() {
   const [offerings, setOfferings] = useState<Offering[]>([]);
