@@ -8,7 +8,7 @@ export function middleware(req: NextRequest) {
   const userCookie = cookies.get("user")?.value;
   const user = userCookie ? JSON.parse(userCookie) : null;
 
-  const protectedPaths = ["/admin", "/dashboard"];
+  const protectedPaths = ["/admin", "/lecturer"];
 
   if (protectedPaths.some((path) => nextUrl.pathname.startsWith(path))) {
     if (!token || !user) {
@@ -18,7 +18,7 @@ export function middleware(req: NextRequest) {
     if (nextUrl.pathname.startsWith("/admin") && user.role !== "admin") {
       return NextResponse.redirect(new URL("/login", req.url));
     }
-    if (nextUrl.pathname.startsWith("/dashboard") && user.role !== "lecturer") {
+    if (nextUrl.pathname.startsWith("/lecturer") && user.role !== "lecturer") {
       return NextResponse.redirect(new URL("/login", req.url));
     }
   }
@@ -27,5 +27,5 @@ export function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/admin/:path*", "/dashboard/:path*"],
+  matcher: ["/admin/:path*", "/lecturer/:path*"],
 };

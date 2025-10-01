@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
 
     const { user, token } = await authUseCase.loginLecturerOrAdmin(identifier, password);
 
-     const res = NextResponse.json({ user });
+     const res = NextResponse.json({ user, token }, { status: 200 });
       res.cookies.set("token", token, {
         httpOnly: true,
         path: "/",
