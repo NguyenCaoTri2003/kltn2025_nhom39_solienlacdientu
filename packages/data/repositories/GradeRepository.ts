@@ -1,4 +1,4 @@
-import { Grade, GradeGroup } from "@/core/entities/Grade";
+import { Grade, GradeGroup } from "@packages/core/entities/Grade";
 import { supabase } from "../supabaseClient";
 
 export class GradeRepository {

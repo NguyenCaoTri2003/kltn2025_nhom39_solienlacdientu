@@ -33,7 +33,7 @@ export function LoginForm() {
       localStorage.setItem("token", data.token)
 
       if (data.user.role === "admin") router.push("/admin")
-      else if (data.user.role === "lecturer") router.push("/dashboard")
+      else if (data.user.role === "lecturer") router.push("/lecturer")
     } catch (err: any) {
       setError(err.message)
     } finally {

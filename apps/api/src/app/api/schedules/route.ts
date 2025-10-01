@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ScheduleRepository } from "@/data/repositories/ScheduleRepository";
-import { ScheduleUseCase } from "@/core/usecases/ScheduleUseCase";
-import { authenticate } from "@/utils/auth";
+import { ScheduleRepository } from "@packages/data/repositories/ScheduleRepository";
+import { ScheduleUseCase } from "@packages/core/usecases/ScheduleUseCase";
+import { authenticate } from "@packages/utils/auth";
 
 const repo = new ScheduleRepository();
 const usecase = new ScheduleUseCase(repo);

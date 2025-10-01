@@ -1,4 +1,4 @@
-import { GradeRepository } from "@/data/repositories/GradeRepository";
+import { GradeRepository } from "@packages/data/repositories/GradeRepository";
 import { GradeGroup } from "../entities/Grade";
 import { AuthorizationService } from "../services/authorization/AuthorizationService";
 

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getLecturersBySemester } from "@/core/usecases/LecturerUseCase";
+import { getLecturersBySemester } from "@packages/core/usecases/LecturerUseCase";
 
 // http://localhost:3000/api/lecturers?semester_id=1
 

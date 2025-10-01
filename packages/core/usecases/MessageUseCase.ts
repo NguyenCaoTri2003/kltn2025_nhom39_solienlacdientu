@@ -1,5 +1,5 @@
-import { MessageRepository } from "@/data/repositories/MessageRepository";
-import { supabase } from "@/data/supabaseClient";
+import { MessageRepository } from "@packages/data/repositories/MessageRepository";
+import { supabase } from "@packages/data/supabaseClient";
 
 export class MessageUseCase {
   constructor(private repo: MessageRepository) {}

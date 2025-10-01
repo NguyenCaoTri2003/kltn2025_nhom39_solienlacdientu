@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getStudentsByOffering } from "@/core/usecases/EnrollmentUseCase";
+import { getStudentsByOffering } from "@packages/core/usecases/EnrollmentUseCase";
 
 // http://localhost:3000/api/students?offering_id=1
 

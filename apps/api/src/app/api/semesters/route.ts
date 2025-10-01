@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getSemesters } from "../../../../../../packages/core/usecases/getSemesters";
+import { getSemesters } from "@packages/core/usecases/getSemesters";
 
 // http://localhost:3000/api/semesters
 
