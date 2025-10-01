@@ -16,6 +16,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import WeeklyScheduleList from "./weekly-schedule-list";
 import SemesterSelector, { Semester } from "@/components/lecturer/classes/semester-selector";
 import { Input } from "@/components/ui/input";
+import CourseOfferingSkeleton from "@/components/skeleton/course-offering-skeleton";
 
 interface Offering {
   practice_group_count: number;
@@ -101,7 +102,6 @@ export default function OfferingsList() {
 
   return (
     <div className="space-y-10">
-      {/* Chọn năm và học kỳ */}
       <div className="flex flex-wrap justify-between items-center gap-4 mb-6">
         <div className="relative w-full sm:w-[420px]">
           <Search className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
@@ -127,18 +127,13 @@ export default function OfferingsList() {
       </div>
 
       {loading ? (
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <Skeleton key={i} className="h-44 rounded-2xl" />
-          ))}
-        </div>
+        <CourseOfferingSkeleton items={6} />
       ) : filteredOfferings.length === 0 ? (
         <div className="text-center text-muted-foreground py-12">
           Không có lớp học phần nào trong học kỳ này.
         </div>
       ) : (
         <section>
-          {/* Lấy thông tin học kỳ đang chọn */}
           {selectedSemester && (
             <div className="flex items-center gap-2 mb-4">
               <CalendarDays className="w-5 h-5 text-primary" />
@@ -173,10 +168,12 @@ export default function OfferingsList() {
                         </h3>
                       </div>
 
-                      {o.practice_group_count > 0 && (
+                      {o.practice_group_count > 0 ? (
                         <p className="text-xs text-muted-foreground ml-7 mt-0.5">
                           ({o.practice_group_count} nhóm thực hành)
                         </p>
+                      ) : (
+                        <div className="ml-7 mt-0.5 h-[1rem]" />
                       )}
                     </div>
 
@@ -205,7 +202,7 @@ export default function OfferingsList() {
                     <div className="flex justify-between text-sm text-muted-foreground pt-1">
                       <div className="flex items-center gap-1">
                         <GraduationCap className="w-4 h-4 text-primary" />
-                        {o.courses?.credit || "?"} tín chỉ
+                        {o.courses?.credit || "-"} tín chỉ
                       </div>
                       <div className="flex items-center gap-1">
                         <Users className="w-4 h-4 text-primary" />
@@ -213,13 +210,6 @@ export default function OfferingsList() {
                       </div>
                     </div>
                   </div>
-
-                  {o.description && (
-                    <p className="text-xs text-muted-foreground mt-2 flex items-start gap-1">
-                      <Info className="w-3.5 h-3.5 text-primary mt-0.5" />
-                      <span className="line-clamp-2">{o.description}</span>
-                    </p>
-                  )}
                 </Card>
               </motion.div>
             ))}
