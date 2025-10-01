@@ -170,7 +170,7 @@ export default function OfferingsList() {
 
                     <div className="space-y-0.5">
                       <p className="text-sm text-muted-foreground">
-                        Mã lớp:{" "}
+                        Mã lớp học phần:{" "}
                         <span className="font-medium text-foreground">{o.class_code}</span>
                       </p>
                       {o.courses?.course_code && (
