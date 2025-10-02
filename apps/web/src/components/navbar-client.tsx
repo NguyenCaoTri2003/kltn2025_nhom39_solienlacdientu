@@ -70,13 +70,11 @@ export default function NavbarClient({ userRole, userName, avatarUrl }: NavbarPr
     return false;
   };
 
-  // 🔤 Lấy chữ cái đầu tên (ví dụ: Nguyễn Văn Tèo -> T)
   const initial = useMemo(() => {
     const parts = userName.trim().split(" ");
     return parts[parts.length - 1]?.[0]?.toUpperCase() ?? "?";
   }, [userName]);
 
-  // 🎨 Random màu từ tên (giữ ổn định)
   const bgColor = useMemo(() => {
     const colors = [
       "bg-blue-500", "bg-green-500", "bg-amber-500", "bg-purple-500",
