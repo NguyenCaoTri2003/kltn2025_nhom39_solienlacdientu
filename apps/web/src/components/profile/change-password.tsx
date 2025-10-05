@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Eye, EyeOff, Lock } from "lucide-react"
+import { Eye, EyeOff, Lock, AlertCircle } from "lucide-react"
+import { isValidPassword } from "@packages/utils/Regex"
 
 type LoggedInUser = {
   id: number
@@ -25,6 +26,16 @@ export default function ChangePassword() {
     newPassword: "",
     confirmPassword: "",
   })
+  const [currentPasswordError, setCurrentPasswordError] = useState<string>("")
+  const [serverError, setServerError] = useState<string>("")
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const confirmMismatch = passwordData.confirmPassword.length > 0 && passwordData.newPassword !== passwordData.confirmPassword
+  const weakNewPassword = passwordData.newPassword.length > 0 && !isValidPassword(passwordData.newPassword)
+  const sameAsCurrent = passwordData.newPassword.length > 0 && passwordData.currentPassword.length > 0 && passwordData.newPassword === passwordData.currentPassword
+  const allFilled = !!passwordData.currentPassword && !!passwordData.newPassword && !!passwordData.confirmPassword
+  const isFormValid = allFilled && !confirmMismatch && !weakNewPassword && !sameAsCurrent
+  const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null)
+
   const router = useRouter()
 
   useEffect(() => {
@@ -33,14 +44,10 @@ export default function ChangePassword() {
   }, [])
 
   const handleChangePassword = async () => {
-    if (passwordData.newPassword !== passwordData.confirmPassword) {
-      alert("Mật khẩu mới và xác nhận mật khẩu không khớp!")
-      return
-    }
-    if (passwordData.newPassword.length < 6) {
-      alert("Mật khẩu mới phải có ít nhất 6 ký tự!")
-      return
-    }
+    if (!isFormValid) return
+    setCurrentPasswordError("")
+    setServerError("")
+    setIsSubmitting(true)
 
     try {
       let token = document.cookie
@@ -65,14 +72,26 @@ export default function ChangePassword() {
 
       const data = await res.json()
       if (!res.ok) {
-        alert(data?.error || "Đổi mật khẩu thất bại")
+        if (data?.error === "Current password is incorrect") {
+          setCurrentPasswordError("Mật khẩu hiện tại không đúng.")
+        } else {
+          setServerError(data?.error || "Đổi mật khẩu thất bại")
+        }
         return
       }
 
       setPasswordData({ currentPassword: "", newPassword: "", confirmPassword: "" })
-      alert("Mật khẩu đã được thay đổi thành công!")
+      setMessage({ type: "success", text: "Đổi mật khẩu thành công!" })
+
+      // setTimeout(() => {
+      //   router.push("/")
+      // }, 0) // thời gian delay thoát ra trang đăng nhập 0ms
     } catch (e) {
-      alert((e as Error)?.message || "Đổi mật khẩu thất bại")
+      setMessage({ type: "error", text: (e as Error)?.message || "Đổi mật khẩu thất bại" })
+
+    }
+    finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -106,6 +125,20 @@ export default function ChangePassword() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+          {/**Mở message */}
+          {message && (
+            <div
+              className={`p-3 rounded-md text-sm flex items-center gap-2 ${
+                message.type === "success"
+                ? "bg-green-100 text-green-700 border border-green-300"
+                : "bg-red-100 text-red-700 border border-red-300"
+              }`}
+             >
+              <AlertCircle className="w-4 h-4" />
+               {message.text}
+            </div>
+          )}
+          {/**Đóng message */}
             <div className="space-y-2">
               <Label htmlFor="currentPassword" className="text-sm font-medium">
                 Mật khẩu hiện tại
@@ -115,7 +148,10 @@ export default function ChangePassword() {
                   id="currentPassword"
                   type={showCurrentPassword ? "text" : "password"}
                   value={passwordData.currentPassword}
-                  onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
+                onChange={(e) => {
+                  setPasswordData({ ...passwordData, currentPassword: e.target.value })
+                  if (currentPasswordError) setCurrentPasswordError("")
+                }}
                   placeholder="Nhập mật khẩu hiện tại"
                 />
                 <Button
@@ -128,6 +164,12 @@ export default function ChangePassword() {
                   {showCurrentPassword ? <EyeOff className="h-4 w-4 text-muted-foreground" /> : <Eye className="h-4 w-4 text-muted-foreground" />}
                 </Button>
               </div>
+              {currentPasswordError && (
+                <p className="text-red-500 text-sm flex items-center gap-1 mt-1">
+                  <AlertCircle className="w-4 h-4" />
+                  {currentPasswordError}
+                </p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -139,8 +181,8 @@ export default function ChangePassword() {
                   id="newPassword"
                   type={showNewPassword ? "text" : "password"}
                   value={passwordData.newPassword}
-                  onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
-                  placeholder="Nhập mật khẩu mới (ít nhất 6 ký tự)"
+                onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
+                placeholder="Ít nhất 8 ký tự, gồm hoa, thường, số, ký tự đặc biệt"
                 />
                 <Button
                   type="button"
@@ -152,6 +194,18 @@ export default function ChangePassword() {
                   {showNewPassword ? <EyeOff className="h-4 w-4 text-muted-foreground" /> : <Eye className="h-4 w-4 text-muted-foreground" />}
                 </Button>
               </div>
+              {weakNewPassword && (
+                <p className="text-red-500 text-sm flex items-center gap-1 mt-1">
+                  <AlertCircle className="w-4 h-4" />
+                  Mật khẩu phải có ít nhất 8 ký tự, gồm chữ hoa, chữ thường, số và ký tự đặc biệt.
+                </p>
+              )}
+              {sameAsCurrent && (
+                <p className="text-red-500 text-sm flex items-center gap-1 mt-1">
+                  <AlertCircle className="w-4 h-4" />
+                  Mật khẩu mới không được trùng với mật khẩu cũ.
+                </p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -176,16 +230,28 @@ export default function ChangePassword() {
                   {showConfirmPassword ? <EyeOff className="h-4 w-4 text-muted-foreground" /> : <Eye className="h-4 w-4 text-muted-foreground" />}
                 </Button>
               </div>
+              {confirmMismatch && (
+                <p className="text-red-500 text-sm flex items-center gap-1 mt-1">
+                  <AlertCircle className="w-4 h-4" />
+                  Mật khẩu nhập lại không khớp với mật khẩu mới.
+                </p>
+              )}
             </div>
 
             <div className="pt-4 border-t">
+              {serverError && (
+                <p className="text-red-500 text-sm flex items-center gap-1 mb-3">
+                  <AlertCircle className="w-4 h-4" />
+                  {serverError}
+                </p>
+              )}
               <Button
                 onClick={handleChangePassword}
-                disabled={!passwordData.currentPassword || !passwordData.newPassword || !passwordData.confirmPassword}
+                disabled={!isFormValid || isSubmitting}
                 className="w-full sm:w-auto"
               >
                 <Lock className="w-4 h-4 mr-2" />
-                Đổi mật khẩu
+                {isSubmitting ? "Đang xử lý..." : "Đổi mật khẩu"}
               </Button>
             </div>
           </CardContent>
