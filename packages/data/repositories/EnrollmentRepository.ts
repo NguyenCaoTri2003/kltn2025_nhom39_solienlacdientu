@@ -6,7 +6,25 @@ export class EnrollmentRepository {
 
       const { data, error } = await supabase
         .from("enrollment")
-        .select("*")
+        .select(`
+          id,
+          registered_at,
+          students:student_id (
+            id,
+            student_code,
+            academic_status,
+            academic_year,
+            type_of_tranning,
+            training_level,
+            class_id,
+            users:users!students_id_fkey (
+              full_name,
+              email,
+              phone,
+              avatar_url
+            )
+          )
+        `)
         .eq("offering_id", offeringId);
 
       if (error) {

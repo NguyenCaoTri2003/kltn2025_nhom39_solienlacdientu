@@ -19,6 +19,7 @@ import { Input } from "@/components/ui/input";
 import CourseOfferingSkeleton from "@/components/skeleton/course-offering-skeleton";
 import Pagination from "@/components/pagination";
 import { Offering } from "@packages/core/entities/CourseOffering";
+import { useRouter } from "next/navigation";
 
 export default function OfferingsList() {
   const [offerings, setOfferings] = useState<Offering[]>([]);
@@ -28,6 +29,7 @@ export default function OfferingsList() {
   const [page, setPage] = useState(1);
   const pageSize = 12;
   const topRef = useRef<HTMLDivElement | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
     if (!selectedSemester?.id) return;
@@ -148,7 +150,8 @@ export default function OfferingsList() {
                 <Card
                   className="h-full flex flex-col justify-between p-5 rounded-2xl border border-border/50 
                   bg-gradient-to-br from-card/95 to-card/70 shadow-md hover:shadow-xl 
-                  hover:-translate-y-1 transition-all backdrop-blur-sm"
+                  hover:-translate-y-1 transition-all backdrop-blur-sm cursor-pointer"
+                  onClick={() => router.push(`/lecturer/classes/${o.id}`)}
                 >
                   <div className="flex flex-col flex-1 justify-between space-y-2">
                     <div>

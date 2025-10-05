@@ -38,6 +38,9 @@ export default function NavbarClient({ userRole, userName, avatarUrl }: NavbarPr
 
   if (!userRole) return null;
 
+  const roleBasePath = userRole === "admin" ? "/admin" : "/lecturer";
+  const profilePath = (subPath: "info" | "change-password") => `${roleBasePath}/profile/${subPath}`;
+
   const handleLogout = () => {
     document.cookie = "token=; path=/; max-age=0";
     document.cookie = "user=; path=/; max-age=0";
@@ -70,13 +73,11 @@ export default function NavbarClient({ userRole, userName, avatarUrl }: NavbarPr
     return false;
   };
 
-  // 🔤 Lấy chữ cái đầu tên (ví dụ: Nguyễn Văn Tèo -> T)
   const initial = useMemo(() => {
     const parts = userName.trim().split(" ");
     return parts[parts.length - 1]?.[0]?.toUpperCase() ?? "?";
   }, [userName]);
 
-  // 🎨 Random màu từ tên (giữ ổn định)
   const bgColor = useMemo(() => {
     const colors = [
       "bg-blue-500", "bg-green-500", "bg-amber-500", "bg-purple-500",
@@ -164,10 +165,10 @@ export default function NavbarClient({ userRole, userName, avatarUrl }: NavbarPr
                   {userName}
                 </div>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => router.push("/lecturer/profile")}>
+                <DropdownMenuItem onClick={() => router.push(profilePath("info"))}> 
                   <User className="w-4 h-4 mr-2" /> Thông tin cá nhân
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => router.push("/change-password")}>
+                <DropdownMenuItem onClick={() => router.push(profilePath("change-password"))}>
                   <KeyRound className="w-4 h-4 mr-2" /> Đổi mật khẩu
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />

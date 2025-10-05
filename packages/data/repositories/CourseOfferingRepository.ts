@@ -76,4 +76,64 @@ export class CourseOfferingRepository {
       practice_group_count: offering.practice_groups?.length ?? 0
     }));
   }
+
+  async getOfferingById(offeringId: number) {
+    const { data, error } = await supabase
+      .from("course_offerings")
+      .select(
+        `
+        id,
+        name,
+        class_code,
+        capacity,
+        registered,
+        status,
+        schedule,
+        description,
+        semester_id,
+        courses:course_id (
+          id,
+          course_code,
+          credit
+        ),
+        lecturers:lecturer_id (
+          id,
+          lecturer_code,
+          users:users!lecturers_id_fkey (
+            full_name, email
+          )
+        )
+      `
+      )
+      .eq("id", offeringId)
+      .single();
+
+    if (error) throw error;
+    return data;
+  }
+
+  async getPracticeGroups(offeringId: number) {
+    const { data, error } = await supabase
+      .from("practice_groups")
+      .select(
+        `
+        id,
+        group_number,
+        capacity,
+        registered,
+        schedule,
+        lecturers:lecturer_id (
+          id,
+          lecturer_code,
+          users:users!lecturers_id_fkey (
+            full_name, email
+          )
+        )
+      `
+      )
+      .eq("offering_id", offeringId);
+
+    if (error) throw error;
+    return data ?? [];
+  }
 }
