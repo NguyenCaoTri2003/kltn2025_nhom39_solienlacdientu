@@ -1,0 +1,198 @@
+"use client"
+
+import { useEffect, useState } from "react"
+import NavbarClient from "@/components/navbar-client"
+import { useRouter } from "next/navigation"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Eye, EyeOff, Lock } from "lucide-react"
+
+type LoggedInUser = {
+  id: number
+  role: string
+  full_name?: string
+}
+
+export default function ChangePassword() {
+  const [user, setUser] = useState<LoggedInUser | null>(null)
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false)
+  const [showNewPassword, setShowNewPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  })
+  const router = useRouter()
+
+  useEffect(() => {
+    const userData = localStorage.getItem("user")
+    if (userData) setUser(JSON.parse(userData))
+  }, [])
+
+  const handleChangePassword = async () => {
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      alert("Mật khẩu mới và xác nhận mật khẩu không khớp!")
+      return
+    }
+    if (passwordData.newPassword.length < 6) {
+      alert("Mật khẩu mới phải có ít nhất 6 ký tự!")
+      return
+    }
+
+    try {
+      let token = document.cookie
+        .split("; ")
+        .find((row) => row.startsWith("token="))?.split("=")[1];
+      if (!token) {
+        token = localStorage.getItem("token") || undefined as unknown as string;
+      }
+
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
+      const res = await fetch(`${apiBase}/api/auth/change-password`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          currentPassword: passwordData.currentPassword,
+          newPassword: passwordData.newPassword,
+        }),
+      })
+
+      const data = await res.json()
+      if (!res.ok) {
+        alert(data?.error || "Đổi mật khẩu thất bại")
+        return
+      }
+
+      setPasswordData({ currentPassword: "", newPassword: "", confirmPassword: "" })
+      alert("Mật khẩu đã được thay đổi thành công!")
+    } catch (e) {
+      alert((e as Error)?.message || "Đổi mật khẩu thất bại")
+    }
+  }
+
+  if (!user) return null
+
+  return (
+    <div className="min-h-screen bg-background">
+      <NavbarClient
+        userRole={user?.role === "admin" ? "admin" : user?.role === "lecturer" ? "teacher" : null}
+        userName={user?.full_name || ""}
+      />
+
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+        <div className="mb-6 sm:mb-8">
+          <Button
+            variant="ghost"
+            onClick={() => router.back()}
+            className="mb-4 text-muted-foreground hover:text-foreground"
+          >
+            ← Quay lại
+          </Button>
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">Đổi mật khẩu</h1>
+          <p className="text-muted-foreground">Cập nhật mật khẩu để bảo mật tài khoản của bạn</p>
+        </div>
+
+        <Card className="bg-card border-border">
+          <CardHeader>
+            <CardTitle className="text-card-foreground">Đổi mật khẩu</CardTitle>
+            <CardDescription className="text-muted-foreground">
+              Nhập mật khẩu hiện tại và mật khẩu mới
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="currentPassword" className="text-sm font-medium">
+                Mật khẩu hiện tại
+              </Label>
+              <div className="relative">
+                <Input
+                  id="currentPassword"
+                  type={showCurrentPassword ? "text" : "password"}
+                  value={passwordData.currentPassword}
+                  onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
+                  placeholder="Nhập mật khẩu hiện tại"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                  onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                >
+                  {showCurrentPassword ? <EyeOff className="h-4 w-4 text-muted-foreground" /> : <Eye className="h-4 w-4 text-muted-foreground" />}
+                </Button>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="newPassword" className="text-sm font-medium">
+                Mật khẩu mới
+              </Label>
+              <div className="relative">
+                <Input
+                  id="newPassword"
+                  type={showNewPassword ? "text" : "password"}
+                  value={passwordData.newPassword}
+                  onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
+                  placeholder="Nhập mật khẩu mới (ít nhất 6 ký tự)"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                  onClick={() => setShowNewPassword(!showNewPassword)}
+                >
+                  {showNewPassword ? <EyeOff className="h-4 w-4 text-muted-foreground" /> : <Eye className="h-4 w-4 text-muted-foreground" />}
+                </Button>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword" className="text-sm font-medium">
+                Xác nhận mật khẩu mới
+              </Label>
+              <div className="relative">
+                <Input
+                  id="confirmPassword"
+                  type={showConfirmPassword ? "text" : "password"}
+                  value={passwordData.confirmPassword}
+                  onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
+                  placeholder="Nhập lại mật khẩu mới"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                >
+                  {showConfirmPassword ? <EyeOff className="h-4 w-4 text-muted-foreground" /> : <Eye className="h-4 w-4 text-muted-foreground" />}
+                </Button>
+              </div>
+            </div>
+
+            <div className="pt-4 border-t">
+              <Button
+                onClick={handleChangePassword}
+                disabled={!passwordData.currentPassword || !passwordData.newPassword || !passwordData.confirmPassword}
+                className="w-full sm:w-auto"
+              >
+                <Lock className="w-4 h-4 mr-2" />
+                Đổi mật khẩu
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  )
+}
+
+
