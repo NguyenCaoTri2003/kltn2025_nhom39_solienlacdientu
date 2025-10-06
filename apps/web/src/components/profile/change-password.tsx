@@ -9,6 +9,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Eye, EyeOff, Lock, AlertCircle } from "lucide-react"
 import { isValidPassword } from "@packages/utils/Regex"
+import { PasswordStrengthChecker } from "@/components/profile/check-password"
+
 
 type LoggedInUser = {
   id: number
@@ -182,7 +184,7 @@ export default function ChangePassword() {
                   type={showNewPassword ? "text" : "password"}
                   value={passwordData.newPassword}
                 onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
-                placeholder="Ít nhất 8 ký tự, gồm hoa, thường, số, ký tự đặc biệt"
+                placeholder="Độ dài từ 8 đến 50 ký tự, gồm hoa, thường, số, ký tự đặc biệt"
                 />
                 <Button
                   type="button"
@@ -194,12 +196,13 @@ export default function ChangePassword() {
                   {showNewPassword ? <EyeOff className="h-4 w-4 text-muted-foreground" /> : <Eye className="h-4 w-4 text-muted-foreground" />}
                 </Button>
               </div>
-              {weakNewPassword && (
+              <PasswordStrengthChecker password={passwordData.newPassword} />
+              {/* {weakNewPassword && (
                 <p className="text-red-500 text-sm flex items-center gap-1 mt-1">
                   <AlertCircle className="w-4 h-4" />
-                  Mật khẩu phải có ít nhất 8 ký tự, gồm chữ hoa, chữ thường, số và ký tự đặc biệt.
+                  Mật khẩu phải có từ 8 đến 50 ký tự, gồm chữ hoa, chữ thường, số và ký tự đặc biệt.
                 </p>
-              )}
+              )} */}
               {sameAsCurrent && (
                 <p className="text-red-500 text-sm flex items-center gap-1 mt-1">
                   <AlertCircle className="w-4 h-4" />
