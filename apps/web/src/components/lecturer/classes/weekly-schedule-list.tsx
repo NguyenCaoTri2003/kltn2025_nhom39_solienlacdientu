@@ -4,7 +4,6 @@ import { Clock, CalendarDays } from "lucide-react";
 import { WeeklySchedule } from "@packages/core/entities/WeeklySchedule";
 import { Semester } from "@packages/core/entities/Semesters";
 
-
 interface WeeklyScheduleListProps {
   schedules?: WeeklySchedule[];
   filterType?: string;
@@ -42,36 +41,43 @@ export default function WeeklyScheduleList({
     !hasTodayClass &&
     filtered.some((s) => s.day_of_week === tomorrowIndex);
 
-  const days = ["Chủ nhật", "Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7"];
+  const days = [
+    "Chủ nhật",
+    "Thứ 2",
+    "Thứ 3",
+    "Thứ 4",
+    "Thứ 5",
+    "Thứ 6",
+    "Thứ 7",
+  ];
 
-  const typeColor = (type: string) => {
+  const typeStyle = (type: string) => {
     switch (type) {
       case "theory":
-        return "bg-blue-100 text-blue-700";
+        return "bg-blue-100 text-blue-700 border border-blue-200";
       case "practice":
-        return "bg-yellow-100 text-yellow-700";
+        return "bg-yellow-100 text-yellow-700 border border-yellow-200";
       default:
-        return "bg-gray-100 text-gray-700";
+        return "bg-gray-100 text-gray-700 border border-gray-200";
     }
   };
 
   const scheduleText = filtered
     .map((w) => {
       const day = days[w.day_of_week] ?? `Thứ ${w.day_of_week}`;
-      const time = `(T${w.start_period} - T${w.start_period + w.period_count - 1})`;
+      const time = `(T${w.start_period} - T${
+        w.start_period + w.period_count - 1
+      })`;
       const location =
         w.building && w.classroom
           ? `${w.building} (${w.classroom})`
           : w.building || w.classroom || "";
-      const typeLabel = w.type === "theory" ? "Lý thuyết" : "Thực hành";
 
-      const detail = [day, time, location, typeLabel]
-        .filter(Boolean)
-        .join(" • ");
-
-      return detail;
+      return `${day} ${time} • ${location}`;
     })
     .join("; ");
+
+  const firstType = filtered[0]?.type || "theory";
 
   return (
     <div className="flex flex-col gap-1 mb-2 text-sm text-muted-foreground">
@@ -80,31 +86,42 @@ export default function WeeklyScheduleList({
         <span className="font-medium text-foreground">
           Lịch học:
           <span className="ml-1 font-normal text-muted-foreground">
-            {scheduleText}
+            {scheduleText.split(";")[0]}
           </span>
+          {/* <span
+            className={`ml-2 px-2 py-[1px] rounded-full text-[12px] font-medium ${typeStyle(
+              firstType
+            )}`}
+          >
+            {firstType === "theory" ? "Lý thuyết" : "Thực hành"}
+          </span> */}
         </span>
       </div>
 
-      {isInSemester ? (
+      {showHighlight && (
         <>
-          {hasTodayClass && (
-            <div className="flex items-center gap-1 text-green-600 font-medium pl-5">
+          {isInSemester ? (
+            <>
+              {hasTodayClass && (
+                <div className="flex items-center gap-1 text-green-600 font-medium pl-5">
+                  <CalendarDays className="w-4 h-4" />
+                  Hôm nay có tiết
+                </div>
+              )}
+              {!hasTodayClass && hasTomorrowClass && (
+                <div className="flex items-center gap-1 text-amber-600 font-medium pl-5">
+                  <CalendarDays className="w-4 h-4" />
+                  Ngày mai có tiết
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="flex items-center gap-1 text-gray-500 italic pl-5">
               <CalendarDays className="w-4 h-4" />
-              Hôm nay có tiết
-            </div>
-          )}
-          {!hasTodayClass && hasTomorrowClass && (
-            <div className="flex items-center gap-1 text-amber-600 font-medium pl-5">
-              <CalendarDays className="w-4 h-4" />
-              Ngày mai có tiết
+              Ngoài thời gian học kỳ
             </div>
           )}
         </>
-      ) : (
-        <div className="flex items-center gap-1 text-gray-500 italic pl-5">
-          <CalendarDays className="w-4 h-4" />
-          Ngoài thời gian học kỳ
-        </div>
       )}
     </div>
   );
