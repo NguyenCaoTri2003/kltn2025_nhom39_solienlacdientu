@@ -22,66 +22,10 @@ import CourseOfferingSkeleton from "@/components/skeleton/course-offering-skelet
 import PracticeGroupCard from "./practice-group-card";
 import { WeeklySchedule } from "@packages/core/entities/WeeklySchedule";
 import { Semester } from "@packages/core/entities/Semesters";
-
-interface User {
-  email: string;
-  full_name: string;
-  phone?: string;
-  avatar_url?: string | null;
-}
-
-interface Student {
-  id: number;
-  student_code: string;
-  academic_year: string;
-  training_level: string;
-  academic_status: string;
-  type_of_tranning: string;
-  users: User;
-}
-
-interface Enrollment {
-  id: number;
-  registered_at: string;
-  students: Student;
-}
-
-interface PracticeGroupStudent {
-  id: number;
-  enrollment_id: number;
-  group_id: number;
-  assigned_at: string;
-}
-
-interface PracticeGroup {
-  weekly_schedules: WeeklySchedule[];
-  schedule: any;
-  capacity: string;
-  lecturers: any;
-  id: number;
-  group_number: number;
-  lecturer_id: number;
-  students: PracticeGroupStudent[];
-}
-
-interface OfferingDetail {
-  lecturers: any;
-  semesters: Semester | null;
-  description: string;
-  id: number;
-  name: string;
-  class_code: string;
-  capacity: number;
-  registered: number;
-  practice_group_count: number;
-  courses?: {
-    course_code: string;
-    credit: number;
-  };
-  weekly_schedules: any[];
-  students: Enrollment[];
-  practice_groups?: PracticeGroup[];
-}
+import { Student } from "@packages/core/entities/Student";
+import { Enrollment } from "@packages/core/entities/Enrollment";
+import { PracticeGroup } from "@packages/core/entities/PracticeGroup";
+import { Offering } from "@packages/core/entities/CourseOffering";
 
 function mapGroupStudents(
   group: PracticeGroup,
@@ -99,7 +43,7 @@ export default function ClassDetail() {
   const params = useParams();
   const { id } = params;
 
-  const [offering, setOffering] = useState<OfferingDetail | null>(null);
+  const [offering, setOffering] = useState<Offering | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("theory");
 
@@ -139,7 +83,7 @@ export default function ClassDetail() {
 
   return (
     <div className="space-y-10">
-      <Card 
+      <Card
         className="p-5 md:p-6 rounded-2xl border border-border/50 
           bg-gradient-to-br from-card/95 to-card/70 shadow-md hover:shadow-lg 
           transition-all backdrop-blur-sm space-y-3 gap-1 cursor-pointer"
@@ -242,7 +186,7 @@ export default function ClassDetail() {
 
             <TabsContent value="theory">
               <StudentTable
-                students={offering.students.map((e) => e.students)}
+                students={offering.students.map((e) => e.students).filter((s): s is Student => !!s)}
               />
             </TabsContent>
 
@@ -253,7 +197,7 @@ export default function ClassDetail() {
             ))}
           </Tabs>
         ) : (
-          <StudentTable students={offering.students.map((e) => e.students)} />
+          <StudentTable students={offering.students.map((e) => e.students).filter((s): s is Student => !!s)} />
         )}
       </section>
     </div>
@@ -276,16 +220,47 @@ function StudentTable({ students }: { students: Student[] }) {
           <TableHead>Mã SV</TableHead>
           <TableHead>Họ và tên</TableHead>
           <TableHead>Email</TableHead>
+          <TableHead>Phụ huynh</TableHead>
         </TableRow>
       </TableHeader>
+
       <TableBody>
-        {students.map((s) => (
-          <TableRow key={s.id}>
-            <TableCell>{s.student_code}</TableCell>
-            <TableCell>{s.users.full_name}</TableCell>
-            <TableCell>{s.users.email || "-"}</TableCell>
-          </TableRow>
-        ))}
+        {students.map((s) => {
+          const parents = s.student_parent?.map((sp) => ({
+            name: sp.parents?.users?.full_name,
+            phone: sp.parents?.users?.phone,
+            relation: sp.relationship,
+          })) ?? [];
+
+          return (
+            <TableRow key={s.id}>
+              <TableCell>{s.student_code}</TableCell>
+              <TableCell>{s.users?.full_name}</TableCell>
+              <TableCell>{s.users?.email || "-"}</TableCell>
+              <TableCell>
+                {parents.length > 0 ? (
+                  <div className="space-y-1">
+                    {parents.map((p, i) => (
+                      <div key={i} className="text-sm leading-tight">
+                        <span className="font-medium text-foreground">
+                          {p.relation === "father"
+                            ? "Cha"
+                            : "Mẹ"}{": "}
+                        </span>
+                        <span>{p.name}</span>
+                        {p.phone && (
+                          <span className="text-muted-foreground"> ({p.phone})</span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <span className="text-muted-foreground italic">Không có</span>
+                )}
+              </TableCell>
+            </TableRow>
+          );
+        })}
       </TableBody>
     </Table>
   );
