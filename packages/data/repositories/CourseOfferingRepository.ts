@@ -91,10 +91,26 @@ export class CourseOfferingRepository {
         schedule,
         description,
         semester_id,
+        semesters:semester_id (
+          id,
+          name,
+          academic_year,
+          start_date,
+          end_date
+        ),
         courses:course_id (
           id,
           course_code,
           credit
+        ),
+        weekly_schedules (
+          id,
+          day_of_week,
+          start_period,
+          period_count,
+          classroom,
+          building,
+          type
         ),
         lecturers:lecturer_id (
           id,
@@ -122,6 +138,15 @@ export class CourseOfferingRepository {
         capacity,
         registered,
         schedule,
+        weekly_schedules (
+          id,
+          day_of_week,
+          start_period,
+          period_count,
+          classroom,
+          building,
+          type
+        ),
         lecturers:lecturer_id (
           id,
           lecturer_code,

@@ -1,4 +1,5 @@
 import { Course } from "./Courses";
+import { Semester } from "./Semesters";
 import { WeeklySchedule } from "./WeeklySchedule";
 
 export interface Offering {
@@ -16,4 +17,5 @@ export interface Offering {
 
   courses: Course;
   weekly_schedules?: WeeklySchedule[];
+  semesters?: Semester | null;
 }

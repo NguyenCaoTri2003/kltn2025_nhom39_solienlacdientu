@@ -7,11 +7,6 @@ export default async function ClassDetailPage() {
       <Navbar />
 
       <div className="flex-1 p-6 max-w-6xl mx-auto w-full">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground mb-2">Quản lý lớp học</h1>
-          <p className="text-muted-foreground">Điểm danh, theo dõi và đánh giá sinh viên</p>
-        </div>
-
         <ClassDetail />
       </div>
     </div>

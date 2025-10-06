@@ -143,58 +143,66 @@ export default function OfferingsList() {
             {pagedOfferings.map((o) => (
               <motion.div
                 key={o.id}
-                whileHover={{ scale: 1.03 }}
+                whileHover={{ scale: 1.02 }}
                 transition={{ type: "spring", stiffness: 300, damping: 20 }}
                 className="h-full"
               >
                 <Card
-                  className="h-full flex flex-col justify-between p-5 rounded-2xl border border-border/50 
-                  bg-gradient-to-br from-card/95 to-card/70 shadow-md hover:shadow-xl 
-                  hover:-translate-y-1 transition-all backdrop-blur-sm cursor-pointer"
+                  className="h-full flex flex-col justify-between p-5 rounded-2xl border border-border/50
+    bg-gradient-to-br from-card/95 to-card/70 shadow-md hover:shadow-xl 
+    transition-all backdrop-blur-sm cursor-pointer overflow-hidden"
                   onClick={() => router.push(`/lecturer/classes/${o.id}`)}
                 >
-                  <div className="flex flex-col flex-1 justify-between space-y-2">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <BookOpen className="w-5 h-5 text-primary" />
-                        <h3 className="font-semibold text-foreground line-clamp-1">
-                          {o.name}
-                        </h3>
-                      </div>
+                  {/* Header */}
+                  <div className="flex items-center gap-2 mb-1">
+                    <BookOpen className="w-5 h-5 text-primary" />
+                    <h3 className="font-semibold text-foreground text-base line-clamp-1 leading-tight">
+                      {o.name}
+                    </h3>
+                  </div>
 
-                      {o.practice_group_count > 0 ? (
-                        <p className="text-xs text-muted-foreground ml-7 mt-0.5">
-                          ({o.practice_group_count} nhóm thực hành)
-                        </p>
-                      ) : (
-                        <div className="ml-7 mt-0.5 h-[1rem]" />
-                      )}
-                    </div>
+                  {o.practice_group_count > 0 ? (
+                    <p className="text-xs text-muted-foreground ml-6 mb-1">
+                      ({o.practice_group_count} nhóm thực hành)
+                    </p>
+                  ) : (
+                    <div className="h-3.5 mb-1" />
+                  )}
 
-                    <div className="space-y-0.5">
+                  {/* Info section */}
+                  <div className="space-y-0.5 mb-2">
+                    <p className="text-sm text-muted-foreground">
+                      Mã lớp học phần:{" "}
+                      <span className="font-medium text-foreground">{o.class_code}</span>
+                    </p>
+                    {o.courses?.course_code && (
                       <p className="text-sm text-muted-foreground">
-                        Mã lớp học phần:{" "}
-                        <span className="font-medium text-foreground">{o.class_code}</span>
+                        Mã học phần:{" "}
+                        <span className="font-medium text-foreground">
+                          {o.courses.course_code}
+                        </span>
                       </p>
-                      {o.courses?.course_code && (
-                        <p className="text-sm text-muted-foreground">
-                          Mã học phần:{" "}
-                          <span className="font-medium text-foreground">{o.courses.course_code}</span>
-                        </p>
-                      )}
+                    )}
+                  </div>
+
+                  {/* Weekly Schedule (có min-height để ổn định card) */}
+                  <div className="flex-1 mb-2 min-h-[2.5rem]">
+                    <WeeklyScheduleList
+                      schedules={o.weekly_schedules}
+                      filterType="theory"
+                      semester={o.semesters ?? undefined} 
+                    />
+                  </div>
+
+                  {/* Footer */}
+                  <div className="flex justify-between text-sm text-muted-foreground border-t border-border/40 pt-2 mt-auto">
+                    <div className="flex items-center gap-1">
+                      <GraduationCap className="w-4 h-4 text-primary" />
+                      {o.courses?.credit || "-"} tín chỉ
                     </div>
-
-                    <WeeklyScheduleList schedules={o.weekly_schedules} filterType="theory" />
-
-                    <div className="flex justify-between text-sm text-muted-foreground pt-1">
-                      <div className="flex items-center gap-1">
-                        <GraduationCap className="w-4 h-4 text-primary" />
-                        {o.courses?.credit || "-"} tín chỉ
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Users className="w-4 h-4 text-primary" />
-                        {o.registered || 0}/{o.capacity || 0} SV
-                      </div>
+                    <div className="flex items-center gap-1">
+                      <Users className="w-4 h-4 text-primary" />
+                      {o.registered || 0}/{o.capacity || 0} SV
                     </div>
                   </div>
                 </Card>
