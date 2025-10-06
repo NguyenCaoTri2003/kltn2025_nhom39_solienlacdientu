@@ -1,27 +1,30 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import NavbarClient from "@/components/navbar-client"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Calendar, Mail, MapPin, Phone, Save } from "lucide-react"
 
 interface UserProfileInfo {
-  id: string
-  name: string
+  id: string              // Mã hiển thị trên giao diện (tùy theo role)
+  role: string
+  full_name: string
   email: string
   phone: string
   address: string
-  department: string
-  position: string
-  joinDate: string
-  bio: string
+  ethnic: string
+  status: string
+  citizen_id_card: string
+  avatar_url: string
+  created_at: string
+  last_login: string
 }
+
 
 type LoggedInUser = {
   id: number
@@ -34,18 +37,39 @@ type LoggedInUser = {
 export default function PersonalProfile() {
   const [user, setUser] = useState<LoggedInUser | null>(null)
   const [profile, setProfile] = useState<UserProfileInfo>({
-    id: "",
-    name: "",
+    id: "",            
+    role: "",
+    full_name: "",
     email: "",
     phone: "",
     address: "",
-    department: "",
-    position: "",
-    joinDate: "",
-    bio: "",
+    ethnic: "",
+    status: "",
+    citizen_id_card: "",
+    avatar_url: "",
+    created_at: "",
+    last_login: "",
   })
   const [isEditing, setIsEditing] = useState(false)
   const router = useRouter()
+
+  const displayName = profile.full_name || user?.full_name || user?.name || "?"
+  const initial = useMemo(() => {
+    const parts = displayName.trim().split(" ")
+    return parts[parts.length - 1]?.[0]?.toUpperCase() ?? "?"
+  }, [displayName])
+  const bgColor = useMemo(() => {
+    const colors = [
+      "bg-blue-500", "bg-green-500", "bg-amber-500", "bg-purple-500",
+      "bg-rose-500", "bg-cyan-500", "bg-lime-500", "bg-pink-500"
+    ]
+    let hash = 0
+    for (let i = 0; i < displayName.length; i++) {
+      hash = displayName.charCodeAt(i) + ((hash << 5) - hash)
+    }
+    const index = Math.abs(hash) % colors.length
+    return colors[index]
+  }, [displayName])
 
   useEffect(() => {
     const userData = localStorage.getItem("user")
@@ -68,44 +92,51 @@ export default function PersonalProfile() {
 
   useEffect(() => {
     const fetchProfile = async () => {
-      if (!user?.id) return
-
+      if (!user?.id) return;
+  
       try {
-        let token = document.cookie
-          .split("; ")
-          .find((row) => row.startsWith("token="))?.split("=")[1];
-        if (!token) {
-          token = localStorage.getItem("token") || undefined as unknown as string;
-        }
-
+        const token =
+          document.cookie.split("; ").find((row) => row.startsWith("token="))?.split("=")[1] ||
+          localStorage.getItem("token");
+  
         const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
         const res = await fetch(`${apiBase}/api/users/${user.id}`, {
           headers: {
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
           },
           cache: "no-store",
-        })
-
-        if (!res.ok) return
-        const data = await res.json()
+        });
+  
+        if (!res.ok) return;
+        const u = await res.json();
+  
         setProfile({
-          id: String((data?.lecturer?.lecturer_code ?? data?.id) ?? ""),
-          name: data.full_name ?? "",
-          email: data.email ?? "",
-          phone: data.phone ?? "",
-          address: data.address ?? "",
-          department: "",
-          position: "",
-          joinDate: "",
-          bio: "",
-        })
+          id: String(
+            user.role === "lecturer"
+              ? (u.lecturer?.lecturer_code ?? u.lecturer_code ?? "")
+              : u.id
+          ),
+          role: u.role ?? "",
+          full_name: u.full_name ?? "",
+          email: u.email ?? "",
+          phone: u.phone ?? "",
+          address: u.address ?? "",
+          ethnic: u.ethnic ?? "",
+          status: u.status ?? "",
+          citizen_id_card: u.citizen_id_card ?? "",
+          avatar_url: u.avatar_url ?? "",
+          created_at: u.created_at ?? "",
+          last_login: u.last_login ?? "",
+        });
       } catch {
         // ignore
       }
-    }
+    };
+  
+    fetchProfile();
+  }, [user]);
+  
 
-    fetchProfile()
-  }, [user])
 
   const handleSaveProfile = () => {
     console.log("Saving profile:", profile)
@@ -141,19 +172,16 @@ export default function PersonalProfile() {
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div className="flex items-center space-x-4">
                 <Avatar className="w-16 h-16 sm:w-20 sm:h-20">
-                  <AvatarImage src="/teacher-avatar.png" />
-                  <AvatarFallback className="text-lg font-semibold bg-primary text-primary-foreground">
-                    {profile.name
-                      .split(" ")
-                      .map((n) => n[0])
-                      .join("")
-                      .slice(0, 2)}
+                  {profile.avatar_url ? (
+                    <AvatarImage src={profile.avatar_url} />
+                  ) : null}
+                  <AvatarFallback className={`text-lg font-semibold ${bgColor} text-white`}>
+                    {initial}
                   </AvatarFallback>
                 </Avatar>
                 <div>
-                  <CardTitle className="text-xl sm:text-2xl text-card-foreground">{profile.name || user?.full_name || ""}</CardTitle>
-                  <CardDescription className="text-muted-foreground">{profile.position}</CardDescription>
-                  <p className="text-sm text-muted-foreground mt-1">{profile.department}</p>
+                  <CardTitle className="text-xl sm:text-2xl text-card-foreground">{displayName}</CardTitle>
+                  <CardDescription className="text-muted-foreground capitalize">{profile.role}</CardDescription>
                 </div>
               </div>
               <Button
@@ -169,18 +197,18 @@ export default function PersonalProfile() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
               <div className="space-y-2">
                 <Label htmlFor="userId" className="text-sm font-medium">
-                  Mã
+                  Mã {user?.role === "lecturer" ? "giảng viên" : "người dùng"}
                 </Label>
                 <Input id="userId" value={profile.id} disabled className="bg-muted" />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="name" className="text-sm font-medium">
+                <Label htmlFor="full_name" className="text-sm font-medium">
                   Họ và tên
                 </Label>
                 <Input
-                  id="name"
-                  value={profile.name}
-                  onChange={(e) => setProfile({ ...profile, name: e.target.value })}
+                  id="full_name"
+                  value={profile.full_name}
+                  onChange={(e) => setProfile({ ...profile, full_name: e.target.value })}
                   disabled={!isEditing}
                   className={!isEditing ? "bg-muted" : ""}
                 />
@@ -232,45 +260,70 @@ export default function PersonalProfile() {
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="department" className="text-sm font-medium">
-                  Đơn vị
+                <Label htmlFor="ethnic" className="text-sm font-medium">
+                  Dân tộc
                 </Label>
                 <Input
-                  id="department"
-                  value={profile.department}
-                  onChange={(e) => setProfile({ ...profile, department: e.target.value })}
+                  id="ethnic"
+                  value={profile.ethnic}
+                  onChange={(e) => setProfile({ ...profile, ethnic: e.target.value })}
                   disabled={!isEditing}
                   className={!isEditing ? "bg-muted" : ""}
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="joinDate" className="text-sm font-medium">
-                  Ngày vào làm
+                <Label htmlFor="status" className="text-sm font-medium">
+                  Trạng thái
+                </Label>
+                <Input
+                  id="status"
+                  value={profile.status}
+                  onChange={(e) => setProfile({ ...profile, status: e.target.value })}
+                  disabled={!isEditing}
+                  className={!isEditing ? "bg-muted" : ""}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="citizen_id_card" className="text-sm font-medium">
+                  CCCD
+                </Label>
+                <Input
+                  id="citizen_id_card"
+                  value={profile.citizen_id_card}
+                  onChange={(e) => setProfile({ ...profile, citizen_id_card: e.target.value })}
+                  disabled={!isEditing}
+                  className={!isEditing ? "bg-muted" : ""}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="created_at" className="text-sm font-medium">
+                  Ngày tạo
                 </Label>
                 <div className="relative">
                   <Calendar className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                   <Input
-                    id="joinDate"
+                    id="created_at"
                     type="date"
-                    value={profile.joinDate}
-                    onChange={(e) => setProfile({ ...profile, joinDate: e.target.value })}
-                    disabled={!isEditing}
-                    className={`pl-10 ${!isEditing ? "bg-muted" : ""}`}
+                    value={profile.created_at ? new Date(profile.created_at).toISOString().slice(0, 10) : ""}
+                    disabled
+                    className={`pl-10 bg-muted`}
                   />
                 </div>
               </div>
-              <div className="space-y-2 sm:col-span-2">
-                <Label htmlFor="bio" className="text-sm font-medium">
-                  Giới thiệu
+              <div className="space-y-2">
+                <Label htmlFor="last_login" className="text-sm font-medium">
+                  Đăng nhập gần nhất
                 </Label>
-                <Textarea
-                  id="bio"
-                  value={profile.bio}
-                  onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
-                  disabled={!isEditing}
-                  className={`min-h-[100px] resize-none ${!isEditing ? "bg-muted" : ""}`}
-                  placeholder="Mô tả ngắn về bản thân, kinh nghiệm..."
-                />
+                <div className="relative">
+                  <Calendar className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="last_login"
+                    type="date"
+                    value={profile.last_login ? new Date(profile.last_login).toISOString().slice(0, 10) : ""}
+                    disabled
+                    className={`pl-10 bg-muted`}
+                  />
+                </div>
               </div>
             </div>
 
