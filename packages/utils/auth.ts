@@ -10,9 +10,12 @@ export interface JwtPayload {
 
 export function authenticate(req: NextRequest): JwtPayload {
   const authHeader = req.headers.get("Authorization");
-  if (!authHeader) throw new Error("No token");
+  // Prefer Authorization header; fallback to cookie named 'token'
+  const headerToken = authHeader?.replace("Bearer ", "").trim();
+  const cookieToken = req.cookies.get("token")?.value;
+  const token = headerToken || cookieToken;
+  if (!token) throw new Error("No token");
 
-  const token = authHeader.replace("Bearer ", "").trim();
   try {
     const payload = jwt.verify(token, JWT_SECRET) as JwtPayload;
     return payload;
