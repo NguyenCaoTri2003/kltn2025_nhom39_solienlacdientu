@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Calendar, Mail, MapPin, Phone, Save } from "lucide-react"
+import { isValidEmail, isValidPhone, isValidFullName, isValidCitizenId, isValidAddress, isValidEthnic } from "@packages/utils/Regex"
 
 interface UserProfileInfo {
   id: string              // Mã hiển thị trên giao diện (tùy theo role)
@@ -50,7 +51,12 @@ export default function PersonalProfile() {
     created_at: "",
     last_login: "",
   })
+  const [originalProfile, setOriginalProfile] = useState<UserProfileInfo | null>(null)
   const [isEditing, setIsEditing] = useState(false)
+  const [errors, setErrors] = useState<Partial<Record<
+    keyof Pick<UserProfileInfo, "full_name" | "email" | "phone" | "address" | "ethnic" | "citizen_id_card">,
+    string
+  >>>({})
   const router = useRouter()
 
   const displayName = profile.full_name || user?.full_name || user?.name || "?"
@@ -110,7 +116,7 @@ export default function PersonalProfile() {
         if (!res.ok) return;
         const u = await res.json();
   
-        setProfile({
+        const mapped: UserProfileInfo = {
           id: String(
             user.role === "lecturer"
               ? (u.lecturer?.lecturer_code ?? u.lecturer_code ?? "")
@@ -127,7 +133,9 @@ export default function PersonalProfile() {
           avatar_url: u.avatar_url ?? "",
           created_at: u.created_at ?? "",
           last_login: u.last_login ?? "",
-        });
+        };
+        setProfile(mapped);
+        setOriginalProfile(mapped);
       } catch {
         // ignore
       }
@@ -137,14 +145,158 @@ export default function PersonalProfile() {
   }, [user]);
   
 
+  const validateField = (field: keyof UserProfileInfo, value: string): string | undefined => {
+    switch (field) {
+      case "full_name":
+        if (!value.trim()) return "Họ và tên là bắt buộc"
+        if (!isValidFullName(value)) return "Họ và tên không hợp lệ"
+        return undefined
+      case "email":
+        if (!value.trim()) return "Email là bắt buộc"
+        if (!isValidEmail(value)) return "Email không hợp lệ"
+        return undefined
+      case "phone":
+        if (!value.trim()) return "Số điện thoại là bắt buộc"
+        if (!isValidPhone(value)) return "Số điện thoại không hợp lệ"
+        return undefined
+      case "address":
+        if (!value.trim()) return undefined
+        if (!isValidAddress(value)) return "Địa chỉ không hợp lệ"
+        return undefined
+      case "ethnic":
+        if (!value.trim()) return undefined
+        if (!isValidEthnic(value)) return "Dân tộc không hợp lệ"
+        return undefined
+      case "citizen_id_card":
+        if (!value.trim()) return undefined
+        if (!isValidCitizenId(value)) return "CCCD không hợp lệ"
+        return undefined
+      default:
+        return undefined
+    }
+  }
 
-  const handleSaveProfile = () => {
-    console.log("Saving profile:", profile)
-    setIsEditing(false)
-    alert("Thông tin cá nhân đã được cập nhật thành công!")
+  const validateAll = (data: UserProfileInfo) => {
+    const nextErrors: typeof errors = {}
+    nextErrors.full_name = validateField("full_name", data.full_name)
+    nextErrors.email = validateField("email", data.email)
+    nextErrors.phone = validateField("phone", data.phone)
+    nextErrors.address = validateField("address", data.address)
+    nextErrors.ethnic = validateField("ethnic", data.ethnic)
+    nextErrors.citizen_id_card = validateField("citizen_id_card", data.citizen_id_card)
+    const compact = Object.fromEntries(Object.entries(nextErrors).filter(([, v]) => v)) as typeof errors
+    setErrors(compact)
+    return compact
+  }
+
+
+  const handleSaveProfile = async () => {
+    if (!user?.id) return
+
+    try {
+      const currentErrors = validateAll(profile)
+      if (Object.keys(currentErrors).length > 0) {
+        alert("Vui lòng kiểm tra lại các trường không hợp lệ")
+        return
+      }
+      const token =
+        document.cookie.split("; ").find((row) => row.startsWith("token="))?.split("=")[1] ||
+        localStorage.getItem("token")
+
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"
+
+      const fields: (keyof UserProfileInfo)[] = [
+        "full_name",
+        "email",
+        "phone",
+        "address",
+        "ethnic",
+        "status",
+        "citizen_id_card",
+        "avatar_url",
+      ];
+
+      const userDiff: Record<string, string> = {};
+      for (const key of fields) {
+        const curr = profile[key] ?? "";
+        const prev = originalProfile ? originalProfile[key] ?? "" : undefined;
+        if (prev === undefined || curr !== prev) {
+          userDiff[key] = curr as string;
+        }
+      }
+
+      if (Object.keys(userDiff).length === 0) {
+        setIsEditing(false);
+        return;
+      }
+
+      const res = await fetch(`${apiBase}/api/users/${user.id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ user: userDiff }),
+      })
+
+      if (!res.ok) {
+        let serverMessage = "Cập nhật thất bại";
+        try {
+          const text = await res.text();
+          serverMessage = (() => {
+            try {
+              const j = JSON.parse(text);
+              return j.error || j.message || text || serverMessage;
+            } catch {
+              return text || serverMessage;
+            }
+          })();
+        } catch {}
+        throw new Error(serverMessage)
+      }
+
+      const updated = await res.json()
+
+      // Cập nhật lại state bằng dữ liệu server trả về
+      setProfile(updated)
+      setOriginalProfile(updated)
+      setIsEditing(false)
+
+      alert("✅ Cập nhật thành công!")
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Cập nhật thất bại"
+      console.error(err)
+      alert("❌ " + message)
+    }
   }
 
   if (!user) return null
+///
+  console.log({
+    hasError: Object.keys(errors).length > 0,
+    hasOriginal: !!originalProfile,
+    isChanged: JSON.stringify(profile) !== JSON.stringify(originalProfile),
+    disabled:
+      Object.keys(errors).length > 0 ||
+      !originalProfile ||
+      JSON.stringify(profile) === JSON.stringify(originalProfile),
+  });
+  const hasError = Object.keys(errors).length > 0;
+  const hasOriginal = !!originalProfile;
+  const isChanged = JSON.stringify(profile) !== JSON.stringify(originalProfile);
+  console.log({ profile, originalProfile, hasError, hasOriginal, isChanged });
+
+
+  const disabled =
+  Object.values(errors).some((err) => err) || // chỉ disable nếu có giá trị lỗi thực sự
+  !originalProfile ||
+  JSON.stringify(profile) === JSON.stringify(originalProfile)
+
+console.log("Errors:", errors);
+console.log("Disabled:", disabled);
+    ////
+
+    
 
   return (
     <div className="min-h-screen bg-background">
@@ -207,11 +359,19 @@ export default function PersonalProfile() {
                 </Label>
                 <Input
                   id="full_name"
-                  value={profile.full_name}
-                  onChange={(e) => setProfile({ ...profile, full_name: e.target.value })}
+                  maxLength={128}
+                  value={profile.full_name ?? ""}
+                  onChange={(e) => {
+                    const v = e.target.value
+                    setProfile({ ...profile, full_name: v })
+                    setErrors((prev) => ({ ...prev, full_name: validateField("full_name", v) }))
+                  }}
                   disabled={!isEditing}
                   className={!isEditing ? "bg-muted" : ""}
                 />
+                {errors.full_name && (
+                  <p className="text-sm text-red-500 mt-1">{errors.full_name}</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="email" className="text-sm font-medium">
@@ -222,12 +382,20 @@ export default function PersonalProfile() {
                   <Input
                     id="email"
                     type="email"
-                    value={profile.email}
-                    onChange={(e) => setProfile({ ...profile, email: e.target.value })}
+                    maxLength={255}
+                    value={profile.email ?? ""}
+                    onChange={(e) => {
+                      const v = e.target.value
+                      setProfile({ ...profile, email: v })
+                      setErrors((prev) => ({ ...prev, email: validateField("email", v) }))
+                    }}
                     disabled={!isEditing}
                     className={`pl-10 ${!isEditing ? "bg-muted" : ""}`}
                   />
                 </div>
+                {errors.email && (
+                  <p className="text-sm text-red-500 mt-1">{errors.email}</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="phone" className="text-sm font-medium">
@@ -237,12 +405,20 @@ export default function PersonalProfile() {
                   <Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                   <Input
                     id="phone"
-                    value={profile.phone}
-                    onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
+                    maxLength={10}
+                    value={profile.phone ?? ""}
+                    onChange={(e) => {
+                      const v = e.target.value
+                      setProfile({ ...profile, phone: v })
+                      setErrors((prev) => ({ ...prev, phone: validateField("phone", v) }))
+                    }}
                     disabled={!isEditing}
                     className={`pl-10 ${!isEditing ? "bg-muted" : ""}`}
                   />
                 </div>
+                {errors.phone && (
+                  <p className="text-sm text-red-500 mt-1">{errors.phone}</p>
+                )}
               </div>
               <div className="space-y-2 sm:col-span-2">
                 <Label htmlFor="address" className="text-sm font-medium">
@@ -252,12 +428,20 @@ export default function PersonalProfile() {
                   <MapPin className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                   <Input
                     id="address"
-                    value={profile.address}
-                    onChange={(e) => setProfile({ ...profile, address: e.target.value })}
+                    maxLength={255}
+                    value={profile.address ?? ""}
+                    onChange={(e) => {
+                      const v = e.target.value
+                      setProfile({ ...profile, address: v })
+                      setErrors((prev) => ({ ...prev, address: validateField("address", v) }))
+                    }}
                     disabled={!isEditing}
                     className={`pl-10 ${!isEditing ? "bg-muted" : ""}`}
                   />
                 </div>
+                {errors.address && (
+                  <p className="text-sm text-red-500 mt-1">{errors.address}</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="ethnic" className="text-sm font-medium">
@@ -265,11 +449,19 @@ export default function PersonalProfile() {
                 </Label>
                 <Input
                   id="ethnic"
-                  value={profile.ethnic}
-                  onChange={(e) => setProfile({ ...profile, ethnic: e.target.value })}
+                  maxLength={20}
+                  value={profile.ethnic ?? ""}
+                  onChange={(e) => {
+                    const v = e.target.value
+                    setProfile({ ...profile, ethnic: v })
+                    setErrors((prev) => ({ ...prev, ethnic: validateField("ethnic", v) }))
+                  }}
                   disabled={!isEditing}
                   className={!isEditing ? "bg-muted" : ""}
                 />
+                {errors.ethnic && (
+                  <p className="text-sm text-red-500 mt-1">{errors.ethnic}</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="status" className="text-sm font-medium">
@@ -279,7 +471,8 @@ export default function PersonalProfile() {
                   id="status"
                   value={profile.status}
                   onChange={(e) => setProfile({ ...profile, status: e.target.value })}
-                  disabled={!isEditing}
+                  //disabled={!isEditing}
+                  disabled
                   className={!isEditing ? "bg-muted" : ""}
                 />
               </div>
@@ -289,11 +482,19 @@ export default function PersonalProfile() {
                 </Label>
                 <Input
                   id="citizen_id_card"
-                  value={profile.citizen_id_card}
-                  onChange={(e) => setProfile({ ...profile, citizen_id_card: e.target.value })}
+                  maxLength={20}
+                  value={profile.citizen_id_card ?? ""}
+                  onChange={(e) => {
+                    const v = e.target.value
+                    setProfile({ ...profile, citizen_id_card: v })
+                    setErrors((prev) => ({ ...prev, citizen_id_card: validateField("citizen_id_card", v) }))
+                  }}
                   disabled={!isEditing}
                   className={!isEditing ? "bg-muted" : ""}
                 />
+                {errors.citizen_id_card && (
+                  <p className="text-sm text-red-500 mt-1">{errors.citizen_id_card}</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="created_at" className="text-sm font-medium">
@@ -329,7 +530,10 @@ export default function PersonalProfile() {
 
             {isEditing && (
               <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t">
-                <Button onClick={handleSaveProfile} className="flex-1 sm:flex-none">
+                
+                <Button onClick={handleSaveProfile} className="flex-1 sm:flex-none" 
+                 disabled={disabled}
+                      >
                   <Save className="w-4 h-4 mr-2" />
                   Lưu thay đổi
                 </Button>
