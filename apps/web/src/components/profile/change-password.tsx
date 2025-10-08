@@ -148,6 +148,7 @@ export default function ChangePassword() {
               <div className="relative">
                 <Input
                   id="currentPassword"
+                  maxLength={50}
                   type={showCurrentPassword ? "text" : "password"}
                   value={passwordData.currentPassword}
                 onChange={(e) => {
@@ -181,6 +182,7 @@ export default function ChangePassword() {
               <div className="relative">
                 <Input
                   id="newPassword"
+                  maxLength={50}
                   type={showNewPassword ? "text" : "password"}
                   value={passwordData.newPassword}
                 onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
@@ -218,6 +220,7 @@ export default function ChangePassword() {
               <div className="relative">
                 <Input
                   id="confirmPassword"
+                  maxLength={50}
                   type={showConfirmPassword ? "text" : "password"}
                   value={passwordData.confirmPassword}
                   onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
