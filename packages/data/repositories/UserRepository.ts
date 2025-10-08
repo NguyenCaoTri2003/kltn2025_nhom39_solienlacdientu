@@ -1,8 +1,9 @@
 import { supabase } from "../supabaseClient";
-import { User } from "../../core/entities/Users";
+import { User, UserPublic } from "../../core/entities/Users";
 import { Student, StudentWithUser } from "@packages/core/entities/Student";
 import { Lecturers } from "@packages/core/entities/Lecturers";
 import { Parent } from "@packages/core/entities/Parent";
+
 
 type RoleSpecificData = {
   student?: Student;
@@ -147,4 +148,17 @@ export class UserRepository {
 
     return userFull; 
   }
+
+  async getAllUsers(): Promise<UserPublic[]> {
+  const { data, error } = await supabase
+    .from("users")
+    .select(
+      "id, full_name, email, phone, role, status, address, ethnic, citizen_id_card, created_at, last_login"
+    )
+    .order("id", { ascending: true });
+
+  if (error) throw error;
+  return data ?? [];
+}
+
 }

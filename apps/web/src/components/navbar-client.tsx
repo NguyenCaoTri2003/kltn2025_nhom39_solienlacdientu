@@ -49,7 +49,7 @@ export default function NavbarClient({ userRole, userName, avatarUrl }: NavbarPr
 
   const adminNavItems = [
     { icon: Home, label: "Trang chủ", href: "/admin" },
-    { icon: Users, label: "Quản lý tài khoản", href: "/admin/accounts" },
+    { icon: Users, label: "Quản lý tài khoản", href: "/admin/accounts/account-management" },
     { icon: Calendar, label: "Quản lý lịch hẹn", href: "/admin/appointments" },
     { icon: MessageSquare, label: "Trung tâm liên lạc", href: "/admin/communications" },
     { icon: BarChart3, label: "Thống kê", href: "/admin/statistics" },
