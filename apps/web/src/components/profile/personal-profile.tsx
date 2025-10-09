@@ -213,7 +213,7 @@ export default function PersonalProfile() {
 
     fetchProfile();
   }, [user]);
-  
+
 
   // Validate từng trường
   const validateField = (
@@ -663,7 +663,7 @@ export default function PersonalProfile() {
                   </p>
                 )}
               </div>
-              <div className="space-y-2">
+              {/* <div className="space-y-2">
                 <Label htmlFor="created_at" className="text-sm font-medium">
                   Ngày tạo
                 </Label>
@@ -704,7 +704,7 @@ export default function PersonalProfile() {
                     className={`pl-10 bg-muted`}
                   />
                 </div>
-              </div>
+              </div> */}
             </div>
 
             {isEditing && (

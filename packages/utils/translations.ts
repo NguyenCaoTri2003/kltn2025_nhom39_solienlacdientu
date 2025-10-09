@@ -1,4 +1,5 @@
 // utils/translations.ts
+
 export function translateRole(role?: string): string {
   switch (role) {
     case "student":
@@ -26,5 +27,18 @@ export function translateAcademicRank(rank?: string): string {
       return "Giáo sư"
     default:
       return rank || ""
+  }
+}
+
+export function translateStatus(status?: string): string {
+  switch (status) {
+    case "active":
+      return "Hoạt động"
+    case "inactive":
+      return "Bị khóa"
+    case "suspended":
+      return "Chờ kích hoạt"
+    default:
+      return status || ""
   }
 }
