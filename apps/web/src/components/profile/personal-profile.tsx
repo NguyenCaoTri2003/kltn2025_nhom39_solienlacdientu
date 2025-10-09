@@ -25,6 +25,11 @@ import {
   isValidEthnic,
 } from "@packages/utils/Regex";
 
+import {
+  translateRole,
+  translateAcademicRank,
+} from "@packages/utils/translations";
+
 interface UserProfileInfo {
   id: string; // Mã hiển thị trên giao diện (tùy theo role)
   role: string;
@@ -38,6 +43,8 @@ interface UserProfileInfo {
   avatar_url: string;
   created_at: string;
   last_login: string;
+  faculty_name?: string;
+  academic_rank?: string; //  học hàm (role = lecturer)
 }
 
 type LoggedInUser = {
@@ -132,6 +139,7 @@ export default function PersonalProfile() {
     }
   }, []);
 
+  // Hàm gọi api lấy dữ liệu
   useEffect(() => {
     const fetchProfile = async () => {
       if (!user?.id) return;
@@ -173,6 +181,29 @@ export default function PersonalProfile() {
           created_at: u.created_at ?? "",
           last_login: u.last_login ?? "",
         };
+
+        // Nếu user là lecturer, lấy thêm thông tin khoa
+        if (u.role === "lecturer" && u.lecturer?.faculty_id) {
+          try {
+            const facultyRes = await fetch(
+              `${apiBase}/api/faculties/${u.lecturer.faculty_id}`,
+              {
+                headers: {
+                  ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                },
+                cache: "no-store",
+              }
+            );
+            if (facultyRes.ok) {
+              const facultyData = await facultyRes.json();
+              mapped.faculty_name = facultyData?.data?.name ?? "";
+              mapped.academic_rank = u.lecturer?.academic_rank ?? "";
+            }
+          } catch {
+            console.warn("Không thể tải thông tin khoa");
+          }
+        }
+
         setProfile(mapped);
         setOriginalProfile(mapped);
       } catch {
@@ -182,6 +213,7 @@ export default function PersonalProfile() {
 
     fetchProfile();
   }, [user]);
+  
 
   // Validate từng trường
   const validateField = (
@@ -401,11 +433,34 @@ export default function PersonalProfile() {
                   </AvatarFallback>
                 </Avatar>
                 <div>
-                  <CardTitle className="text-xl sm:text-2xl text-card-foreground truncate cursor-default max-w-[200px]" title={displayName}>
+                  <CardTitle
+                    className="text-xl sm:text-2xl text-card-foreground truncate cursor-default max-w-[200px]"
+                    title={displayName}
+                  >
                     {displayName}
                   </CardTitle>
-                  <CardDescription className="text-muted-foreground capitalize">
-                    {profile.role}
+                  <CardDescription className="text-muted-foreground capitalize flex flex-wrap items-center gap-x-2">
+                    <span>{translateRole(profile.role)}</span>
+
+                    {profile.role === "lecturer" && (
+                      <>
+                        {profile.academic_rank && (
+                          <>
+                            <span className="text-muted-foreground/60">•</span>
+                            <span>
+                              {translateAcademicRank(profile.academic_rank)}
+                            </span>
+                          </>
+                        )}
+
+                        {profile.faculty_name && (
+                          <>
+                            <span className="text-muted-foreground/60">•</span>
+                            <span>Khoa {profile.faculty_name}</span>
+                          </>
+                        )}
+                      </>
+                    )}
                   </CardDescription>
                 </div>
               </div>
@@ -472,7 +527,7 @@ export default function PersonalProfile() {
                   <Input
                     id="email"
                     type="email"
-                    maxLength={255}
+                    maxLength={100}
                     value={profile.email ?? ""}
                     onChange={(e) => {
                       const v = e.target.value;
