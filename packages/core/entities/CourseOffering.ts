@@ -24,4 +24,7 @@ export interface Offering {
   lecturers?: Lecturers;
   students: Enrollment[];
   practice_groups?: PracticeGroup[];
+
+  is_practice_lecturer?: boolean;
+  practice_group_number?: number;
 }

@@ -57,6 +57,8 @@ export default function OfferingsList() {
     fetchOfferings();
   }, [selectedSemester]);
 
+  console.log("Offerings:", offerings);
+
   useEffect(() => {
     setPage(1);
   }, [selectedSemester?.id, searchTerm]);
@@ -149,19 +151,28 @@ export default function OfferingsList() {
               >
                 <Card
                   className="h-full flex flex-col justify-between p-5 rounded-2xl border border-border/50
-    bg-gradient-to-br from-card/95 to-card/70 shadow-md hover:shadow-xl 
-    transition-all backdrop-blur-sm cursor-pointer overflow-hidden"
+                  bg-gradient-to-br from-card/95 to-card/70 shadow-md hover:shadow-xl 
+                  transition-all backdrop-blur-sm cursor-pointer overflow-hidden"
                   onClick={() => router.push(`/lecturer/classes/${o.id}`)}
                 >
-                  {/* Header */}
                   <div className="flex items-center gap-2 mb-1">
                     <BookOpen className="w-5 h-5 text-primary" />
                     <h3 className="font-semibold text-foreground text-base line-clamp-1 leading-tight">
                       {o.name}
                     </h3>
+
+                    {o.is_practice_lecturer && (
+                      <span className="ml-2 text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-medium">
+                        Thực hành
+                      </span>
+                    )}
                   </div>
 
-                  {o.practice_group_count > 0 ? (
+                  {o.is_practice_lecturer ? (
+                    <p className="text-xs text-muted-foreground ml-6 mb-1">
+                      (Nhóm thực hành số {o.practice_group_number})
+                    </p>
+                  ) : o.practice_group_count > 0 ? (
                     <p className="text-xs text-muted-foreground ml-6 mb-1">
                       ({o.practice_group_count} nhóm thực hành)
                     </p>
@@ -169,7 +180,6 @@ export default function OfferingsList() {
                     <div className="h-3.5 mb-1" />
                   )}
 
-                  {/* Info section */}
                   <div className="space-y-0.5 mb-2">
                     <p className="text-sm text-muted-foreground">
                       Mã lớp học phần:{" "}
@@ -185,16 +195,15 @@ export default function OfferingsList() {
                     )}
                   </div>
 
-                  {/* Weekly Schedule (có min-height để ổn định card) */}
                   <div className="flex-1 mb-2 min-h-[2.5rem]">
                     <WeeklyScheduleList
                       schedules={o.weekly_schedules}
-                      filterType="theory"
-                      semester={o.semesters ?? undefined} 
+                      filterType={o.is_practice_lecturer ? "practice" : "theory"}
+                      semester={o.semesters ?? undefined}
+                      practiceGroupNumber={o.practice_group_number ?? undefined}
                     />
                   </div>
 
-                  {/* Footer */}
                   <div className="flex justify-between text-sm text-muted-foreground border-t border-border/40 pt-2 mt-auto">
                     <div className="flex items-center gap-1">
                       <GraduationCap className="w-4 h-4 text-primary" />

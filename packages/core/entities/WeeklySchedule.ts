@@ -5,4 +5,5 @@ export interface WeeklySchedule {
   classroom?: string | null;
   building?: string | null;
   type: string; 
+  practice_group_id?: number | null;
 }

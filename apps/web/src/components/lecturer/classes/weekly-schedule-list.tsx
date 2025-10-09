@@ -9,6 +9,7 @@ interface WeeklyScheduleListProps {
   filterType?: string;
   showHighlight?: boolean;
   semester?: Semester;
+  practiceGroupNumber?: number;
 }
 
 export default function WeeklyScheduleList({
@@ -16,10 +17,25 @@ export default function WeeklyScheduleList({
   filterType,
   showHighlight = true,
   semester,
+  practiceGroupNumber,
 }: WeeklyScheduleListProps) {
-  const filtered = filterType
+
+  let filtered = filterType
     ? schedules.filter((s) => s.type === filterType)
     : schedules;
+
+  if (filterType === "practice" && practiceGroupNumber) {
+    filtered = filtered.filter(
+      (s) => s.practice_group_id === practiceGroupNumber
+    );
+  }
+
+  console.log("📚 Filter result:", {
+    filterType,
+    practiceGroupNumber,
+    totalBefore: schedules.length,
+    totalAfter: filtered.length,
+  });
 
   if (!filtered || filtered.length === 0) return null;
 
@@ -51,17 +67,6 @@ export default function WeeklyScheduleList({
     "Thứ 7",
   ];
 
-  const typeStyle = (type: string) => {
-    switch (type) {
-      case "theory":
-        return "bg-blue-100 text-blue-700 border border-blue-200";
-      case "practice":
-        return "bg-yellow-100 text-yellow-700 border border-yellow-200";
-      default:
-        return "bg-gray-100 text-gray-700 border border-gray-200";
-    }
-  };
-
   const scheduleText = filtered
     .map((w) => {
       const day = days[w.day_of_week] ?? `Thứ ${w.day_of_week}`;
@@ -88,13 +93,6 @@ export default function WeeklyScheduleList({
           <span className="ml-1 font-normal text-muted-foreground">
             {scheduleText.split(";")[0]}
           </span>
-          {/* <span
-            className={`ml-2 px-2 py-[1px] rounded-full text-[12px] font-medium ${typeStyle(
-              firstType
-            )}`}
-          >
-            {firstType === "theory" ? "Lý thuyết" : "Thực hành"}
-          </span> */}
         </span>
       </div>
 
