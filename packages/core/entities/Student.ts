@@ -1,3 +1,5 @@
+import { Grade } from "./Grade";
+import { Parent } from "./Parent";
 import { StudentParent } from "./StudentParent";
 import { User } from "./Users";
 
@@ -19,4 +21,27 @@ export interface Student {
 export interface StudentWithUser {
   id: string;
   users: User;
+}
+
+export interface StudentDetailData {
+    student: {
+        id: number
+        full_name: string
+        student_code: string
+        date_of_birth: string
+        contact_address: string
+    }
+    parents: Parent[]
+    grades?: {
+        theoryScores?: Grade[]
+        practiceScores?: Grade[]
+        summary?: {
+          total_score: number | null;
+          gpa4: number | null;
+          letter_grade: string | null;   
+          classification: string | null;
+          passed: boolean | null;
+          note: string | null; 
+        }
+    }
 }

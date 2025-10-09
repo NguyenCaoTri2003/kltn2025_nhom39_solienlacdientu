@@ -1,5 +1,6 @@
 import { CourseOfferingRepository } from "@packages/data/repositories/CourseOfferingRepository";
 import { EnrollmentRepository } from "@packages/data/repositories/EnrollmentRepository";
+import { AuthorizationService } from "../services/authorization/AuthorizationService"; 
 
 export class CourseOfferingUseCase {
   private courseRepo: CourseOfferingRepository;
@@ -10,14 +11,21 @@ export class CourseOfferingUseCase {
     this.enrollmentRepo = enrollmentRepo;
   }
 
-  async getOfferingDetail(offeringId: number) {
+  async canViewOffering(user: any, offeringId: number): Promise<boolean> {
+    return AuthorizationService.canViewOffering(user, offeringId);
+  }
+
+  async getOfferingDetail(offeringId: number, user?: any) {
+    if (user) {
+      const allowed = await this.canViewOffering(user, offeringId);
+      if (!allowed) throw new Error("Forbidden");
+    }
+
     const offering = await this.courseRepo.getOfferingById(offeringId);
     if (!offering) return null;
 
-    // Sinh viên lý thuyết
     const students = await this.enrollmentRepo.getStudentsByOffering(offeringId);
 
-    // Nhóm thực hành
     const practiceGroups = await this.courseRepo.getPracticeGroups(offeringId);
 
     const practiceGroupsWithStudents = await Promise.all(
@@ -36,10 +44,9 @@ export class CourseOfferingUseCase {
   }
 }
 
-// --- Export function for direct use ---
-export async function getOfferingDetail(offeringId: number) {
+export async function getOfferingDetail(offeringId: number, user?: any) {
   const courseRepo = new CourseOfferingRepository();
   const enrollmentRepo = new EnrollmentRepository();
   const usecase = new CourseOfferingUseCase(courseRepo, enrollmentRepo);
-  return await usecase.getOfferingDetail(offeringId);
+  return await usecase.getOfferingDetail(offeringId, user);
 }

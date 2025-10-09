@@ -51,7 +51,7 @@ export default function ClassDetail() {
   const currentUser = typeof window !== "undefined" ? JSON.parse(localStorage.getItem("user") || "null") : null;
 
   const currentLecturerId = currentUser?.id;
-  
+
   console.log("Current Lecturer ID:", currentLecturerId);
   console.log("currentUser:", currentUser);
 
@@ -168,7 +168,10 @@ export default function ClassDetail() {
               <div
                 key={g.id}
                 onClick={() => setActiveTab(`group-${g.group_number}`)}
-                className="cursor-pointer"
+                className={`cursor-pointer ${!isTheoryLecturer && myPracticeGroup?.id !== g.id
+                    ? "opacity-60 pointer-events-none"
+                    : ""
+                  }`}
               >
                 <PracticeGroupCard
                   groupNumber={g.group_number}
@@ -185,44 +188,9 @@ export default function ClassDetail() {
           </div>
         )}
 
-      {/* <section>
-        <h3 className="text-lg font-semibold mb-4">Danh sách sinh viên</h3>
-
-        {offering.practice_group_count > 0 &&
-          offering.practice_groups &&
-          offering.practice_groups.length > 0 ? (
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList>
-              <TabsTrigger value="theory">Lý thuyết</TabsTrigger>
-              {offering.practice_groups.map((g) => (
-                <TabsTrigger key={g.id} value={`group-${g.group_number}`}>
-                  Nhóm {g.group_number}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-
-            <TabsContent value="theory">
-              <StudentTable
-                students={offering.students.map((e) => e.students).filter((s): s is Student => !!s)}
-              />
-            </TabsContent>
-
-            {offering.practice_groups.map((g) => (
-              <TabsContent key={g.id} value={`group-${g.group_number}`}>
-                <StudentTable students={mapGroupStudents(g, offering.students)} />
-              </TabsContent>
-            ))}
-          </Tabs>
-        ) : (
-          <StudentTable students={offering.students.map((e) => e.students).filter((s): s is Student => !!s)} />
-        )}
-      </section> */}
-
       <section>
         <h3 className="text-lg font-semibold mb-4">Danh sách sinh viên</h3>
-
-        {/* Giảng viên dạy lý thuyết (hoặc cả lý thuyết + thực hành 1) */}
-        {offering.practice_groups?.length > 0 && !isPracticeOnly && (
+        {(offering.practice_groups?.length ?? 0) > 0 && !isPracticeOnly && offering.practice_groups && offering.practice_groups.length > 0 && (
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList>
               <TabsTrigger value="theory">Lý thuyết</TabsTrigger>
@@ -233,25 +201,26 @@ export default function ClassDetail() {
               ))}
             </TabsList>
 
-            {/* Tab lý thuyết */}
             <TabsContent value="theory">
               <StudentTable
+                classId={offering.id}
                 students={offering.students
                   .map((e) => e.students)
                   .filter((s): s is Student => !!s)}
               />
             </TabsContent>
 
-            {/* Các nhóm thực hành */}
             {offering.practice_groups.map((g) => (
               <TabsContent key={g.id} value={`group-${g.group_number}`}>
-                <StudentTable students={mapGroupStudents(g, offering.students)} />
+                <StudentTable 
+                  classId={offering.id} 
+                  students={mapGroupStudents(g, offering.students)} 
+                />
               </TabsContent>
             ))}
           </Tabs>
         )}
 
-        {/* Giảng viên chỉ dạy thực hành */}
         {isPracticeOnly && myPracticeGroup && (
           <Tabs value={`group-${myPracticeGroup.group_number}`}>
             <TabsList>
@@ -262,15 +231,16 @@ export default function ClassDetail() {
 
             <TabsContent value={`group-${myPracticeGroup.group_number}`}>
               <StudentTable
+                classId={offering.id}
                 students={mapGroupStudents(myPracticeGroup, offering.students)}
               />
             </TabsContent>
           </Tabs>
         )}
 
-        {/* Không có nhóm thực hành (chỉ lý thuyết) */}
         {offering.practice_group_count === 0 && (
           <StudentTable
+            classId={offering.id}
             students={offering.students
               .map((e) => e.students)
               .filter((s): s is Student => !!s)}

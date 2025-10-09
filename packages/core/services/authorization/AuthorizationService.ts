@@ -38,7 +38,7 @@ export class AuthorizationService {
                 .from("practice_groups")
                 .select("id")
                 .eq("lecturer_id", user.id)
-                .eq("offering_id", offeringId) 
+                .eq("offering_id", offeringId)
                 .maybeSingle();
 
             if (practice) return true;
@@ -49,6 +49,30 @@ export class AuthorizationService {
         return user.role === "admin";
     }
 
-    
+    static async canViewOffering(user: any, offeringId: number): Promise<boolean> {
+        if (user.role === "admin") return true;
+
+        if (user.role === "lecturer") {
+            const { data: theory } = await supabase
+                .from("course_offerings")
+                .select("id")
+                .eq("id", offeringId)
+                .eq("lecturer_id", user.id)
+                .maybeSingle();
+            if (theory) return true;
+
+            const { data: practice } = await supabase
+                .from("practice_groups")
+                .select("id")
+                .eq("offering_id", offeringId)
+                .eq("lecturer_id", user.id)
+                .maybeSingle();
+            if (practice) return true;
+
+            return false;
+        }
+
+        return false;
+    }
 
 }

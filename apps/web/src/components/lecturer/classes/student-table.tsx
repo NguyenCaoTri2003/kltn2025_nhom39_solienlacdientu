@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, use } from "react";
 import {
   Table,
   TableBody,
@@ -20,11 +20,14 @@ import {
 import { Calendar, Eye, Mail, MessageCircle, MessageSquare, MoreHorizontal } from "lucide-react";
 import Pagination from "@/components/pagination";
 import { Student } from "@packages/core/entities/Student";
+import { useRouter } from "next/navigation";
 
 export function StudentTable({
+  classId,
   students,
   pageSize = 10,
 }: {
+  classId: number;
   students: Student[];
   pageSize?: number;
 }) {
@@ -35,6 +38,8 @@ export function StudentTable({
     const startIndex = (currentPage - 1) * pageSize;
     return students.slice(startIndex, startIndex + pageSize);
   }, [students, currentPage, pageSize]);
+  
+  const router = useRouter();
 
   if (!students || students.length === 0) {
     return (
@@ -121,7 +126,10 @@ export function StudentTable({
                       className="w-[180px] rounded-lg border border-border bg-background/95 backdrop-blur-sm shadow-lg p-1"
                     >
                       {/* Nhóm 1 */}
-                      <DropdownMenuItem className="flex items-center gap-2 rounded-md px-2 py-2 hover:bg-accent hover:text-accent-foreground transition-colors">
+                      <DropdownMenuItem 
+                        className="flex items-center gap-2 rounded-md px-2 py-2 hover:bg-accent hover:text-accent-foreground transition-colors"
+                        onClick={() => router.push(`/lecturer/classes/${classId}/student/${s.id}`)}
+                      >
                         <Eye className="w-4 h-4 text-muted-foreground" />
                         <span>Chi tiết</span>
                       </DropdownMenuItem>
