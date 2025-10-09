@@ -20,66 +20,14 @@ import {
 import WeeklyScheduleList from "@/components/lecturer/classes/weekly-schedule-list";
 import CourseOfferingSkeleton from "@/components/skeleton/course-offering-skeleton";
 import PracticeGroupCard from "./practice-group-card";
+import { WeeklySchedule } from "@packages/core/entities/WeeklySchedule";
+import { Semester } from "@packages/core/entities/Semesters";
+import { Student } from "@packages/core/entities/Student";
+import { Enrollment } from "@packages/core/entities/Enrollment";
+import { PracticeGroup } from "@packages/core/entities/PracticeGroup";
+import { Offering } from "@packages/core/entities/CourseOffering";
+import { StudentTable } from "./student-table";
 
-/* -------------------- Types -------------------- */
-interface User {
-  email: string;
-  full_name: string;
-  phone?: string;
-  avatar_url?: string | null;
-}
-
-interface Student {
-  id: number;
-  student_code: string;
-  academic_year: string;
-  training_level: string;
-  academic_status: string;
-  type_of_tranning: string;
-  users: User;
-}
-
-interface Enrollment {
-  id: number;
-  registered_at: string;
-  students: Student;
-}
-
-interface PracticeGroupStudent {
-  id: number;
-  enrollment_id: number;
-  group_id: number;
-  assigned_at: string;
-}
-
-interface PracticeGroup {
-  schedule: any;
-  capacity: string;
-  lecturers: any;
-  id: number;
-  group_number: number;
-  lecturer_id: number;
-  students: PracticeGroupStudent[];
-}
-
-interface OfferingDetail {
-  id: number;
-  name: string;
-  class_code: string;
-  capacity: number;
-  registered: number;
-  practice_group_count: number;
-  courses?: {
-    course_code: string;
-    credit: number;
-  };
-  weekly_schedules: any[];
-  students: Enrollment[];
-  practice_groups?: PracticeGroup[];
-}
-
-/* -------------------- Helpers -------------------- */
-// Lấy danh sách sinh viên từ 1 group (dựa vào enrollment_id)
 function mapGroupStudents(
   group: PracticeGroup,
   enrollments: Enrollment[]
@@ -92,13 +40,13 @@ function mapGroupStudents(
     .filter((s): s is Student => !!s);
 }
 
-/* -------------------- Component -------------------- */
 export default function ClassDetail() {
   const params = useParams();
   const { id } = params;
 
-  const [offering, setOffering] = useState<OfferingDetail | null>(null);
+  const [offering, setOffering] = useState<Offering | null>(null);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState("theory");
 
   useEffect(() => {
     if (!id) return;
@@ -136,62 +84,98 @@ export default function ClassDetail() {
 
   return (
     <div className="space-y-10">
-      {/* Thông tin lớp */}
-      <Card className="p-6 space-y-4">
+      <Card
+        className="p-5 md:p-6 rounded-2xl border border-border/50 
+          bg-gradient-to-br from-card/95 to-card/70 shadow-md hover:shadow-lg 
+          transition-all backdrop-blur-sm space-y-3 gap-1 cursor-pointer"
+        onClick={() => setActiveTab("theory")}
+      >
+
         <div className="flex items-center gap-2">
           <BookOpen className="w-5 h-5 text-primary" />
-          <h2 className="text-xl font-semibold text-foreground">
+          <h2 className="text-xl font-semibold text-foreground leading-tight">
             {offering.name}
           </h2>
         </div>
-        <p className="text-muted-foreground">Mã lớp: {offering.class_code}</p>
-        <p className="text-muted-foreground">
-          Mã học phần: {offering.courses?.course_code}
-        </p>
-        <div className="flex justify-between text-sm text-muted-foreground">
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1 text-sm text-muted-foreground">
+          <p>
+            <span className="font-medium text-foreground">Mã lớp học phần:</span>{" "}
+            {offering.class_code}
+          </p>
+          <p>
+            <span className="font-medium text-foreground">Mã học phần:</span>{" "}
+            {offering.courses?.course_code || "-"}
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1 text-sm text-muted-foreground">
+          <p>
+            <span className="font-medium text-foreground">Giảng viên:</span>{" "}
+            {offering.lecturers?.users?.full_name || "Chưa phân công"}
+          </p>
+          <p>
+            <span className="font-medium text-foreground">Học kỳ:</span>{" "}
+            {offering.semesters?.name || "-"} {""} ({offering.semesters?.academic_year || "-"})
+          </p>
+        </div>
+
+        <WeeklyScheduleList
+          schedules={offering.weekly_schedules}
+          filterType="theory"
+          semester={offering.semesters ?? undefined}
+        />
+
+        <div className="flex justify-between text-sm text-muted-foreground border-t border-border/50 pt-3">
           <div className="flex items-center gap-1">
             <GraduationCap className="w-4 h-4 text-primary" />
             {offering.courses?.credit || "-"} tín chỉ
           </div>
           <div className="flex items-center gap-1">
             <Users className="w-4 h-4 text-primary" />
-            {offering.registered}/{offering.capacity} SV
+            {offering.registered || 0}/{offering.capacity || 0} SV
           </div>
         </div>
-        <WeeklyScheduleList
-          schedules={offering.weekly_schedules}
-          filterType="theory"
-        />
+
+        {offering.description && (
+          <p className="text-sm text-muted-foreground italic">
+            {offering.description}
+          </p>
+        )}
       </Card>
 
-      {/* Danh sách nhóm thực hành */}
       {offering.practice_group_count > 0 &&
         offering.practice_groups &&
         offering.practice_groups.length > 0 && (
           <div className="grid md:grid-cols-2 gap-6">
             {offering.practice_groups.map((g) => (
-              <PracticeGroupCard
+              <div
                 key={g.id}
-                groupNumber={g.group_number}
-                lecturerName={g.lecturers?.users?.full_name}
-                lecturerCode={g.lecturers?.lecturer_code}
-                lecturerEmail={g.lecturers?.users?.email}
-                studentCount={g.students?.length || 0}
-                capacity={g.capacity ? Number(g.capacity) : undefined}
-                schedule={g.schedule}
-              />
+                onClick={() => setActiveTab(`group-${g.group_number}`)}
+                className="cursor-pointer"
+              >
+                <PracticeGroupCard
+                  groupNumber={g.group_number}
+                  lecturerName={g.lecturers?.users?.full_name}
+                  lecturerCode={g.lecturers?.lecturer_code}
+                  lecturerEmail={g.lecturers?.users?.email}
+                  studentCount={g.students?.length || 0}
+                  capacity={g.capacity ? Number(g.capacity) : undefined}
+                  schedule={g.weekly_schedules}
+                  semester={offering.semesters}
+                />
+              </div>
             ))}
           </div>
         )}
 
-      {/* Danh sách sinh viên */}
       <section>
         <h3 className="text-lg font-semibold mb-4">Danh sách sinh viên</h3>
 
         {offering.practice_group_count > 0 &&
           offering.practice_groups &&
           offering.practice_groups.length > 0 ? (
-          <Tabs defaultValue="theory">
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList>
               <TabsTrigger value="theory">Lý thuyết</TabsTrigger>
               {offering.practice_groups.map((g) => (
@@ -201,14 +185,12 @@ export default function ClassDetail() {
               ))}
             </TabsList>
 
-            {/* Lý thuyết = tất cả sinh viên */}
             <TabsContent value="theory">
               <StudentTable
-                students={offering.students.map((e) => e.students)}
+                students={offering.students.map((e) => e.students).filter((s): s is Student => !!s)}
               />
             </TabsContent>
 
-            {/* Các nhóm */}
             {offering.practice_groups.map((g) => (
               <TabsContent key={g.id} value={`group-${g.group_number}`}>
                 <StudentTable students={mapGroupStudents(g, offering.students)} />
@@ -216,41 +198,9 @@ export default function ClassDetail() {
             ))}
           </Tabs>
         ) : (
-          <StudentTable students={offering.students.map((e) => e.students)} />
+          <StudentTable students={offering.students.map((e) => e.students).filter((s): s is Student => !!s)} />
         )}
       </section>
     </div>
-  );
-}
-
-/* -------------------- Sub Component -------------------- */
-function StudentTable({ students }: { students: Student[] }) {
-  if (!students || students.length === 0) {
-    return (
-      <div className="text-center text-muted-foreground py-6">
-        Chưa có sinh viên.
-      </div>
-    );
-  }
-
-  return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Mã SV</TableHead>
-          <TableHead>Họ và tên</TableHead>
-          <TableHead>Email</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {students.map((s) => (
-          <TableRow key={s.id}>
-            <TableCell>{s.student_code}</TableCell>
-            <TableCell>{s.users.full_name}</TableCell>
-            <TableCell>{s.users.email || "-"}</TableCell>
-          </TableRow>
-        ))}
-      </TableBody>
-    </Table>
   );
 }

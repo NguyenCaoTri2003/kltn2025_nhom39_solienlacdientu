@@ -1,3 +1,4 @@
+import { StudentParent } from "./StudentParent";
 import { User } from "./Users";
 
 export interface Student {
@@ -11,6 +12,8 @@ export interface Student {
   type_of_training: string;
   training_level: string;
   academic_year: string;
+  student_parent?: StudentParent[];
+  users?: User;
 }
 
 export interface StudentWithUser {

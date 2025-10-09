@@ -1,4 +1,8 @@
 import { Course } from "./Courses";
+import { Enrollment } from "./Enrollment";
+import { Lecturers } from "./Lecturers";
+import { PracticeGroup } from "./PracticeGroup";
+import { Semester } from "./Semesters";
 import { WeeklySchedule } from "./WeeklySchedule";
 
 export interface Offering {
@@ -16,4 +20,11 @@ export interface Offering {
 
   courses: Course;
   weekly_schedules?: WeeklySchedule[];
+  semesters?: Semester | null;
+  lecturers?: Lecturers;
+  students: Enrollment[];
+  practice_groups?: PracticeGroup[];
+
+  is_practice_lecturer?: boolean;
+  practice_group_number?: number;
 }

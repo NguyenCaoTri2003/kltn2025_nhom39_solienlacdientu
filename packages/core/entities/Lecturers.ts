@@ -3,7 +3,7 @@ import { User } from "./Users";
 export interface Lecturers {
   id: number;
   lecturer_code: string;
-  users: User;
+  users?: User;
   academic_rank: string;
 }
 

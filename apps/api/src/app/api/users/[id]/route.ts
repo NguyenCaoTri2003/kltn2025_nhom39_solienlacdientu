@@ -20,20 +20,50 @@ export async function GET(req: NextRequest, { params }: { params: any }) {
   }
 }
 
+// export async function PATCH(req: NextRequest, { params }: { params: any }) {
+//   try {
+//     const { id } = await params; 
+//     const payload = authenticate(req); 
+
+//     if (payload.id !== Number(id) && payload.role !== "admin") {
+//       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+//     }
+
+//     const updates = await req.json(); 
+//     const user = await repo.updateUserFull(Number(id), updates);
+
+//     return NextResponse.json(user);
+//   } catch (e: any) {
+//     return NextResponse.json({ error: e.message }, { status: e.message === "Invalid token" ? 401 : 400 });
+//   }
+// }
+
+
 export async function PATCH(req: NextRequest, { params }: { params: any }) {
   try {
-    const { id } = await params; 
-    const payload = authenticate(req); 
+    const { id } = params;
+    const payload = authenticate(req);
 
-    if (payload.id !== Number(id) && payload.role !== "admin") {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
+    // 🟩 THÊM DÒNG LOG NÀY
+    console.log("🟩 PATCH /api/users:", {
+      id,
+      payload,
+      body: await req.clone().json(), // clone req để log mà không làm mất body
+    });
 
-    const updates = await req.json(); 
+    const updates = await req.json();
+
     const user = await repo.updateUserFull(Number(id), updates);
+
+    // 🟩 Log sau khi update
+    console.log("✅ Updated user result:", user);
 
     return NextResponse.json(user);
   } catch (e: any) {
-    return NextResponse.json({ error: e.message }, { status: e.message === "Invalid token" ? 401 : 400 });
+    console.error("❌ PATCH ERROR:", e);
+    return NextResponse.json(
+      { error: e.message },
+      { status: e.message === "Invalid token" ? 401 : 400 }
+    );
   }
 }
