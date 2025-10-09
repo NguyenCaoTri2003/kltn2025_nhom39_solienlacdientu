@@ -550,7 +550,6 @@ export function AccountManagement() {
               </div>
             </TableCell>
 
-            {/* ✅ Email: Giới hạn 100px, cho xuống dòng */}
             <TableCell className="text-muted-foreground max-w-[200px] whitespace-normal break-words">
               {account.email}
             </TableCell>
