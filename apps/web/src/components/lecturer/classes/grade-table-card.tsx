@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import {
   Table,
   TableHeader,
@@ -9,63 +9,48 @@ import {
   TableHead,
   TableCell,
 } from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { X, Search, CircleCheck, CircleX, Loader2 } from "lucide-react";
-import Pagination from "@/components/pagination";
 import { Grade } from "@packages/core/entities/Grade";
+import {
+  CircleCheck,
+  CircleX,
+  Search,
+  X,
+  Loader2,
+  FileDown,
+} from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import Pagination from "@/components/pagination";
 import { normalize } from "@/utils/normalize";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+import * as XLSX from "xlsx";
+import { getClassificationLabel } from "./get-classification-label";
 
 interface GradeTableCardProps {
   grades: any[];
   title?: string;
   pageSize?: number;
+  offeringName?: string;
 }
 
 export function GradeTableCard({
   grades = [],
-  title = "Bảng điểm chi tiết của lớp học phần",
+  title = "Bảng điểm chi tiết",
   pageSize = 10,
+  offeringName,
 }: GradeTableCardProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [query, setQuery] = useState("");
+  const [filter, setFilter] = useState("all"); 
   const [isLoading, setIsLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-
-  const getLastName = (fullName?: string) => {
-    if (!fullName) return "";
-    const parts = fullName.trim().split(/\s+/);
-    return parts[parts.length - 1];
-  };
-
-  const sortedGrades = useMemo(() => {
-    return [...grades].sort((a, b) =>
-      getLastName(a.student_name).localeCompare(getLastName(b.student_name), "vi", {
-        sensitivity: "base",
-      })
-    );
-  }, [grades]);
-
-  const filteredGrades = useMemo(() => {
-    let data = sortedGrades;
-    if (query) {
-      const normalizedQuery = normalize(query);
-      data = data.filter((s) => {
-        const combined = [s.student_code, s.student_name]
-          .filter(Boolean)
-          .map((v) => normalize(v as string))
-          .join(" ");
-        return combined.includes(normalizedQuery);
-      });
-    }
-    return data;
-  }, [sortedGrades, query]);
-
-  const totalItems = filteredGrades.length;
-  const currentData = useMemo(() => {
-    const startIndex = (currentPage - 1) * pageSize;
-    return filteredGrades.slice(startIndex, startIndex + pageSize);
-  }, [filteredGrades, currentPage, pageSize]);
 
   const handleSearch = () => {
     setIsLoading(true);
@@ -81,43 +66,127 @@ export function GradeTableCard({
     setQuery("");
   };
 
+  const exportToExcel = () => {
+    if (!grades.length) return;
+
+    const exportData = grades.map((s) => ({
+      "Mã sinh viên": s.student_code,
+      "Tên sinh viên": s.student_name,
+      "Thường xuyên": s.theoryScores
+        ?.filter((g: Grade) => g.type === "regular")
+        .map((g: Grade) => g.score)
+        .join(", ") ?? "",
+      "Thực hành": s.practiceScores?.map((g: Grade) => g.score).join(", ") ?? "",
+      "Giữa kỳ":
+        s.theoryScores?.find((g: Grade) => g.type === "midterm")?.score ?? "",
+      "Cuối kỳ":
+        s.theoryScores?.find((g: Grade) => g.type === "final")?.score ?? "",
+      "Tổng kết": s.summary?.total_score ?? "",
+      "Thang 4": s.summary?.gpa4 ?? "",
+      "Điểm chữ": s.summary?.letter_grade ?? "",
+      "Xếp loại": getClassificationLabel(s.summary?.classification) ?? "",
+      "Đạt":
+        s.summary?.passed === true
+          ? "Đạt"
+          : s.summary?.passed === false
+          ? "Không đạt"
+          : "",
+      "Ghi chú": s.summary?.note ?? "",
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "BangDiem");
+    XLSX.writeFile(workbook, `Bảng điểm lớp ${offeringName}${Date.now()}.xlsx`);
+  };
+
+  const filteredGrades = useMemo(() => {
+    let data = grades;
+
+    if (query) {
+      const normalizedQuery = normalize(query);
+      data = data.filter((s) => {
+        const combined = normalize(`${s.student_name} ${s.student_code}`);
+        return combined.includes(normalizedQuery);
+      });
+    }
+
+    if (filter !== "all") {
+      data = data.filter((s) =>
+        filter === "passed"
+          ? s.summary?.passed === true
+          : s.summary?.passed === false
+      );
+    }
+
+    return [...data].sort((a, b) => {
+      const nameA = a.student_name?.trim().split(" ").slice(-1)[0] || "";
+      const nameB = b.student_name?.trim().split(" ").slice(-1)[0] || "";
+      return nameA.localeCompare(nameB, "vi", { sensitivity: "base" });
+    });
+  }, [grades, query, filter]);
+
+  const totalItems = filteredGrades.length;
+  const currentData = useMemo(() => {
+    const startIndex = (currentPage - 1) * pageSize;
+    return filteredGrades.slice(startIndex, startIndex + pageSize);
+  }, [filteredGrades, currentPage, pageSize]);
+
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="font-semibold text-lg">{title}</h2>
-
-        <div className="flex items-center gap-2">
-          <div className="relative w-[420px] sm:w-[480px]">
-            <Input
-              placeholder="Tìm theo MSSV hoặc tên sinh viên..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-              className="pr-10"
-            />
-            {searchTerm && (
-              <button
-                onClick={() => setSearchTerm("")}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            )}
-          </div>
-
-          <Button onClick={handleSearch}>
-            <Search className="w-4 h-4 mr-2" /> Tìm kiếm
-          </Button>
-
-          {query && (
-            <Button variant="destructive" onClick={clearSearch}>
-              Xóa tìm
-            </Button>
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="relative w-full sm:max-w-sm">
+          <Input
+            placeholder="Tìm theo tên hoặc mã sinh viên..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+            className="pr-10"
+          />
+          {searchTerm && (
+            <button
+              onClick={() => setSearchTerm("")}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            >
+              <X className="w-4 h-4" />
+            </button>
           )}
         </div>
+
+        <Button onClick={handleSearch}>
+          <Search className="w-4 h-4 mr-2" />
+          Tìm kiếm
+        </Button>
+
+        {query && (
+          <Button variant="destructive" onClick={clearSearch}>
+            Xóa tìm kiếm
+          </Button>
+        )}
+
+        <Select value={filter} onValueChange={setFilter}>
+          <SelectTrigger className="w-[160px]">
+            <SelectValue placeholder="Lọc kết quả" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Tất cả</SelectItem>
+            <SelectItem value="passed">Đạt</SelectItem>
+            <SelectItem value="failed">Không đạt</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <Button
+          variant="outline"
+          onClick={exportToExcel}
+          className="ml-auto flex items-center"
+          disabled={!grades.length}
+        >
+          <FileDown className="w-4 h-4 mr-2" />
+          Xuất Excel
+        </Button>
       </div>
 
-      <div className="overflow-x-auto w-full rounded-lg border border-border/40 min-h-[200px]">
+      <div className="overflow-x-auto w-full rounded-lg border border-border/40 min-h-[200px] relative">
         <Table className="w-max min-w-full border-collapse text-sm">
           <TableHeader className="bg-muted/40 sticky top-0 z-10">
             <TableRow>
@@ -153,11 +222,10 @@ export function GradeTableCard({
             </TableRow>
           </TableHeader>
 
-          {/* Body */}
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={22} className="text-center py-10">
+                <TableCell colSpan={20} className="text-center py-10">
                   <div className="flex flex-col items-center text-muted-foreground">
                     <Loader2 className="w-6 h-6 animate-spin mb-2" />
                     <span>Đang tìm kiếm...</span>
@@ -167,12 +235,10 @@ export function GradeTableCard({
             ) : currentData.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={22}
+                  colSpan={20}
                   className="text-center text-muted-foreground py-6"
                 >
-                  {query
-                    ? "Không tìm thấy sinh viên phù hợp."
-                    : "Chưa có dữ liệu điểm."}
+                  Không có dữ liệu phù hợp.
                 </TableCell>
               </TableRow>
             ) : (
@@ -181,34 +247,47 @@ export function GradeTableCard({
                   key={student.student_id}
                   className="hover:bg-muted/30 transition-colors"
                 >
-                  {/* Sinh viên */}
                   <TableCell className="font-medium whitespace-nowrap text-foreground">
-                    <div className="flex flex-col">
-                      <span>{student.student_name}</span>
-                      <span className="text-xs text-muted-foreground">
-                        {student.student_code}
-                      </span>
-                    </div>
+                    {student.student_name}
+                    <span className="text-muted-foreground text-xs block">
+                      {student.student_code}
+                    </span>
                   </TableCell>
 
                   {Array.from({ length: 9 }, (_, i) => (
-                    <TableCell key={`reg-${student.student_id}-${i}`} className="text-center">
-                      {student.theoryScores?.filter((g: Grade) => g.type === "regular")[i]?.score ?? "-"}
+                    <TableCell
+                      key={`reg-${student.student_id}-${i}`}
+                      className="text-center"
+                    >
+                      {student.theoryScores?.filter(
+                        (g: Grade) => g.type === "regular"
+                      )[i]?.score ?? "-"}
                     </TableCell>
                   ))}
 
                   {Array.from({ length: 5 }, (_, i) => (
-                    <TableCell key={`prac-${student.student_id}-${i}`} className="text-center">
+                    <TableCell
+                      key={`prac-${student.student_id}-${i}`}
+                      className="text-center"
+                    >
                       {student.practiceScores?.[i]?.score ?? "-"}
                     </TableCell>
                   ))}
 
                   <TableCell className="text-center">
-                    {student.theoryScores?.find((g: Grade) => g.type === "midterm")?.score ?? "-"}
+                    {
+                      student.theoryScores?.find(
+                        (g: Grade) => g.type === "midterm"
+                      )?.score ?? "-"
+                    }
                   </TableCell>
 
                   <TableCell className="text-center">
-                    {student.theoryScores?.find((g: Grade) => g.type === "final")?.score ?? "-"}
+                    {
+                      student.theoryScores?.find(
+                        (g: Grade) => g.type === "final"
+                      )?.score ?? "-"
+                    }
                   </TableCell>
 
                   <TableCell className="text-center font-medium">
@@ -218,13 +297,11 @@ export function GradeTableCard({
                   <TableCell className="text-center">
                     {student.summary?.gpa4 ?? "-"}
                   </TableCell>
-
                   <TableCell className="text-center">
                     {student.summary?.letter_grade ?? "-"}
                   </TableCell>
-
                   <TableCell className="text-center">
-                    {student.summary?.classification ?? "-"}
+                    {getClassificationLabel(student.summary?.classification)}
                   </TableCell>
 
                   <TableCell className="text-center">
@@ -246,13 +323,13 @@ export function GradeTableCard({
           </TableBody>
         </Table>
 
-        {!isLoading && filteredGrades.length > 0 && (
+        {!isLoading && currentData.length > 0 && (
           <Pagination
             totalItems={totalItems}
             pageSize={pageSize}
             currentPage={currentPage}
             onChange={setCurrentPage}
-            item="sinh viên"
+            item={totalItems > 1 ? "sinh viên" : "sinh viên"}
           />
         )}
       </div>

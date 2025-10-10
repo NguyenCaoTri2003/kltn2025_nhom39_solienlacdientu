@@ -293,7 +293,10 @@ export default function ClassDetail() {
         )}
       </section>
 
-      <GradeTableCard grades={gradesData} />
+      <section>
+        <h3 className="text-lg font-semibold mb-4">Bảng điểm chi tiết của lớp học phần</h3>
+        <GradeTableCard grades={gradesData} offeringName={offering.name} />
+      </section>
 
     </div>
   );
