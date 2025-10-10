@@ -46,7 +46,7 @@ interface UserProfileInfo {
   created_at: string;
   last_login: string;
   faculty_name?: string;
-  academic_rank?: string; //  học hàm (role = lecturer)
+  academic_rank?: string; 
 }
 
 type LoggedInUser = {
@@ -107,7 +107,13 @@ export default function PersonalProfile() {
 
   console.log("User in PersonalProfile:", user);
 
-  const bgColor = useMemo(() => getAvatarColor(userId !== null && userId !== undefined ? String(userId) : displayName), [userId, displayName]);
+  const bgColor = useMemo(
+    () =>
+      getAvatarColor(
+        userId !== null && userId !== undefined ? String(userId) : displayName
+      ),
+    [userId, displayName]
+  );
 
   useEffect(() => {
     const userData = localStorage.getItem("user");
@@ -204,7 +210,6 @@ export default function PersonalProfile() {
     fetchProfile();
   }, [user]);
 
-
   // Validate từng trường
   const validateField = (
     field: keyof UserProfileInfo,
@@ -278,7 +283,7 @@ export default function PersonalProfile() {
         process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
 
       const fields: (keyof UserProfileInfo)[] = [
-        "full_name",
+        //"full_name",
         "email",
         "phone",
         "address",
@@ -346,7 +351,6 @@ export default function PersonalProfile() {
   const handleCancelEdit = () => {
     if (originalProfile) {
       setProfile(originalProfile);
-      // Xóa hoặc re-validate để chắc chắn không còn lỗi hiển thị
       setErrors({});
     }
     setIsEditing(false);
@@ -379,7 +383,6 @@ export default function PersonalProfile() {
 
   return (
     <div className="min-h-screen bg-background">
-
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         <div className="mb-6 sm:mb-8">
           <Button
@@ -479,17 +482,10 @@ export default function PersonalProfile() {
                 <Input
                   id="full_name"
                   maxLength={128}
+                  disabled
+                  className="bg-muted"
                   value={profile.full_name ?? ""}
-                  onChange={(e) => {
-                    const v = e.target.value;
-                    setProfile({ ...profile, full_name: v });
-                    setErrors((prev) => ({
-                      ...prev,
-                      full_name: validateField("full_name", v),
-                    }));
-                  }}
-                  disabled={!isEditing}
-                  className={!isEditing ? "bg-muted" : ""}
+                  readOnly
                 />
                 {errors.full_name && (
                   <p className="text-sm text-red-500 mt-1">
