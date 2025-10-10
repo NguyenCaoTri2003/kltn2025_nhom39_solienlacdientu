@@ -278,7 +278,7 @@ export class GradeRepository {
           offering: g.enrollment.course_offerings,
           theoryScores: [],
           practiceScores: [],
-          practice_group_number: null, 
+          practice_group_number: null,
           summary: summaries?.find((s) => s.enrollment_id === enrollmentId) ?? null,
         };
       }
@@ -334,7 +334,8 @@ export class GradeRepository {
       .eq("offering_id", offeringId)
       .single();
 
-    if (enrollError || !enrollment) throw new Error("Không tìm thấy enrollment");
+    if (enrollError || !enrollment)
+      throw new Error("Không tìm thấy enrollment");
 
     const { data: theoryGrades, error: theoryError } = await supabase
       .from("grades")
@@ -346,7 +347,15 @@ export class GradeRepository {
 
     const { data: practiceEnrollments, error: peError } = await supabase
       .from("practice_enrollment")
-      .select("id, group_id")
+      .select(`
+      id,
+      group_id,
+      practice_groups (
+        id,
+        group_number,
+        lecturer_id
+      )
+    `)
       .eq("enrollment_id", enrollment.id);
 
     if (peError) throw peError;
@@ -362,7 +371,8 @@ export class GradeRepository {
         score_type,
         score,
         comment,
-        practice_groups:practice_enrollment_id (
+        practice_enrollment_id,
+        practice_enrollment:practice_enrollment_id (
           id,
           group_id,
           practice_groups (
@@ -380,8 +390,7 @@ export class GradeRepository {
         id: g.id,
         type: g.score_type,
         score: g.score,
-        comment: g.comment,
-        practice_group: g.practice_groups?.practice_groups ?? null,
+        comment: g.comment
       }));
     }
 
@@ -393,6 +402,9 @@ export class GradeRepository {
 
     if (summaryError && summaryError.code !== "PGRST116") throw summaryError;
 
+    const practice_group =
+      practiceEnrollments?.[0]?.practice_groups ?? null;
+
     return {
       student_id: studentId,
       theoryScores:
@@ -403,7 +415,9 @@ export class GradeRepository {
           comment: g.comment,
         })) ?? [],
       practiceScores: practiceGrades ?? [],
+      practice_group: practice_group, 
       summary: summary ?? null,
     };
   }
+
 }

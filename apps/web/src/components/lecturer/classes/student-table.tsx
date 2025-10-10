@@ -34,13 +34,22 @@ import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { normalize } from "@/utils/normalize";
+import AttendanceModal from "./attendance-modal";
+import { toast } from "sonner";
+import { PracticeGroup } from "@packages/core/entities/PracticeGroup";
 
 export function StudentTable({
   classId,
+  type,
+  enrollments,
+  practiceGroups,
   students,
   pageSize = 10,
 }: {
   classId: number;
+  type: string;
+  enrollments: { id: number; students: Student }[];
+  practiceGroups: PracticeGroup[];
   students: Student[];
   pageSize?: number;
 }) {
@@ -50,15 +59,25 @@ export function StudentTable({
   const [isLoading, setIsLoading] = useState(false);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const router = useRouter();
+  const [attendanceOpen, setAttendanceOpen] = useState(false);
 
-  // Hàm lấy tên cuối cùng trong họ tên
+  console.log("students", students);
+  console.log("enrollments", enrollments);
+  console.log("practiceGroups", practiceGroups);
+
+  const practiceGroupMap: Record<number, number> = {};
+  practiceGroups.forEach(pg => {
+    pg.students.forEach(pe => {
+      practiceGroupMap[pe.enrollment.student_id] = pg.id; 
+    });
+  });
+
   const getLastName = (fullName?: string) => {
     if (!fullName) return "";
     const parts = fullName.trim().split(/\s+/);
-    return parts[parts.length - 1]; // tên cuối
+    return parts[parts.length - 1];
   };
 
-  // Sắp xếp trước theo tên (tên gọi - tiếng Việt)
   const sortedStudents = useMemo(() => {
     return [...students].sort((a, b) => {
       const nameA = getLastName(a.users?.full_name);
@@ -67,7 +86,6 @@ export function StudentTable({
     });
   }, [students]);
 
-  // Lọc dữ liệu + sắp xếp lại theo tên gọi
   const filteredStudents = useMemo(() => {
     let data = sortedStudents;
 
@@ -96,7 +114,6 @@ export function StudentTable({
       });
     }
 
-    // Sắp xếp lại theo tên gọi cho chắc
     return data.sort((a, b) => {
       const nameA = getLastName(a.users?.full_name);
       const nameB = getLastName(b.users?.full_name);
@@ -110,7 +127,6 @@ export function StudentTable({
     return filteredStudents.slice(startIndex, startIndex + pageSize);
   }, [filteredStudents, currentPage, pageSize]);
 
-  // Xử lý tìm kiếm
   const handleSearch = () => {
     setIsLoading(true);
     setTimeout(() => {
@@ -125,7 +141,6 @@ export function StudentTable({
     setQuery("");
   };
 
-  // Checkbox logic
   const toggleSelectAll = () => {
     const ids = currentData.map((s) => s.id);
     if (ids.every((id) => selectedIds.includes(id))) {
@@ -146,6 +161,44 @@ export function StudentTable({
     currentData.every((s) => selectedIds.includes(s.id));
 
   const hasSelection = selectedIds.length > 0;
+
+  const handleAttendanceSubmit = async (records: any[]) => {
+    try {
+      const responses = await Promise.all(
+        records.map(async (r) => {
+          const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/attendance`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+            credentials: "include",
+            body: JSON.stringify({
+              offeringId: classId,
+              ...r,
+            }),
+          });
+
+          if (!res.ok) {
+            const error = await res.json().catch(() => ({}));
+            throw new Error(error?.message || `Lỗi ${res.status}`);
+          }
+          return res.json();
+        })
+      );
+
+      setAttendanceOpen(false);
+      setSelectedIds([]);
+      toast.success("Điểm danh thành công", {
+        description: `Đã điểm danh ${responses.length} sinh viên.`,
+      });
+    } catch (err: any) {
+      console.error("Lỗi điểm danh:", err);
+      toast.error("Không thể điểm danh", {
+        description: err.message || "Vui lòng thử lại sau.",
+      });
+    }
+  };
 
   if (!students || students.length === 0) {
     return (
@@ -193,12 +246,11 @@ export function StudentTable({
             variant="outline"
             disabled={!hasSelection}
             className="gap-2"
+            onClick={() => setAttendanceOpen(true)}
           >
             <Calendar className="w-4 h-4" />
-            Điểm danh{" "}
-            {selectedIds.length > 0 && (
-              <span className="ml-1">({selectedIds.length})</span>
-            )}
+            Điểm danh
+            {selectedIds.length > 0 && <span className="ml-1">({selectedIds.length})</span>}
           </Button>
           <Button
             variant="outline"
@@ -381,6 +433,24 @@ export function StudentTable({
             item="sinh viên"
           />
         )}
+
+        <AttendanceModal
+          open={attendanceOpen}
+          onClose={() => setAttendanceOpen(false)}
+          // students={
+          //   type === "practice"
+          //     ? practiceGroups.flatMap(pg => pg.students).filter(pe => selectedIds.includes(pe.id))
+          //     : students.filter(s => selectedIds.includes(s.id))
+          // }
+           students={students.filter((s) => selectedIds.includes(s.id))}
+          type={type}
+          enrollmentMap={enrollments.reduce((map, e) => {
+            map[e.students.id] = e.id;
+            return map;
+          }, {} as Record<number, number>)}
+          practiceGroupMap={practiceGroupMap}
+          onSubmit={handleAttendanceSubmit}
+        />
       </div>
     </div>
   );

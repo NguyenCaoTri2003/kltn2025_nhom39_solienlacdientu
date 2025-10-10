@@ -67,9 +67,9 @@ export class AttendanceUseCase {
             .maybeSingle();
 
         if (offeringError) throw offeringError;
-        if (!offering || offering.lecturer_id !== lecturerId) {
-            throw new Error("Forbidden");
-        }
+        // if (!offering || offering.lecturer_id !== lecturerId) {
+        //     throw new Error("Forbidden");
+        // }
 
         // Check enrollment thuộc offering này không
         const { data: enrollment, error: enrollError } = await supabase

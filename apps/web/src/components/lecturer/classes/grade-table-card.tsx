@@ -48,7 +48,8 @@ export function GradeTableCard({
 }: GradeTableCardProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [query, setQuery] = useState("");
-  const [filter, setFilter] = useState("all"); 
+  const [filter, setFilter] = useState("all"); // all | passed | failed
+  const [groupFilter, setGroupFilter] = useState("all"); // nhóm thực hành
   const [isLoading, setIsLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -72,6 +73,7 @@ export function GradeTableCard({
     const exportData = grades.map((s) => ({
       "Mã sinh viên": s.student_code,
       "Tên sinh viên": s.student_name,
+      "Nhóm thực hành": s.practice_group_number ?? "",
       "Thường xuyên": s.theoryScores
         ?.filter((g: Grade) => g.type === "regular")
         .map((g: Grade) => g.score)
@@ -100,6 +102,15 @@ export function GradeTableCard({
     XLSX.writeFile(workbook, `Bảng điểm lớp ${offeringName}${Date.now()}.xlsx`);
   };
 
+  // Lấy danh sách nhóm thực hành duy nhất (vd: [1, 2, 3])
+  const practiceGroups = useMemo(() => {
+    const unique = Array.from(
+      new Set(grades.map((s) => s.practice_group_number).filter(Boolean))
+    );
+    return unique.sort((a, b) => a - b);
+  }, [grades]);
+
+  // Lọc và sắp xếp dữ liệu
   const filteredGrades = useMemo(() => {
     let data = grades;
 
@@ -119,12 +130,18 @@ export function GradeTableCard({
       );
     }
 
+    if (groupFilter !== "all") {
+      data = data.filter(
+        (s) => String(s.practice_group_number) === groupFilter
+      );
+    }
+
     return [...data].sort((a, b) => {
       const nameA = a.student_name?.trim().split(" ").slice(-1)[0] || "";
       const nameB = b.student_name?.trim().split(" ").slice(-1)[0] || "";
       return nameA.localeCompare(nameB, "vi", { sensitivity: "base" });
     });
-  }, [grades, query, filter]);
+  }, [grades, query, filter, groupFilter]);
 
   const totalItems = filteredGrades.length;
   const currentData = useMemo(() => {
@@ -134,7 +151,9 @@ export function GradeTableCard({
 
   return (
     <div className="space-y-4">
+      {/* Thanh công cụ */}
       <div className="flex flex-wrap items-center gap-2">
+        {/* Ô tìm kiếm */}
         <div className="relative w-full sm:max-w-sm">
           <Input
             placeholder="Tìm theo tên hoặc mã sinh viên..."
@@ -164,6 +183,7 @@ export function GradeTableCard({
           </Button>
         )}
 
+        {/* Bộ lọc Đạt / Không đạt */}
         <Select value={filter} onValueChange={setFilter}>
           <SelectTrigger className="w-[160px]">
             <SelectValue placeholder="Lọc kết quả" />
@@ -175,6 +195,22 @@ export function GradeTableCard({
           </SelectContent>
         </Select>
 
+        {/* Bộ lọc nhóm thực hành */}
+        <Select value={groupFilter} onValueChange={setGroupFilter}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Nhóm thực hành" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Tất cả nhóm</SelectItem>
+            {practiceGroups.map((g) => (
+              <SelectItem key={g} value={String(g)}>
+                Nhóm {g}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        {/* Xuất Excel */}
         <Button
           variant="outline"
           onClick={exportToExcel}
@@ -186,6 +222,7 @@ export function GradeTableCard({
         </Button>
       </div>
 
+      {/* Bảng dữ liệu */}
       <div className="overflow-x-auto w-full rounded-lg border border-border/40 min-h-[200px] relative">
         <Table className="w-max min-w-full border-collapse text-sm">
           <TableHeader className="bg-muted/40 sticky top-0 z-10">
@@ -193,6 +230,7 @@ export function GradeTableCard({
               <TableHead rowSpan={2} className="text-center w-48">
                 Sinh viên
               </TableHead>
+              <TableHead rowSpan={2}>Nhóm TH</TableHead>
               <TableHead colSpan={9} className="text-center">
                 Thường xuyên
               </TableHead>
@@ -225,7 +263,7 @@ export function GradeTableCard({
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={20} className="text-center py-10">
+                <TableCell colSpan={21} className="text-center py-10">
                   <div className="flex flex-col items-center text-muted-foreground">
                     <Loader2 className="w-6 h-6 animate-spin mb-2" />
                     <span>Đang tìm kiếm...</span>
@@ -235,7 +273,7 @@ export function GradeTableCard({
             ) : currentData.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={20}
+                  colSpan={21}
                   className="text-center text-muted-foreground py-6"
                 >
                   Không có dữ liệu phù hợp.
@@ -252,6 +290,10 @@ export function GradeTableCard({
                     <span className="text-muted-foreground text-xs block">
                       {student.student_code}
                     </span>
+                  </TableCell>
+
+                  <TableCell className="text-center">
+                    {student.practice_group_number ?? "-"}
                   </TableCell>
 
                   {Array.from({ length: 9 }, (_, i) => (
@@ -329,7 +371,7 @@ export function GradeTableCard({
             pageSize={pageSize}
             currentPage={currentPage}
             onChange={setCurrentPage}
-            item={totalItems > 1 ? "sinh viên" : "sinh viên"}
+            item="sinh viên"
           />
         )}
       </div>

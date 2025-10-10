@@ -51,6 +51,7 @@ export default function ClassDetail() {
   const [activeTab, setActiveTab] = useState("theory");
   const [gradesData, setGradesData] = useState<any[]>([]);
   const [loadingGrades, setLoadingGrades] = useState(false);
+  console.log("offering", offering);
 
   const currentUser = typeof window !== "undefined" ? JSON.parse(localStorage.getItem("user") || "null") : null;
 
@@ -107,7 +108,6 @@ export default function ClassDetail() {
         if (json.returnCode === 0) {
           let data = json.data;
 
-          // ✅ Nếu là giảng viên thực hành, chỉ xem nhóm mình
           if (!isTheoryLecturer && myPracticeGroup) {
             data = data.filter(
               (g: any) => g.practice_group_number === myPracticeGroup.group_number
@@ -171,9 +171,9 @@ export default function ClassDetail() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1 text-sm text-muted-foreground">
-          <p>
+          <p className="flex gap-1 items-center">
             <span className="font-medium text-foreground">Giảng viên:</span>{" "}
-            {offering.lecturers?.users?.full_name || "Chưa phân công"}
+            <span className="single-ellipsis"> {offering.lecturers?.users?.full_name || "Chưa phân công"} {""} {offering.lecturers?.lecturer_code ? `(${offering.lecturers.lecturer_code})` : ""}</span>
           </p>
           <p>
             <span className="font-medium text-foreground">Học kỳ:</span>{" "}
@@ -249,6 +249,11 @@ export default function ClassDetail() {
             <TabsContent value="theory">
               <StudentTable
                 classId={offering.id}
+                type="theory"
+                enrollments={offering.students
+                  .filter((e) => e.students !== undefined)
+                  .map((e) => ({ id: e.id, students: e.students as Student }))}
+                practiceGroups={offering.practice_groups ?? []}
                 students={offering.students
                   .map((e) => e.students)
                   .filter((s): s is Student => !!s)}
@@ -259,6 +264,12 @@ export default function ClassDetail() {
               <TabsContent key={g.id} value={`group-${g.group_number}`}>
                 <StudentTable
                   classId={offering.id}
+                  type="practice"
+                  enrollments={offering.students
+                    .filter((e) => e.students !== undefined)
+                    .map((e) => ({ id: e.id, students: e.students as Student }))
+                  }
+                  practiceGroups={offering.practice_groups ?? []}
                   students={mapGroupStudents(g, offering.students)}
                 />
               </TabsContent>
@@ -277,6 +288,11 @@ export default function ClassDetail() {
             <TabsContent value={`group-${myPracticeGroup.group_number}`}>
               <StudentTable
                 classId={offering.id}
+                type="practice"
+                enrollments={offering.students
+                  .filter((e) => e.students !== undefined)
+                  .map((e) => ({ id: e.id, students: e.students as Student }))}
+                practiceGroups={offering.practice_groups ?? []}
                 students={mapGroupStudents(myPracticeGroup, offering.students)}
               />
             </TabsContent>
@@ -286,6 +302,11 @@ export default function ClassDetail() {
         {offering.practice_group_count === 0 && (
           <StudentTable
             classId={offering.id}
+            type="theory"
+            enrollments={offering.students
+              .filter((e) => e.students !== undefined)
+              .map((e) => ({ id: e.id, students: e.students as Student }))}
+            practiceGroups={offering.practice_groups ?? []}
             students={offering.students
               .map((e) => e.students)
               .filter((s): s is Student => !!s)}

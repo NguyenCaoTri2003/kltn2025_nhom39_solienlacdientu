@@ -44,7 +44,7 @@ export default function StudentDetail() {
     if (loading) return <p className="text-center mt-10">Đang tải dữ liệu...</p>
     if (!data) return <p className="text-center mt-10 text-destructive">Không tìm thấy sinh viên.</p>
 
-    const { student, parents, grades, offering } = data
+    const { student, parents, grades, offering, practice_groups } = data
 
     console.log("Student Detail Data:", data)
 
@@ -53,7 +53,7 @@ export default function StudentDetail() {
             <PageBreadcrumb
                 items={[
                     { label: "Lớp học phần", href: "/lecturer/classes" },
-                    { label: offering.name, href: `/lecturer/classes/${id}` },
+                    { label: `${offering.name} - Nhóm thực hành ${practice_groups.group_number}` , href: `/lecturer/classes/${id}` },
                     { label: "Thông tin sinh viên" },
                 ]}
             />

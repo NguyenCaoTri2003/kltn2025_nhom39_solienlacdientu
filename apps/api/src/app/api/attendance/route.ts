@@ -73,24 +73,33 @@ export async function POST(req: NextRequest) {
     const status = body.status;
     const note = body.note ?? null;
 
-    if (!offeringId || !enrollment_id || !attendance_date || !type || !status) {
+    if (!offeringId || !attendance_date || !type || !status) {
       return NextResponse.json(
         { error: "Missing required fields" },
         { status: 400 }
       );
     }
 
-    const result = await usecase.createAttendance(user.id, offeringId, {
-      enrollment_id,
-      practice_group_id,
-      attendance_date,
-      type,
-      status,
-      note,
-    });
+    try {
+      const result = await usecase.createAttendance(user.id, offeringId, {
+        enrollment_id,
+        practice_group_id,
+        attendance_date,
+        type,
+        status,
+        note,
+      });
+      return NextResponse.json(result, { status: 201 });
+    } catch (err: any) {
+      console.error("Error in createAttendance:", err); 
+      return NextResponse.json(
+        { error: err.message },
+        { status: 500 }
+      );
+    }
 
-    return NextResponse.json(result, { status: 201 });
   } catch (e: any) {
+    console.error("Unexpected error in POST /api/attendance:", e);
     return NextResponse.json(
       { error: e.message },
       { status: e.message === "Forbidden" ? 403 : 500 }

@@ -60,4 +60,9 @@ export interface StudentDetailData {
         lecturer_id: number | null
         name: string
     }
+    practice_groups: {
+        id: number
+        lecturer_id: number | null
+        group_number: number
+    }
 }

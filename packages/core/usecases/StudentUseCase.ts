@@ -61,7 +61,7 @@ export class StudentUseCase {
             const data = {
                 student: {
                     id: student.id,
-                    full_name: user?.full_name, 
+                    full_name: user?.full_name,
                     student_code: student.student_code,
                     date_of_birth: student.date_of_birth,
                     contact_address: student.contact_address,
@@ -96,6 +96,11 @@ export class StudentUseCase {
                     lecturer_id: offering.lecturer_id,
                     name: offering.name
                 },
+                practice_groups:
+                    grades?.practice_group ??
+                    grades?.practiceGroups ??
+                    grades?.practice_group_info ??
+                    null,
             }
 
             return {

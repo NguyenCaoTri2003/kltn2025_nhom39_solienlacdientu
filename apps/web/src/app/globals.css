@@ -67,6 +67,15 @@ body {
   --sidebar-ring: oklch(0.55 0.18 240);
 }
 
+.single-ellipsis {
+  display: -webkit-box;          
+  -webkit-line-clamp: 1;          
+  -webkit-box-orient: vertical;   
+  overflow: hidden;            
+  text-overflow: ellipsis;
+  word-break: break-word;         
+}
+
 .dark {
   /* Dark theme */
   --background: oklch(0.08 0.01 240);
