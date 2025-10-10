@@ -19,4 +19,7 @@ export interface PracticeGroupStudent {
   enrollment_id: number;
   group_id: number;
   assigned_at: string;
+  enrollment: {
+    student_id: number;
+  };
 }

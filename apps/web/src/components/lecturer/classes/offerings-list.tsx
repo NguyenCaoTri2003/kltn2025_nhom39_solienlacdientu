@@ -224,6 +224,7 @@ export default function OfferingsList() {
             pageSize={pageSize}
             currentPage={page}
             onChange={handlePageChange}
+            item="lớp học phần"
           />
         </section>
       )}

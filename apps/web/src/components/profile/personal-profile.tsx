@@ -24,6 +24,13 @@ import {
   isValidAddress,
   isValidEthnic,
 } from "@packages/utils/Regex";
+import { getAvatarColor } from "@/utils/color-hash";
+import Navbar from "../navbar";
+
+import {
+  translateRole,
+  translateAcademicRank,
+} from "@packages/utils/translations";
 
 interface UserProfileInfo {
   id: string; // Mã hiển thị trên giao diện (tùy theo role)
@@ -38,6 +45,8 @@ interface UserProfileInfo {
   avatar_url: string;
   created_at: string;
   last_login: string;
+  faculty_name?: string;
+  academic_rank?: string; //  học hàm (role = lecturer)
 }
 
 type LoggedInUser = {
@@ -89,28 +98,16 @@ export default function PersonalProfile() {
   // giá trị trong input thay đổi nhưng header/avatar không nhảy theo cho tới khi lưu
   const displayName =
     originalProfile?.full_name || user?.full_name || user?.name || "?";
+
+  const userId = user?.id ?? null;
   const initial = useMemo(() => {
     const parts = displayName.trim().split(" ");
     return parts[parts.length - 1]?.[0]?.toUpperCase() ?? "?";
   }, [displayName]);
-  const bgColor = useMemo(() => {
-    const colors = [
-      "bg-blue-500",
-      "bg-green-500",
-      "bg-amber-500",
-      "bg-purple-500",
-      "bg-rose-500",
-      "bg-cyan-500",
-      "bg-lime-500",
-      "bg-pink-500",
-    ];
-    let hash = 0;
-    for (let i = 0; i < displayName.length; i++) {
-      hash = displayName.charCodeAt(i) + ((hash << 5) - hash);
-    }
-    const index = Math.abs(hash) % colors.length;
-    return colors[index];
-  }, [displayName]);
+
+  console.log("User in PersonalProfile:", user);
+
+  const bgColor = useMemo(() => getAvatarColor(userId !== null && userId !== undefined ? String(userId) : displayName), [userId, displayName]);
 
   useEffect(() => {
     const userData = localStorage.getItem("user");
@@ -132,6 +129,7 @@ export default function PersonalProfile() {
     }
   }, []);
 
+  // Hàm gọi api lấy dữ liệu
   useEffect(() => {
     const fetchProfile = async () => {
       if (!user?.id) return;
@@ -173,6 +171,29 @@ export default function PersonalProfile() {
           created_at: u.created_at ?? "",
           last_login: u.last_login ?? "",
         };
+
+        // Nếu user là lecturer, lấy thêm thông tin khoa
+        if (u.role === "lecturer" && u.lecturer?.faculty_id) {
+          try {
+            const facultyRes = await fetch(
+              `${apiBase}/api/faculties/${u.lecturer.faculty_id}`,
+              {
+                headers: {
+                  ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                },
+                cache: "no-store",
+              }
+            );
+            if (facultyRes.ok) {
+              const facultyData = await facultyRes.json();
+              mapped.faculty_name = facultyData?.data?.name ?? "";
+              mapped.academic_rank = u.lecturer?.academic_rank ?? "";
+            }
+          } catch {
+            console.warn("Không thể tải thông tin khoa");
+          }
+        }
+
         setProfile(mapped);
         setOriginalProfile(mapped);
       } catch {
@@ -182,6 +203,7 @@ export default function PersonalProfile() {
 
     fetchProfile();
   }, [user]);
+
 
   // Validate từng trường
   const validateField = (
@@ -357,17 +379,6 @@ export default function PersonalProfile() {
 
   return (
     <div className="min-h-screen bg-background">
-      <NavbarClient
-        userRole={
-          user?.role === "admin"
-            ? "admin"
-            : user?.role === "lecturer"
-            ? "teacher"
-            : null
-        }
-        userName={user?.full_name || user?.name || ""}
-        avatarUrl={user?.avatar_url || null}
-      />
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         <div className="mb-6 sm:mb-8">
@@ -401,11 +412,34 @@ export default function PersonalProfile() {
                   </AvatarFallback>
                 </Avatar>
                 <div>
-                  <CardTitle className="text-xl sm:text-2xl text-card-foreground truncate cursor-default max-w-[200px]" title={displayName}>
+                  <CardTitle
+                    className="text-xl sm:text-2xl text-card-foreground truncate cursor-default max-w-[200px]"
+                    title={displayName}
+                  >
                     {displayName}
                   </CardTitle>
-                  <CardDescription className="text-muted-foreground capitalize">
-                    {profile.role}
+                  <CardDescription className="text-muted-foreground capitalize flex flex-wrap items-center gap-x-2">
+                    <span>{translateRole(profile.role)}</span>
+
+                    {profile.role === "lecturer" && (
+                      <>
+                        {profile.academic_rank && (
+                          <>
+                            <span className="text-muted-foreground/60">•</span>
+                            <span>
+                              {translateAcademicRank(profile.academic_rank)}
+                            </span>
+                          </>
+                        )}
+
+                        {profile.faculty_name && (
+                          <>
+                            <span className="text-muted-foreground/60">•</span>
+                            <span>Khoa {profile.faculty_name}</span>
+                          </>
+                        )}
+                      </>
+                    )}
                   </CardDescription>
                 </div>
               </div>
@@ -472,7 +506,7 @@ export default function PersonalProfile() {
                   <Input
                     id="email"
                     type="email"
-                    maxLength={255}
+                    maxLength={100}
                     value={profile.email ?? ""}
                     onChange={(e) => {
                       const v = e.target.value;
@@ -608,7 +642,7 @@ export default function PersonalProfile() {
                   </p>
                 )}
               </div>
-              <div className="space-y-2">
+              {/* <div className="space-y-2">
                 <Label htmlFor="created_at" className="text-sm font-medium">
                   Ngày tạo
                 </Label>
@@ -649,7 +683,7 @@ export default function PersonalProfile() {
                     className={`pl-10 bg-muted`}
                   />
                 </div>
-              </div>
+              </div> */}
             </div>
 
             {isEditing && (

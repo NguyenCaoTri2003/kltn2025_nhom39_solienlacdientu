@@ -27,6 +27,8 @@ import { Enrollment } from "@packages/core/entities/Enrollment";
 import { PracticeGroup } from "@packages/core/entities/PracticeGroup";
 import { Offering } from "@packages/core/entities/CourseOffering";
 import { StudentTable } from "./student-table";
+import { PageBreadcrumb } from "@/components/page-breadcrumb";
+import { GradeTableCard } from "./grade-table-card";
 
 function mapGroupStudents(
   group: PracticeGroup,
@@ -47,6 +49,21 @@ export default function ClassDetail() {
   const [offering, setOffering] = useState<Offering | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("theory");
+  const [gradesData, setGradesData] = useState<any[]>([]);
+  const [loadingGrades, setLoadingGrades] = useState(false);
+  console.log("offering", offering);
+
+  const currentUser = typeof window !== "undefined" ? JSON.parse(localStorage.getItem("user") || "null") : null;
+
+  const currentLecturerId = currentUser?.id;
+
+  const isTheoryLecturer = offering?.lecturers?.id === currentLecturerId;
+
+  const myPracticeGroup = offering?.practice_groups?.find(
+    (g) => g.lecturers?.id === currentLecturerId
+  );
+
+  const isPracticeOnly = !isTheoryLecturer && !!myPracticeGroup;
 
   useEffect(() => {
     if (!id) return;
@@ -74,6 +91,44 @@ export default function ClassDetail() {
     fetchDetail();
   }, [id]);
 
+  useEffect(() => {
+    if (!id) return;
+    const fetchGrades = async () => {
+      setLoadingGrades(true);
+      try {
+        const token = localStorage.getItem("token");
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/api/grades/lecturer?offering_id=${id}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+        const json = await res.json();
+        console.log("Grades Response:", json);
+        if (json.returnCode === 0) {
+          let data = json.data;
+
+          if (!isTheoryLecturer && myPracticeGroup) {
+            data = data.filter(
+              (g: any) => g.practice_group_number === myPracticeGroup.group_number
+            );
+          }
+
+          setGradesData(data);
+        } else {
+          console.warn("Không lấy được điểm:", json.message);
+        }
+      } catch (error) {
+        console.error("Error fetching grades:", error);
+      } finally {
+        setLoadingGrades(false);
+      }
+    };
+    fetchGrades();
+  }, [id, isTheoryLecturer, myPracticeGroup]);
+
+  console.log("Grades Data:", gradesData);
+
   if (loading) return <CourseOfferingSkeleton items={1} />;
   if (!offering)
     return (
@@ -84,6 +139,12 @@ export default function ClassDetail() {
 
   return (
     <div className="space-y-10">
+      <PageBreadcrumb
+        items={[
+          { label: "Lớp học phần", href: "/lecturer/classes" },
+          { label: offering.name }
+        ]}
+      />
       <Card
         className="p-5 md:p-6 rounded-2xl border border-border/50 
           bg-gradient-to-br from-card/95 to-card/70 shadow-md hover:shadow-lg 
@@ -110,9 +171,9 @@ export default function ClassDetail() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1 text-sm text-muted-foreground">
-          <p>
+          <p className="flex gap-1 items-center">
             <span className="font-medium text-foreground">Giảng viên:</span>{" "}
-            {offering.lecturers?.users?.full_name || "Chưa phân công"}
+            <span className="single-ellipsis"> {offering.lecturers?.users?.full_name || "Chưa phân công"} {""} {offering.lecturers?.lecturer_code ? `(${offering.lecturers.lecturer_code})` : ""}</span>
           </p>
           <p>
             <span className="font-medium text-foreground">Học kỳ:</span>{" "}
@@ -152,7 +213,10 @@ export default function ClassDetail() {
               <div
                 key={g.id}
                 onClick={() => setActiveTab(`group-${g.group_number}`)}
-                className="cursor-pointer"
+                className={`cursor-pointer ${!isTheoryLecturer && myPracticeGroup?.id !== g.id
+                  ? "opacity-60 pointer-events-none"
+                  : ""
+                  }`}
               >
                 <PracticeGroupCard
                   groupNumber={g.group_number}
@@ -171,10 +235,7 @@ export default function ClassDetail() {
 
       <section>
         <h3 className="text-lg font-semibold mb-4">Danh sách sinh viên</h3>
-
-        {offering.practice_group_count > 0 &&
-          offering.practice_groups &&
-          offering.practice_groups.length > 0 ? (
+        {(offering.practice_groups?.length ?? 0) > 0 && !isPracticeOnly && offering.practice_groups && offering.practice_groups.length > 0 && (
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList>
               <TabsTrigger value="theory">Lý thuyết</TabsTrigger>
@@ -187,20 +248,77 @@ export default function ClassDetail() {
 
             <TabsContent value="theory">
               <StudentTable
-                students={offering.students.map((e) => e.students).filter((s): s is Student => !!s)}
+                classId={offering.id}
+                type="theory"
+                enrollments={offering.students
+                  .filter((e) => e.students !== undefined)
+                  .map((e) => ({ id: e.id, students: e.students as Student }))}
+                practiceGroups={offering.practice_groups ?? []}
+                students={offering.students
+                  .map((e) => e.students)
+                  .filter((s): s is Student => !!s)}
               />
             </TabsContent>
 
             {offering.practice_groups.map((g) => (
               <TabsContent key={g.id} value={`group-${g.group_number}`}>
-                <StudentTable students={mapGroupStudents(g, offering.students)} />
+                <StudentTable
+                  classId={offering.id}
+                  type="practice"
+                  enrollments={offering.students
+                    .filter((e) => e.students !== undefined)
+                    .map((e) => ({ id: e.id, students: e.students as Student }))
+                  }
+                  practiceGroups={offering.practice_groups ?? []}
+                  students={mapGroupStudents(g, offering.students)}
+                />
               </TabsContent>
             ))}
           </Tabs>
-        ) : (
-          <StudentTable students={offering.students.map((e) => e.students).filter((s): s is Student => !!s)} />
+        )}
+
+        {isPracticeOnly && myPracticeGroup && (
+          <Tabs value={`group-${myPracticeGroup.group_number}`}>
+            <TabsList>
+              <TabsTrigger disabled value={`group-${myPracticeGroup.group_number}`}>
+                Nhóm {myPracticeGroup.group_number}
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value={`group-${myPracticeGroup.group_number}`}>
+              <StudentTable
+                classId={offering.id}
+                type="practice"
+                enrollments={offering.students
+                  .filter((e) => e.students !== undefined)
+                  .map((e) => ({ id: e.id, students: e.students as Student }))}
+                practiceGroups={offering.practice_groups ?? []}
+                students={mapGroupStudents(myPracticeGroup, offering.students)}
+              />
+            </TabsContent>
+          </Tabs>
+        )}
+
+        {offering.practice_group_count === 0 && (
+          <StudentTable
+            classId={offering.id}
+            type="theory"
+            enrollments={offering.students
+              .filter((e) => e.students !== undefined)
+              .map((e) => ({ id: e.id, students: e.students as Student }))}
+            practiceGroups={offering.practice_groups ?? []}
+            students={offering.students
+              .map((e) => e.students)
+              .filter((s): s is Student => !!s)}
+          />
         )}
       </section>
+
+      <section>
+        <h3 className="text-lg font-semibold mb-4">Bảng điểm chi tiết của lớp học phần</h3>
+        <GradeTableCard grades={gradesData} offeringName={offering.name} />
+      </section>
+
     </div>
   );
 }

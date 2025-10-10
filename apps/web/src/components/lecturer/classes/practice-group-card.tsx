@@ -38,24 +38,23 @@ export default function PracticeGroupCard({
         <Users className="w-5 h-5 text-primary" />
       </div>
 
-      <div className="space-y-1 text-sm text-muted-foreground">
-        <p>
+      <div className="space-y-1 text-sm text-muted-foreground mb-3">
+        <p className="flex gap-1 items-center">
           <span className="font-medium text-foreground">Giảng viên:</span>{" "}
-          <span>
+          <span className="single-ellipsis">
             {lecturerName || "Chưa phân công"}
           </span>{" "}
           {lecturerCode && (
             <span className="text-xs text-muted-foreground">({lecturerCode})</span>
           )}
         </p>
-        {lecturerEmail && <p><span className="font-medium text-foreground">Email:</span>{" "} {lecturerEmail}</p>}
+        {lecturerEmail && <p className="flex gap-1"><span className="font-medium text-foreground">Email:</span><span className="single-ellipsis">{lecturerEmail}</span></p>}
       </div>
 
       <WeeklyScheduleList
         schedules={schedule ?? undefined}
         filterType="practice"
         semester={semester ?? undefined}
-
       />
 
       <div className="flex justify-between items-center text-sm text-muted-foreground border-t border-border/50 mt-3 pt-3">

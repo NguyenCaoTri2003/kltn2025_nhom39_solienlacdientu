@@ -57,7 +57,12 @@ export class EnrollmentRepository {
 
       const { data, error } = await supabase
         .from("practice_enrollment")
-        .select("*")
+        .select(`
+          *,
+          enrollment (
+            student_id
+          )
+        `)
         .eq("group_id", groupId);
 
       if (error) {

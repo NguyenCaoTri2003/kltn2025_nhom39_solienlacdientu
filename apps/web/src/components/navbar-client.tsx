@@ -24,14 +24,16 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
+import { getAvatarColor } from "@/utils/color-hash";
 
 interface NavbarProps {
   userRole: "admin" | "teacher" | null;
   userName: string;
   avatarUrl?: string | null;
+  userId?: number | null;
 }
 
-export default function NavbarClient({ userRole, userName, avatarUrl }: NavbarProps) {
+export default function NavbarClient({ userRole, userName, avatarUrl, userId }: NavbarProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
@@ -78,20 +80,8 @@ export default function NavbarClient({ userRole, userName, avatarUrl }: NavbarPr
     return parts[parts.length - 1]?.[0]?.toUpperCase() ?? "?";
   }, [userName]);
 
-  const bgColor = useMemo(() => {
-    const colors = [
-      "bg-blue-500", "bg-green-500", "bg-amber-500", "bg-purple-500",
-      "bg-rose-500", "bg-cyan-500", "bg-lime-500", "bg-pink-500"
-    ];
-    let hash = 0;
-    for (let i = 0; i < userName.length; i++) {
-      hash = userName.charCodeAt(i) + ((hash << 5) - hash);
-    }
-    const index = Math.abs(hash) % colors.length;
-    return colors[index];
-  }, [userName]);
+  const bgColor = useMemo(() => getAvatarColor(userId !== null && userId !== undefined ? String(userId) : userName), [userId, userName]);
 
-  // Now guard after hooks
   if (!userRole) {
     return null;
   }

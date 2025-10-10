@@ -30,13 +30,6 @@ export default function WeeklyScheduleList({
     );
   }
 
-  console.log("📚 Filter result:", {
-    filterType,
-    practiceGroupNumber,
-    totalBefore: schedules.length,
-    totalAfter: filtered.length,
-  });
-
   if (!filtered || filtered.length === 0) return null;
 
   const today = new Date();

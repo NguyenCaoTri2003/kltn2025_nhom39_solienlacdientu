@@ -13,6 +13,7 @@ interface PaginationProps {
     pageSize?: number;
     currentPage: number;
     onChange: (page: number) => void;
+    item?: string;
 }
 
 export default function Pagination({
@@ -20,6 +21,7 @@ export default function Pagination({
     pageSize = 12,
     currentPage,
     onChange,
+    item
 }: PaginationProps) {
     const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
     const start = totalItems === 0 ? 0 : (currentPage - 1) * pageSize + 1;
@@ -40,7 +42,7 @@ export default function Pagination({
                 <span className="text-foreground font-medium">
                     {start}-{end}
                 </span>{" "}
-                / <span className="text-foreground font-medium">{totalItems}</span> lớp học phần
+                / <span className="text-foreground font-medium">{totalItems}</span> {item}
             </div>
 
             <div className="flex justify-center items-center gap-2">

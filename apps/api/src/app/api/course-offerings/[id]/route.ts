@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getOfferingDetail } from "@packages/core/usecases/CourseOfferingUseCase";
+import { authenticate } from "@packages/utils/auth";
 
 export async function GET(
   req: NextRequest,
@@ -14,7 +15,8 @@ export async function GET(
       );
     }
 
-    const data = await getOfferingDetail(id);
+    const user = authenticate(req);
+    const data = await getOfferingDetail(id, user);
 
     if (!data) {
       return NextResponse.json(

@@ -169,6 +169,7 @@ export class GradeRepository {
   }
 
   async getAllGradesByOffering(offeringId: number) {
+    // --- Lấy điểm lý thuyết ---
     const { data: theoryGrades, error: theoryError } = await supabase
       .from("grades")
       .select(`
@@ -181,6 +182,7 @@ export class GradeRepository {
         student_id,
         students:student_id (
           id,
+          student_code,
           users(full_name)
         ),
         course_offerings:offering_id (
@@ -202,6 +204,7 @@ export class GradeRepository {
 
     if (theoryError) throw theoryError;
 
+    // --- Lấy điểm thực hành ---
     const { data: practiceGrades, error: practiceError } = await supabase
       .from("grades")
       .select(`
@@ -216,6 +219,7 @@ export class GradeRepository {
           student_id,
           students:student_id (
             id,
+            student_code,
             users(full_name)
           ),
           course_offerings:offering_id (
@@ -243,6 +247,20 @@ export class GradeRepository {
 
     if (practiceError) throw practiceError;
 
+    const enrollmentIds = [
+      ...(theoryGrades?.map((g) => g.enrollment?.id) ?? []),
+      ...(practiceGrades?.map((g) => g.practice_enrollment?.enrollment?.id) ?? []),
+    ].filter((id): id is number => !!id);
+
+    const uniqueEnrollmentIds = [...new Set(enrollmentIds)];
+
+    const { data: summaries, error: summaryError } = await supabase
+      .from("grade_summary")
+      .select("enrollment_id, total_score, gpa4, letter_grade, classification, passed, note")
+      .in("enrollment_id", uniqueEnrollmentIds);
+
+    if (summaryError) throw summaryError;
+
     const grouped: Record<string, any> = {};
 
     theoryGrades?.forEach((g: any) => {
@@ -250,39 +268,50 @@ export class GradeRepository {
       if (!student) return;
 
       const studentId = student.id;
+      const enrollmentId = g.enrollment?.id;
+
       if (!grouped[studentId]) {
         grouped[studentId] = {
           student_id: studentId,
+          student_code: student.student_code,
           student_name: student.users.full_name,
           offering: g.enrollment.course_offerings,
           theoryScores: [],
-          practiceScores: []
+          practiceScores: [],
+          practice_group_number: null,
+          summary: summaries?.find((s) => s.enrollment_id === enrollmentId) ?? null,
         };
       }
 
-      // Chỉ push field cần thiết
       grouped[studentId].theoryScores.push({
         id: g.id,
         type: g.score_type,
         score: g.score,
-        comment: g.comment
+        comment: g.comment,
       });
     });
 
-    // Gộp điểm thực hành
     practiceGrades?.forEach((g: any) => {
       const student = g.practice_enrollment?.enrollment?.students;
       if (!student) return;
 
       const studentId = student.id;
+      const enrollmentId = g.practice_enrollment?.enrollment?.id;
+      const group = g.practice_enrollment?.practice_groups;
+
       if (!grouped[studentId]) {
         grouped[studentId] = {
           student_id: studentId,
+          student_code: student.student_code,
           student_name: student.users.full_name,
           offering: g.practice_enrollment.enrollment.course_offerings,
           theoryScores: [],
-          practiceScores: []
+          practiceScores: [],
+          practice_group_number: group?.group_number ?? null,
+          summary: summaries?.find((s) => s.enrollment_id === enrollmentId) ?? null,
         };
+      } else if (!grouped[studentId].practice_group_number) {
+        grouped[studentId].practice_group_number = group?.group_number ?? null;
       }
 
       grouped[studentId].practiceScores.push({
@@ -290,7 +319,7 @@ export class GradeRepository {
         type: g.score_type,
         score: g.score,
         comment: g.comment,
-        practice_group: g.practice_enrollment?.practice_groups
+        practice_group: group,
       });
     });
 
@@ -298,65 +327,97 @@ export class GradeRepository {
   }
 
   async getStudentGradesInOffering(studentId: number, offeringId: number) {
+    const { data: enrollment, error: enrollError } = await supabase
+      .from("enrollment")
+      .select("id")
+      .eq("student_id", studentId)
+      .eq("offering_id", offeringId)
+      .single();
+
+    if (enrollError || !enrollment)
+      throw new Error("Không tìm thấy enrollment");
+
     const { data: theoryGrades, error: theoryError } = await supabase
       .from("grades")
-      .select(`
-      id,
-      score_type,
-      score,
-      comment,
-      enrollment:enrollment_id (
-        id,
-        student_id,
-        offering_id
-      )
-    `)
-      .eq("enrollment.student_id", studentId)
-      .eq("enrollment.offering_id", offeringId);
+      .select("id, score_type, score, comment")
+      .eq("enrollment_id", enrollment.id)
+      .is("practice_enrollment_id", null);
 
     if (theoryError) throw theoryError;
 
-    const { data: practiceGrades, error: practiceError } = await supabase
-      .from("grades")
+    const { data: practiceEnrollments, error: peError } = await supabase
+      .from("practice_enrollment")
       .select(`
       id,
-      score_type,
-      score,
-      comment,
-      practice_enrollment:practice_enrollment_id (
+      group_id,
+      practice_groups (
         id,
-        enrollment:enrollment_id (
-          id,
-          student_id,
-          offering_id
-        ),
-        practice_groups:group_id (
-          id,
-          group_number,
-          lecturer_id
-        )
+        group_number,
+        lecturer_id
       )
     `)
-      .eq("practice_enrollment.enrollment.student_id", studentId)
-      .eq("practice_enrollment.enrollment.offering_id", offeringId);
+      .eq("enrollment_id", enrollment.id);
 
-    if (practiceError) throw practiceError;
+    if (peError) throw peError;
 
-    return {
-      student_id: studentId,
-      theoryScores: theoryGrades?.map(g => ({
+    const practiceEnrollmentIds = practiceEnrollments?.map((p) => p.id) ?? [];
+
+    let practiceGrades: any[] = [];
+    if (practiceEnrollmentIds.length > 0) {
+      const { data, error } = await supabase
+        .from("grades")
+        .select(`
+        id,
+        score_type,
+        score,
+        comment,
+        practice_enrollment_id,
+        practice_enrollment:practice_enrollment_id (
+          id,
+          group_id,
+          practice_groups (
+            id,
+            group_number,
+            lecturer_id
+          )
+        )
+      `)
+        .in("practice_enrollment_id", practiceEnrollmentIds);
+
+      if (error) throw error;
+
+      practiceGrades = data.map((g) => ({
         id: g.id,
         type: g.score_type,
         score: g.score,
         comment: g.comment
-      })) ?? [],
-      practiceScores: practiceGrades?.map(g => ({
-        id: g.id,
-        type: g.score_type,
-        score: g.score,
-        comment: g.comment,
-        practice_group: g.practice_enrollment?.practice_groups
-      })) ?? []
+      }));
+    }
+
+    const { data: summary, error: summaryError } = await supabase
+      .from("grade_summary")
+      .select("total_score, gpa4, letter_grade, classification, passed, note")
+      .eq("enrollment_id", enrollment.id)
+      .single();
+
+    if (summaryError && summaryError.code !== "PGRST116") throw summaryError;
+
+    const practice_group =
+      practiceEnrollments?.[0]?.practice_groups ?? null;
+
+    return {
+      student_id: studentId,
+      theoryScores:
+        theoryGrades?.map((g) => ({
+          id: g.id,
+          type: g.score_type,
+          score: g.score,
+          comment: g.comment,
+        })) ?? [],
+      practiceScores: practiceGrades ?? [],
+      practice_group: practice_group, 
+      summary: summary ?? null,
     };
   }
+
 }
