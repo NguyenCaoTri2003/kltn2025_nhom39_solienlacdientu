@@ -80,8 +80,6 @@ export default function NavbarClient({ userRole, userName, avatarUrl, userId }: 
     return parts[parts.length - 1]?.[0]?.toUpperCase() ?? "?";
   }, [userName]);
 
-  console.log("UserId in NavbarClient:", userId);
-
   const bgColor = useMemo(() => getAvatarColor(userId !== null && userId !== undefined ? String(userId) : userName), [userId, userName]);
 
   if (!userRole) {

@@ -27,6 +27,8 @@ import { Enrollment } from "@packages/core/entities/Enrollment";
 import { PracticeGroup } from "@packages/core/entities/PracticeGroup";
 import { Offering } from "@packages/core/entities/CourseOffering";
 import { StudentTable } from "./student-table";
+import { PageBreadcrumb } from "@/components/page-breadcrumb";
+import { GradeTableCard } from "./grade-table-card";
 
 function mapGroupStudents(
   group: PracticeGroup,
@@ -47,15 +49,13 @@ export default function ClassDetail() {
   const [offering, setOffering] = useState<Offering | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("theory");
+  const [gradesData, setGradesData] = useState<any[]>([]);
+  const [loadingGrades, setLoadingGrades] = useState(false);
 
   const currentUser = typeof window !== "undefined" ? JSON.parse(localStorage.getItem("user") || "null") : null;
 
   const currentLecturerId = currentUser?.id;
 
-  console.log("Current Lecturer ID:", currentLecturerId);
-  console.log("currentUser:", currentUser);
-
-  // Chỉ tính sau khi có offering
   const isTheoryLecturer = offering?.lecturers?.id === currentLecturerId;
 
   const myPracticeGroup = offering?.practice_groups?.find(
@@ -90,6 +90,45 @@ export default function ClassDetail() {
     fetchDetail();
   }, [id]);
 
+  useEffect(() => {
+    if (!id) return;
+    const fetchGrades = async () => {
+      setLoadingGrades(true);
+      try {
+        const token = localStorage.getItem("token");
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/api/grades/lecturer?offering_id=${id}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+        const json = await res.json();
+        console.log("Grades Response:", json);
+        if (json.returnCode === 0) {
+          let data = json.data;
+
+          // ✅ Nếu là giảng viên thực hành, chỉ xem nhóm mình
+          if (!isTheoryLecturer && myPracticeGroup) {
+            data = data.filter(
+              (g: any) => g.practice_group_number === myPracticeGroup.group_number
+            );
+          }
+
+          setGradesData(data);
+        } else {
+          console.warn("Không lấy được điểm:", json.message);
+        }
+      } catch (error) {
+        console.error("Error fetching grades:", error);
+      } finally {
+        setLoadingGrades(false);
+      }
+    };
+    fetchGrades();
+  }, [id, isTheoryLecturer, myPracticeGroup]);
+
+  console.log("Grades Data:", gradesData);
+
   if (loading) return <CourseOfferingSkeleton items={1} />;
   if (!offering)
     return (
@@ -100,6 +139,12 @@ export default function ClassDetail() {
 
   return (
     <div className="space-y-10">
+      <PageBreadcrumb
+        items={[
+          { label: "Lớp học phần", href: "/lecturer/classes" },
+          { label: offering.name }
+        ]}
+      />
       <Card
         className="p-5 md:p-6 rounded-2xl border border-border/50 
           bg-gradient-to-br from-card/95 to-card/70 shadow-md hover:shadow-lg 
@@ -169,8 +214,8 @@ export default function ClassDetail() {
                 key={g.id}
                 onClick={() => setActiveTab(`group-${g.group_number}`)}
                 className={`cursor-pointer ${!isTheoryLecturer && myPracticeGroup?.id !== g.id
-                    ? "opacity-60 pointer-events-none"
-                    : ""
+                  ? "opacity-60 pointer-events-none"
+                  : ""
                   }`}
               >
                 <PracticeGroupCard
@@ -212,9 +257,9 @@ export default function ClassDetail() {
 
             {offering.practice_groups.map((g) => (
               <TabsContent key={g.id} value={`group-${g.group_number}`}>
-                <StudentTable 
-                  classId={offering.id} 
-                  students={mapGroupStudents(g, offering.students)} 
+                <StudentTable
+                  classId={offering.id}
+                  students={mapGroupStudents(g, offering.students)}
                 />
               </TabsContent>
             ))}
@@ -247,6 +292,8 @@ export default function ClassDetail() {
           />
         )}
       </section>
+
+      <GradeTableCard grades={gradesData} />
 
     </div>
   );

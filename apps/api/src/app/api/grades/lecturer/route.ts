@@ -10,7 +10,10 @@ export async function GET(req: NextRequest) {
   try {
     const user = authenticate(req);
     if (user.role !== "lecturer" && user.role !== "admin") {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      return NextResponse.json(
+        { returnCode: 1, message: "Forbidden: Bạn không có quyền truy cập" },
+        { status: 403 }
+      );
     }
 
     const { searchParams } = new URL(req.url);
@@ -18,17 +21,33 @@ export async function GET(req: NextRequest) {
     const student_id = Number(searchParams.get("student_id"));
 
     if (!offering_id) {
-      return NextResponse.json({ error: "Missing offering_id" }, { status: 400 });
+      return NextResponse.json(
+        { returnCode: 1, message: "Thiếu tham số offering_id" },
+        { status: 400 }
+      );
     }
 
+    let data;
     if (student_id) {
-      const data = await usecase.getStudentGradesInOffering(student_id, offering_id, user);
-      return NextResponse.json(data);
+      data = await usecase.getStudentGradesInOffering(student_id, offering_id, user);
     } else {
-      const data = await usecase.getOfferingGrades(offering_id, user);
-      return NextResponse.json(data);
+      data = await usecase.getOfferingGrades(offering_id, user);
     }
+
+    return NextResponse.json({
+      returnCode: 0,
+      message: "Lấy dữ liệu thành công",
+      data,
+    });
   } catch (e: any) {
-    return NextResponse.json({ error: e.message }, { status: 400 });
+    console.error("Lỗi trong /api/grades:", e);
+    return NextResponse.json(
+      {
+        returnCode: 1,
+        message: "Đã xảy ra lỗi khi lấy dữ liệu",
+        error: e.message,
+      },
+      { status: 500 }
+    );
   }
 }

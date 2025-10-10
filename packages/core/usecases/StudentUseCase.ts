@@ -94,6 +94,7 @@ export class StudentUseCase {
                 offering: {
                     id: offering.id,
                     lecturer_id: offering.lecturer_id,
+                    name: offering.name
                 },
             }
 

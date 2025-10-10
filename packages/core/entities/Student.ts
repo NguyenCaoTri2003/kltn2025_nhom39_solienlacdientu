@@ -30,6 +30,17 @@ export interface StudentDetailData {
         student_code: string
         date_of_birth: string
         contact_address: string
+        place_of_birth: string
+        academic_status: string
+        type_of_tranning: string
+        training_level: string
+        academic_year: string
+        email: string | null
+        phone: string | null
+        class_id: number
+        class: string
+        citizen_id_card: string | null
+        ethnic: string | null
     }
     parents: Parent[]
     grades?: {
@@ -43,5 +54,10 @@ export interface StudentDetailData {
           passed: boolean | null;
           note: string | null; 
         }
+    }
+    offering: {
+        id: number
+        lecturer_id: number | null
+        name: string
     }
 }

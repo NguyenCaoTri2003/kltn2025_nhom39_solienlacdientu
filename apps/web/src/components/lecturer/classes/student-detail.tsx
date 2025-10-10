@@ -11,6 +11,7 @@ import { Parent } from "@packages/core/entities/Parent";
 import { Grade } from "@packages/core/entities/Grade";
 import { Student, StudentDetailData } from "@packages/core/entities/Student";
 import { AcademicStatusBadge, TrainingLevelBadge, TrainingTypeBadge } from "./student-badges"
+import { PageBreadcrumb } from "@/components/page-breadcrumb"
 
 export default function StudentDetail() {
     const { studentId } = useParams()
@@ -43,12 +44,19 @@ export default function StudentDetail() {
     if (loading) return <p className="text-center mt-10">Đang tải dữ liệu...</p>
     if (!data) return <p className="text-center mt-10 text-destructive">Không tìm thấy sinh viên.</p>
 
-    const { student, parents, grades } = data
+    const { student, parents, grades, offering } = data
 
     console.log("Student Detail Data:", data)
 
     return (
         <div className="space-y-8">
+            <PageBreadcrumb
+                items={[
+                    { label: "Lớp học phần", href: "/lecturer/classes" },
+                    { label: offering.name, href: `/lecturer/classes/${id}` },
+                    { label: "Thông tin sinh viên" },
+                ]}
+            />
             <Card className="shadow-sm">
                 <CardHeader>
                     <CardTitle>Thông tin sinh viên</CardTitle>

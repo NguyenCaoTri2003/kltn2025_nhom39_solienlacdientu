@@ -64,7 +64,7 @@ export class StudentRepository {
   async getOfferingLecturer(offeringId: number) {
     const { data, error } = await supabase
       .from("course_offerings")
-      .select("id, lecturer_id")
+      .select("id, lecturer_id, name")
       .eq("id", offeringId)
       .single()
 
