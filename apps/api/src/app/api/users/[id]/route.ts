@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { UserRepository } from '@packages/data/repositories/UserRepository';
 import { authenticate } from "@packages/utils/auth";
+import { logUserChange } from '@packages/core/usecases/UserAuditLogUseCase';
 
 const repo = new UserRepository();
 
@@ -44,7 +45,7 @@ export async function PATCH(req: NextRequest, { params }: { params: any }) {
     const { id } = params;
     const payload = authenticate(req);
 
-    // 🟩 THÊM DÒNG LOG NÀY
+    // THÊM DÒNG LOG NÀY
     console.log("🟩 PATCH /api/users:", {
       id,
       payload,
@@ -55,7 +56,25 @@ export async function PATCH(req: NextRequest, { params }: { params: any }) {
 
     const user = await repo.updateUserFull(Number(id), updates);
 
-    // 🟩 Log sau khi update
+    // // 📌 Lấy user cũ trước khi update để biết thay đổi
+    // const oldUser = await repo.findById(Number(id));
+
+    // const updatedUser = await repo.updateUserFull(Number(id), updates);
+
+    // // 🧾 So sánh để ghi log thay đổi
+    // await logUserChange({
+    //   user_id: Number(id),              // người bị thay đổi
+    //   changed_by: payload?.id || null,  // người thực hiện thay đổi
+    //   change_type: "profile_update",
+    //   changes: {
+    //     old_data: oldUser,
+    //     new_data: updatedUser,
+    //     changed_at: new Date().toISOString(),
+
+    //   },
+    // });
+
+    // Log sau khi update
     console.log("✅ Updated user result:", user);
 
     return NextResponse.json(user);

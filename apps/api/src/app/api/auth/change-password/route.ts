@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { authenticate } from "../../../../../../../packages/utils/auth";
 import { UserRepository } from "../../../../../../../packages/data/repositories/UserRepository";
+import { logUserChange } from "@packages/core/usecases/UserAuditLogUseCase";
 
 
 /**  http://localhost:3000/api/auth/change-password
@@ -38,6 +39,20 @@ export async function POST(req: NextRequest) {
 
     const newHash = await bcrypt.hash(newPassword, 10);
     await userRepo.updateUser(id, { password_hash: newHash });
+
+    try {
+      await logUserChange({
+        user_id: id,           
+        changed_by: id,         
+        change_type: "password_change", 
+        changes: {
+          changed_at: new Date().toISOString(),
+          description: "User changed password",
+        },
+      });
+    } catch (logErr) {
+      console.warn("⚠️ Failed to log password change:", logErr);
+    }
 
     return NextResponse.json({ message: "Password changed successfully" });
   } catch (e: any) {
