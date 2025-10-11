@@ -1,5 +1,5 @@
 import { supabase } from "../supabaseClient";
-import { User, UserPublic } from "../../core/entities/Users";
+import { User, UserPublic, Role } from "../../core/entities/Users";
 import { Student, StudentWithUser } from "@packages/core/entities/Student";
 import { Lecturers } from "@packages/core/entities/Lecturers";
 import { Parent } from "@packages/core/entities/Parent";
@@ -149,16 +149,146 @@ export class UserRepository {
     return userFull; 
   }
 
-  async getAllUsers(): Promise<UserPublic[]> {
-  const { data, error } = await supabase
-    .from("users")
-    .select(
-      "id, full_name, email, phone, role, status, address, ethnic, citizen_id_card, created_at, last_login"
-    )
-    .order("id", { ascending: true });
+  async getAllUsersWithPagination(
+    page: number = 1,
+    limit: number = 10,
+    search: string = "",
+    roleFilter?: Role | "admin" | "lecturer" | "student" | "parent",
+    statusFilter?: "active" | "inactive" | "suspended" | string
+  ): Promise<{
+    users: (UserPublic & {
+      _code?: string;
+      student?: { id: number; student_code?: string };
+      lecturer?: { id: number; lecturer_code?: string };
+      parent?: { id: number };
+    })[];
+    total: number;
+    totalPages: number;
+  }> {
+    const from = (page - 1) * limit;
+    const to = from + limit - 1;
 
-  if (error) throw error;
-  return data ?? [];
-}
+    // Chuẩn hóa từ khóa tìm kiếm
+    const keyword = (search || "").trim();
 
+    let codeMatchedIds: number[] = [];
+    if (keyword) {
+      const [studentsMatch, lecturersMatch] = await Promise.all([
+        supabase
+          .from("students")
+          .select("id, student_code")
+          .ilike("student_code", `%${keyword}%`),
+        supabase
+          .from("lecturers")
+          .select("id, lecturer_code")
+          .ilike("lecturer_code", `%${keyword}%`),
+      ]);
+
+      const sIds = (studentsMatch.data || []).map((s: any) => Number(s.id)).filter((n) => Number.isFinite(n));
+      const lIds = (lecturersMatch.data || []).map((l: any) => Number(l.id)).filter((n) => Number.isFinite(n));
+      codeMatchedIds = Array.from(new Set([...sIds, ...lIds]));
+    }
+
+    let query = supabase
+      .from("users")
+      .select(
+        "id, full_name, email, phone, role, status, created_at, last_login",
+        { count: "exact" }
+      )
+      .order("id", { ascending: true });
+
+    // Lọc theo role/status nếu có
+    if (roleFilter && ["admin", "lecturer", "student", "parent"].includes(roleFilter)) {
+      query = query.eq("role", roleFilter);
+    }
+    if (statusFilter && ["active", "inactive", "suspended"].includes(String(statusFilter))) {
+      query = query.eq("status", statusFilter);
+    }
+
+    if (keyword) {
+      const orParts = [
+        `full_name.ilike.%${keyword}%`,
+        `email.ilike.%${keyword}%`,
+        `phone.ilike.%${keyword}%`,
+      ];
+      if (codeMatchedIds.length > 0) {
+        orParts.push(`id.in.(${codeMatchedIds.join(",")})`);
+      }
+      query = query.or(orParts.join(","));
+    }
+
+    const { data: users, error, count } = await query.range(from, to);
+    if (error) throw error;
+
+    const total = count ?? 0;
+    const totalPages = Math.ceil(total / limit);
+
+    if (!users?.length) {
+      return { users: [], total, totalPages };
+    }
+
+    const roleGroups = {
+      student: users.filter((u) => u.role === "student").map((u) => u.id),
+      lecturer: users.filter((u) => u.role === "lecturer").map((u) => u.id),
+      parent: users.filter((u) => u.role === "parent").map((u) => u.id),
+    };
+
+    const { data: students } = roleGroups.student.length
+      ? await supabase
+          .from("students")
+          .select("id, student_code")
+          .in("id", roleGroups.student)
+      : { data: [] };
+
+    const { data: lecturers } = roleGroups.lecturer.length
+      ? await supabase
+          .from("lecturers")
+          .select("id, lecturer_code")
+          .in("id", roleGroups.lecturer)
+      : { data: [] };
+
+    const mergedUsers = users.map((u) => {
+      let _code: string | undefined;
+      let studentObj: { id: number; student_code?: string } | undefined;
+      let lecturerObj: { id: number; lecturer_code?: string } | undefined;
+      let parentObj: { id: number } | undefined;
+
+      if (u.role === "student") {
+        const found = students?.find((s) => s.id === u.id);
+        _code = found?.student_code;
+        studentObj = { id: u.id, student_code: found?.student_code };
+      } else if (u.role === "lecturer") {
+        const found = lecturers?.find((l) => l.id === u.id);
+        _code = found?.lecturer_code;
+        lecturerObj = { id: u.id, lecturer_code: found?.lecturer_code };
+      } else if (u.role === "parent") {
+        parentObj = { id: u.id };
+      }
+
+      return {
+        ...u,
+        _code,
+        ...(studentObj ? { student: studentObj } : {}),
+        ...(lecturerObj ? { lecturer: lecturerObj } : {}),
+        ...(parentObj ? { parent: parentObj } : {}),
+      };
+    });
+
+    return { users: mergedUsers, total, totalPages };
+  }
+
+  async updateUserStatus(
+    id: number,
+    status: "active" | "inactive" | "suspended"
+  ): Promise<User> {
+    const { data, error } = await supabase
+      .from("users")
+      .update({ status })
+      .eq("id", id)
+      .select()
+      .single();
+
+    if (error) throw new Error(error.message);
+    return data as User;
+  }
 }

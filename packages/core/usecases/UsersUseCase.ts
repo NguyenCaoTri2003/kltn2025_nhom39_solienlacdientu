@@ -3,5 +3,5 @@ import { UserRepository } from "../../data/repositories/UserRepository";
 
 export async function getAllUsers() {
   const repo = new UserRepository();
-  return await repo.getAllUsers();
+  return await repo.getAllUsersWithPagination();
 }

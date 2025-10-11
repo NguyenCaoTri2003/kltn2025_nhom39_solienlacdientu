@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { UserRepository } from "@packages/data/repositories/UserRepository";
 import { AuthUseCase } from "@packages/core/usecases/authUseCase";
+import { logUserChange } from "@packages/core/usecases/UserAuditLogUseCase";
 
 const userRepo = new UserRepository();
 const authUseCase = new AuthUseCase(userRepo);
@@ -11,6 +12,38 @@ export async function POST(req: NextRequest) {
     const { identifier, password, role } = body;
 
     const { user, token } = await authUseCase.loginLecturerOrAdmin(identifier, password);
+
+// 
+    const status = String((user as any)?.status || "").toLowerCase();
+    if (status === "inactive") {
+      return NextResponse.json(
+        { error: "Tài khoản của bạn đang bị khóa. Vui lòng liên hệ quản trị viên." },
+        { status: 403 }
+      );
+    }
+
+    if (status === "suspended") {
+      const oldStatus = user.status;
+
+      const updatedUser = await userRepo.updateUserStatus(user.id, "active");
+
+      // Ghi log hành động hệ thống
+      await logUserChange({
+        user_id: user.id,
+        changed_by: null, 
+        change_type: "status_change",
+        changes: {
+          old_status: oldStatus,
+          new_status: "active",
+          reason: "First-time login",
+          changed_at: new Date().toISOString(),
+          source: "system",
+        },
+      });
+
+      user.status = updatedUser.status;
+    }
+//
 
      const res = NextResponse.json({ user, token }, { status: 200 });
       res.cookies.set("token", token, {
