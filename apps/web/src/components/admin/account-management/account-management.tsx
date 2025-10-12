@@ -1,5 +1,6 @@
 "use client";
 
+import { toast } from "sonner";
 import { useState } from "react";
 import {
   Card,
@@ -36,6 +37,8 @@ import {
   ChevronsRight,
   FileClock,
   Loader2,
+  RotateCcw,
+  AlertTriangle,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -55,6 +58,8 @@ import { translateRole, translateStatus } from "@packages/utils/translations";
 // Allow using process.env in client without Node types
 declare const process: { env: Record<string, string | undefined> };
 import type { ChangeEvent, KeyboardEvent } from "react";
+
+import { ResetPasswordModal } from "@/components/modals_UI/ResetPasswordModal";
 
 interface Account {
   id: string;
@@ -100,13 +105,71 @@ export function AccountManagement() {
   const [roleFilter, setRoleFilter] = useState<RoleOption>("all");
   const [statusFilter, setStatusFilter] = useState<StatusOption>("all");
 
-  
+  // Model reset password
+  const [resetOpen, setResetOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
 
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  // Loading state for a row action (status change)
   const [rowActionId, setRowActionId] = useState<string | null>(null);
+
+  // Hiển thị xác nhận bằng toast (Sonner)
+  const confirmWithToast = (message: string): Promise<boolean> => {
+    return new Promise((resolve) => {
+      toast.custom(
+        (t) => (
+          <div
+            className="flex flex-col gap-3 bg-popover text-popover-foreground
+                     border border-border rounded-lg p-4 shadow-xl min-w-[340px]"
+          >
+            {/* Header */}
+            <div className="flex items-center gap-3">
+              <div className="flex items-center justify-center w-10 h-10 rounded-full bg-yellow-100/10 text-yellow-500">
+                <AlertTriangle className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="font-semibold text-base">Xác nhận hành động</p>
+                <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
+                  {message}
+                </p>
+              </div>
+            </div>
+
+            {/* Buttons */}
+            <div className="flex justify-end gap-2 pt-2">
+              <Button
+                size="sm"
+                variant="outline"
+                className="border-border text-muted-foreground hover:bg-muted"
+                onClick={() => {
+                  toast.dismiss(t);
+                  resolve(false);
+                }}
+              >
+                Hủy
+              </Button>
+              <Button
+                size="sm"
+                className="bg-primary hover:bg-primary/90 text-primary-foreground"
+                onClick={() => {
+                  toast.dismiss(t);
+                  resolve(true);
+                }}
+              >
+                Xác nhận
+              </Button>
+            </div>
+          </div>
+        ),
+        { duration: Infinity }
+      );
+    });
+  };
+
   // Hàm gọi API server-side pagination
   const loadAccounts = async (
     nextPage: number,
@@ -115,7 +178,7 @@ export function AccountManagement() {
     nextRole: string = roleFilter,
     nextStatus: string = statusFilter
   ) => {
-  const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
+    const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
     try {
       setLoading(true);
       setError(null);
@@ -132,17 +195,23 @@ export function AccountManagement() {
         },
       });
       const result = await res.json().catch(() => ({}));
-      if (res.ok && result.returnCode === 0 && Array.isArray(result.data?.users)) {
+      if (
+        res.ok &&
+        result.returnCode === 0 &&
+        Array.isArray(result.data?.users)
+      ) {
         const pag: ApiPagination | undefined = result.data?.pagination;
-        const mapped = (result.data.users as ApiUser[]).map((u: ApiUser): Account => ({
-          id: String(u.id),
-          code: u._code ?? undefined,
-          name: u.full_name,
-          role: u.role as Account["role"],
-          status: u.status as Account["status"],
-          email: u.email,
-          lastLogin: u.last_login ?? null,
-        }));
+        const mapped = (result.data.users as ApiUser[]).map(
+          (u: ApiUser): Account => ({
+            id: String(u.id),
+            code: u._code ?? undefined,
+            name: u.full_name,
+            role: u.role as Account["role"],
+            status: u.status as Account["status"],
+            email: u.email,
+            lastLogin: u.last_login ?? null,
+          })
+        );
         setAccounts(mapped);
         if (pag) {
           setTotal(pag.total);
@@ -155,8 +224,10 @@ export function AccountManagement() {
           setTotalPages(1);
         }
       } else {
-        if (res.status === 401) setError("Bạn chưa đăng nhập hoặc phiên đăng nhập đã hết hạn (401)");
-        else if (res.status === 403) setError("Bạn không có quyền truy cập tài nguyên này (403)");
+        if (res.status === 401)
+          setError("Bạn chưa đăng nhập hoặc phiên đăng nhập đã hết hạn (401)");
+        else if (res.status === 403)
+          setError("Bạn không có quyền truy cập tài nguyên này (403)");
         else setError(result.message || "Không thể tải danh sách người dùng");
         setAccounts([]);
         setTotal(0);
@@ -196,7 +267,10 @@ export function AccountManagement() {
   };
 
   // Call API to change status and update local state
-  const changeUserStatus = async (accountId: string, nextStatus: Account["status"]) => {
+  const changeUserStatus = async (
+    accountId: string,
+    nextStatus: Account["status"]
+  ): Promise<{ ok: boolean; message?: string }> => {
     const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
     try {
       setRowActionId(accountId);
@@ -211,23 +285,34 @@ export function AccountManagement() {
       });
       const result = await res.json().catch(() => ({}));
       if (res.ok && result?.returnCode === 0) {
-        const updatedStatus: Account["status"] = result?.data?.status || nextStatus;
+        const updatedStatus: Account["status"] =
+          result?.data?.status || nextStatus;
         setAccounts((prev) =>
-          prev.map((a) => (a.id === accountId ? { ...a, status: updatedStatus } : a))
+          prev.map((a) =>
+            a.id === accountId ? { ...a, status: updatedStatus } : a
+          )
         );
+        return { ok: true };
       } else {
-        if (res.status === 401) setError("Bạn chưa đăng nhập hoặc phiên đã hết hạn (401)");
-        else if (res.status === 403) setError("Bạn không có quyền cập nhật trạng thái (403)");
-        else setError(result?.message || "Không thể cập nhật trạng thái người dùng");
+        let msg = "Không thể cập nhật trạng thái người dùng";
+        if (res.status === 401)
+          msg = "Bạn chưa đăng nhập hoặc phiên đã hết hạn (401)";
+        else if (res.status === 403)
+          msg = "Bạn không có quyền cập nhật trạng thái (403)";
+        else if (result?.message) msg = result.message;
+        setError(msg);
+        return { ok: false, message: msg };
       }
     } catch {
-      setError("Lỗi kết nối máy chủ khi cập nhật trạng thái");
+      const msg = "Lỗi kết nối máy chủ khi cập nhật trạng thái";
+      setError(msg);
+      return { ok: false, message: msg };
     } finally {
       setRowActionId(null);
     }
   };
 
-  // ⚙️ Dùng translateStatus trong Badge
+  //  Dùng translateStatus trong Badge
   const getStatusBadge = (status: string) => {
     const text = translateStatus(status);
     switch (status) {
@@ -343,7 +428,9 @@ export function AccountManagement() {
                 <Input
                   placeholder="Nhập tên, email, số điện thoại hoặc mã số..."
                   value={searchInput}
-                  onChange={(e: ChangeEvent<HTMLInputElement>) => setSearchInput(e.target.value)}
+                  onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                    setSearchInput(e.target.value)
+                  }
                   onKeyDown={(e: KeyboardEvent<HTMLInputElement>) => {
                     if (e.key === "Enter") handleSearch();
                   }}
@@ -352,7 +439,10 @@ export function AccountManagement() {
               </div>
 
               {/* Bộ lọc vai trò */}
-              <Select value={roleFilter} onValueChange={(v: string) => setRoleFilter(v as RoleOption)}>
+              <Select
+                value={roleFilter}
+                onValueChange={(v: string) => setRoleFilter(v as RoleOption)}
+              >
                 <SelectTrigger className="w-[160px] bg-input border-border">
                   <SelectValue placeholder="Lọc theo vai trò" />
                 </SelectTrigger>
@@ -366,7 +456,12 @@ export function AccountManagement() {
               </Select>
 
               {/* Bộ lọc trạng thái */}
-              <Select value={statusFilter} onValueChange={(v: string) => setStatusFilter(v as StatusOption)}>
+              <Select
+                value={statusFilter}
+                onValueChange={(v: string) =>
+                  setStatusFilter(v as StatusOption)
+                }
+              >
                 <SelectTrigger className="w-[160px] bg-input border-border">
                   <SelectValue placeholder="Lọc theo trạng thái" />
                 </SelectTrigger>
@@ -378,12 +473,35 @@ export function AccountManagement() {
                 </SelectContent>
               </Select>
 
-              <Button variant="outline" onClick={() => { setSearchInput(""); setQuery(""); setRoleFilter("all"); setStatusFilter("all"); setAccounts([]); setTotal(0); setTotalPages(1); setHasSearched(false); }}>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setSearchInput("");
+                  setQuery("");
+                  setRoleFilter("all");
+                  setStatusFilter("all");
+                  setAccounts([]);
+                  setTotal(0);
+                  setTotalPages(1);
+                  setHasSearched(false);
+                }}
+              >
                 Đặt lại
               </Button>
 
-              <Button onClick={async () => { setHasSearched(true); setQuery(searchInput.trim()); await loadAccounts(1, pageSize, searchInput.trim()); }} disabled={loading} className="bg-primary hover:bg-primary/90 text-primary-foreground">
+              <Button
+                onClick={async () => {
+                  setHasSearched(true);
+                  setQuery(searchInput.trim());
+                  await loadAccounts(1, pageSize, searchInput.trim());
+                }}
+                disabled={loading}
+                className="bg-primary hover:bg-primary/90 text-primary-foreground"
+              >
                 Tìm kiếm
+              </Button>
+              <Button className="bg-primary hover:bg-primary/90 text-primary-foreground">
+                Thêm tài khoản
               </Button>
             </div>
           </div>
@@ -399,176 +517,240 @@ export function AccountManagement() {
               <Button
                 variant="outline"
                 className="border-red-500/40 text-red-300 hover:bg-red-500/10"
-                onClick={() => { setError(null); handleRetry(); }}
+                onClick={() => {
+                  setError(null);
+                  handleRetry();
+                }}
               >
                 Thử lại
               </Button>
             </div>
           )}
-         <div className="rounded-md border border-border overflow-hidden">
-  <div className="overflow-x-auto overflow-y-auto max-h-[65vh]">
-  <Table className="min-w-[800px]">
-      <TableHeader>
-        <TableRow className="border-border sticky top-0 bg-card z-10">
-          <TableHead className="text-muted-foreground w-[50px] text-center">STT</TableHead>
-          <TableHead className="text-muted-foreground">Mã số</TableHead>
-          <TableHead className="text-muted-foreground text-center">Họ tên</TableHead>
-          <TableHead className="text-muted-foreground">Vai trò</TableHead>
-          <TableHead className="text-muted-foreground w-[100px] text-center">Email</TableHead>
-          <TableHead className="text-muted-foreground">Trạng thái</TableHead>
-          <TableHead className="text-muted-foreground">Đăng nhập cuối</TableHead>
-          <TableHead className="text-muted-foreground sticky right-0 bg-card z-20 border-l border-border">Thao tác</TableHead>
-        </TableRow>
-      </TableHeader>
+          <div className="rounded-md border border-border overflow-hidden">
+            <div className="overflow-x-auto overflow-y-auto max-h-[65vh]">
+              <Table className="min-w-[800px]">
+                <TableHeader>
+                  <TableRow className="border-border sticky top-0 bg-card z-10">
+                    <TableHead className="text-muted-foreground w-[50px] text-center">
+                      STT
+                    </TableHead>
+                    <TableHead className="text-muted-foreground">
+                      Mã số
+                    </TableHead>
+                    <TableHead className="text-muted-foreground text-center">
+                      Họ tên
+                    </TableHead>
+                    <TableHead className="text-muted-foreground">
+                      Vai trò
+                    </TableHead>
+                    <TableHead className="text-muted-foreground w-[100px] text-center">
+                      Email
+                    </TableHead>
+                    <TableHead className="text-muted-foreground">
+                      Trạng thái
+                    </TableHead>
+                    <TableHead className="text-muted-foreground">
+                      Đăng nhập cuối
+                    </TableHead>
+                    <TableHead className="text-muted-foreground">
+                      Thao tác
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
 
-      <TableBody>
-        {loading && (
-          <>
-            {Array.from({ length: 5 }).map((_, idx) => (
-              <TableRow key={`sk-${idx}`} className="border-border">
-                <TableCell className="w-[70px] text-center">
-                  <Skeleton className="h-4 w-8 mx-auto" />
-                </TableCell>
-                <TableCell className="w-[120px]">
-                  <Skeleton className="h-4 w-24" />
-                </TableCell>
-                <TableCell>
-                  <Skeleton className="h-4 w-48" />
-                </TableCell>
-                <TableCell>
-                  <Skeleton className="h-4 w-28" />
-                </TableCell>
-                <TableCell>
-                  <Skeleton className="h-4 w-64" />
-                </TableCell>
-                <TableCell>
-                  <Skeleton className="h-6 w-24" />
-                </TableCell>
-                <TableCell>
-                  <Skeleton className="h-4 w-40" />
-                </TableCell>
-                <TableCell className="sticky right-0 bg-card z-10 border-l border-border">
-                  <Skeleton className="h-6 w-8 ml-auto" />
-                </TableCell>
-              </TableRow>
-            ))}
-          </>
-        )}
-
-  {accounts.map((account, idx) => (
-          <TableRow
-            key={account.id}
-            className="border-border hover:bg-accent/40 transition-colors"
-          >
-            <TableCell className="text-center text-card-foreground">
-              {(page - 1) * pageSize + idx + 1}
-            </TableCell>
-            <TableCell className="font-medium text-card-foreground">
-              {account.code || account.id}
-            </TableCell>
-
-            <TableCell className="text-card-foreground">
-              {account.name}
-            </TableCell>
-
-            <TableCell>
-              <div className="flex items-center space-x-2">
-
-                <span className="text-card-foreground">
-                  {translateRole(account.role)}
-                </span>
-              </div>
-            </TableCell>
-
-            <TableCell className="text-muted-foreground max-w-[200px] whitespace-normal break-words">
-              {account.email}
-            </TableCell>
-
-            <TableCell>{getStatusBadge(account.status)}</TableCell>
-
-            <TableCell className="text-muted-foreground">
-              <span suppressHydrationWarning>
-                {account.lastLogin ? new Date(account.lastLogin).toLocaleString("vi-VN") : "Chưa đăng nhập"}
-              </span>
-            </TableCell>
-
-            <TableCell className="sticky right-0 bg-card z-10 border-l border-border">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" disabled={rowActionId === account.id}>
-                    {rowActionId === account.id ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <MoreHorizontal className="h-4 w-4" />
-                    )}
-                  </Button>
-                </DropdownMenuTrigger>
-
-                <DropdownMenuContent
-                  align="end"
-                  className="bg-popover border-border min-w-48"
-                >
-                  <DropdownMenuItem className="text-popover-foreground hover:bg-accent">
-                    <Eye className="w-4 h-4 mr-2" /> Xem chi tiết
-                  </DropdownMenuItem>
-                  <DropdownMenuItem className="text-popover-foreground hover:bg-accent">
-                    <Pencil className="w-4 h-4 mr-2" /> Chỉnh sửa
-                  </DropdownMenuItem>
-
-                  {account.status === "active" ? (
-                    <DropdownMenuItem
-                      className="text-red-400 hover:bg-accent"
-                      onClick={async () => {
-                        const ok = window.confirm("Bạn có chắc muốn khóa tài khoản này?");
-                        if (!ok) return;
-                        await changeUserStatus(account.id, "inactive");
-                      }}
-                      disabled={rowActionId === account.id}
-                    >
-                      <Lock className="w-4 h-4 mr-2" /> Khóa tài khoản
-                    </DropdownMenuItem>
-                  ) : (
-                    <DropdownMenuItem
-                      className="text-green-400 hover:bg-accent"
-                      onClick={async () => {
-                        const ok = window.confirm("Kích hoạt tài khoản này?");
-                        if (!ok) return;
-                        await changeUserStatus(account.id, "active");
-                      }}
-                      disabled={rowActionId === account.id}
-                    >
-                      <Unlock className="w-4 h-4 mr-2" /> Kích hoạt tài khoản
-                    </DropdownMenuItem>
+                <TableBody>
+                  {loading && (
+                    <>
+                      {Array.from({ length: 5 }).map((_, idx) => (
+                        <TableRow key={`sk-${idx}`} className="border-border">
+                          <TableCell className="w-[70px] text-center">
+                            <Skeleton className="h-4 w-8 mx-auto" />
+                          </TableCell>
+                          <TableCell className="w-[120px]">
+                            <Skeleton className="h-4 w-24" />
+                          </TableCell>
+                          <TableCell>
+                            <Skeleton className="h-4 w-48" />
+                          </TableCell>
+                          <TableCell>
+                            <Skeleton className="h-4 w-28" />
+                          </TableCell>
+                          <TableCell>
+                            <Skeleton className="h-4 w-64" />
+                          </TableCell>
+                          <TableCell>
+                            <Skeleton className="h-6 w-24" />
+                          </TableCell>
+                          <TableCell>
+                            <Skeleton className="h-4 w-40" />
+                          </TableCell>
+                          <TableCell className="sticky right-0 bg-card z-10 border-l border-border">
+                            <Skeleton className="h-6 w-8 ml-auto" />
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </>
                   )}
 
-                  <DropdownMenuItem className="text-popover-foreground hover:bg-accent">
-                    <FileClock className="w-4 h-4 mr-2" /> Lịch sử đăng nhập
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </TableCell>
-          </TableRow>
-        ))}
+                  {accounts.map((account, idx) => (
+                    <TableRow
+                      key={account.id}
+                      className="border-border hover:bg-accent/40 transition-colors"
+                    >
+                      <TableCell className="text-center text-card-foreground">
+                        {(page - 1) * pageSize + idx + 1}
+                      </TableCell>
+                      <TableCell className="font-medium text-card-foreground">
+                        {account.code || account.id}
+                      </TableCell>
 
-        {total === 0 && (
-          <TableRow>
-            <TableCell
-              colSpan={8}
-              className="text-center text-muted-foreground py-8"
-            >
-              {loading
-                ? "Đang tải dữ liệu..."
-                : hasSearched
-                ? "Không có tài khoản nào phù hợp. Hãy thay đổi từ khóa và thử lại."
-                : "Chưa có dữ liệu. Nhập điều kiện và nhấn Tìm kiếm để tải danh sách."}
-            </TableCell>
-          </TableRow>
-        )}
-      </TableBody>
-    </Table>
-  </div>
-</div>
+                      <TableCell className="text-card-foreground">
+                        {account.name}
+                      </TableCell>
 
+                      <TableCell>
+                        <div className="flex items-center space-x-2">
+                          <span className="text-card-foreground">
+                            {translateRole(account.role)}
+                          </span>
+                        </div>
+                      </TableCell>
+
+                      <TableCell className="text-muted-foreground max-w-[200px] whitespace-normal break-words">
+                        {account.email}
+                      </TableCell>
+
+                      <TableCell>{getStatusBadge(account.status)}</TableCell>
+
+                      <TableCell className="text-muted-foreground">
+                        <span suppressHydrationWarning>
+                          {account.lastLogin
+                            ? new Date(account.lastLogin).toLocaleString(
+                                "vi-VN"
+                              )
+                            : "Chưa đăng nhập"}
+                        </span>
+                      </TableCell>
+
+                      <TableCell className="text-muted-foreground">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              disabled={rowActionId === account.id}
+                            >
+                              {rowActionId === account.id ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <MoreHorizontal className="h-4 w-4" />
+                              )}
+                            </Button>
+                          </DropdownMenuTrigger>
+
+                          <DropdownMenuContent
+                            align="end"
+                            className="bg-popover border-border min-w-48"
+                          >
+                            <DropdownMenuItem className="text-popover-foreground hover:bg-accent">
+                              <Eye className="w-4 h-4 mr-2" /> Xem chi tiết
+                            </DropdownMenuItem>
+                            <DropdownMenuItem className="text-popover-foreground hover:bg-accent">
+                              <Pencil className="w-4 h-4 mr-2" /> Chỉnh sửa
+                            </DropdownMenuItem>
+
+                            {account.status === "active" ? (
+                              <DropdownMenuItem
+                                className="text-red-400 hover:bg-accent"
+                                onClick={async () => {
+                                  const ok = await confirmWithToast(
+                                    "Bạn có chắc muốn khóa tài khoản này?"
+                                  );
+                                  if (!ok) return;
+                                  const res = await changeUserStatus(
+                                    account.id,
+                                    "inactive"
+                                  );
+                                  if (res.ok)
+                                    toast.success("Đã khóa tài khoản");
+                                  else
+                                    toast.error(
+                                      res.message ||
+                                        "Không thể cập nhật trạng thái"
+                                    );
+                                }}
+                                disabled={rowActionId === account.id}
+                              >
+                                <Lock className="w-4 h-4 mr-2" /> Khóa tài khoản
+                              </DropdownMenuItem>
+                            ) : (
+                              <DropdownMenuItem
+                                className="text-green-400 hover:bg-accent"
+                                onClick={async () => {
+                                  const ok = await confirmWithToast(
+                                    "Kích hoạt tài khoản này?"
+                                  );
+                                  if (!ok) return;
+                                  const res = await changeUserStatus(
+                                    account.id,
+                                    "active"
+                                  );
+                                  if (res.ok)
+                                    toast.success("Đã kích hoạt tài khoản");
+                                  else
+                                    toast.error(
+                                      res.message ||
+                                        "Không thể cập nhật trạng thái"
+                                    );
+                                }}
+                                disabled={rowActionId === account.id}
+                              >
+                                <Unlock className="w-4 h-4 mr-2" /> Kích hoạt
+                                tài khoản
+                              </DropdownMenuItem>
+                            )}
+                            <DropdownMenuItem
+                              className="text-popover-foreground hover:bg-accent"
+                              onClick={() => {
+                                setSelectedUser({
+                                  id: account.id,
+                                  name: account.name,
+                                });
+                                setResetOpen(true);
+                              }}
+                            >
+                              <RotateCcw className="w-4 h-4 mr-2" /> Đặt lại mật
+                              khẩu
+                            </DropdownMenuItem>
+
+                            <DropdownMenuItem className="text-popover-foreground hover:bg-accent">
+                              <FileClock className="w-4 h-4 mr-2" /> Lịch sử
+                              đăng nhập
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+
+                  {total === 0 && (
+                    <TableRow>
+                      <TableCell
+                        colSpan={8}
+                        className="text-center text-muted-foreground py-8"
+                      >
+                        {loading
+                          ? "Đang tải dữ liệu..."
+                          : hasSearched
+                          ? "Không có tài khoản nào phù hợp. Hãy thay đổi từ khóa và thử lại."
+                          : "Chưa có dữ liệu. Nhập điều kiện và nhấn Tìm kiếm để tải danh sách."}
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
 
           {/* Pagination */}
           {total > 0 && (
@@ -612,7 +794,9 @@ export function AccountManagement() {
                     variant="outline"
                     size="icon"
                     className="h-8 w-8"
-                    onClick={async () => changePage(Math.max(1, currentPage - 1))}
+                    onClick={async () =>
+                      changePage(Math.max(1, currentPage - 1))
+                    }
                     disabled={currentPage === 1}
                   >
                     <ChevronLeft className="h-4 w-4" />
@@ -624,7 +808,9 @@ export function AccountManagement() {
                     variant="outline"
                     size="icon"
                     className="h-8 w-8"
-                    onClick={async () => changePage(Math.min(totalPages, currentPage + 1))}
+                    onClick={async () =>
+                      changePage(Math.min(totalPages, currentPage + 1))
+                    }
                     disabled={currentPage === totalPages}
                   >
                     <ChevronRight className="h-4 w-4" />
@@ -644,6 +830,16 @@ export function AccountManagement() {
           )}
         </CardContent>
       </Card>
+      {/* Modal đặt lại mật khẩu */}
+      <ResetPasswordModal
+        open={resetOpen}
+        onClose={() => setResetOpen(false)}
+        userId={selectedUser?.id || null}
+        userName={selectedUser?.name}
+        onSuccess={() => {
+          toast.success("Đặt lại mật khẩu thành công!");
+        }}
+      />
     </div>
   );
 }
