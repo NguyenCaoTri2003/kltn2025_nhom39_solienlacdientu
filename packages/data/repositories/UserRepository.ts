@@ -3,6 +3,7 @@ import { User, UserPublic, Role } from "../../core/entities/Users";
 import { Student, StudentWithUser } from "@packages/core/entities/Student";
 import { Lecturers } from "@packages/core/entities/Lecturers";
 import { Parent } from "@packages/core/entities/Parent";
+import bcrypt from "bcryptjs";
 
 
 type RoleSpecificData = {
@@ -291,4 +292,104 @@ export class UserRepository {
     if (error) throw new Error(error.message);
     return data as User;
   }
+
+  async createUserWithRole(data: {
+  user: Partial<User>;
+  student?: Partial<Student>;
+  parent?: Partial<Parent>;
+  lecturer?: Partial<Lecturers>;
+}): Promise<User> {
+  const { user, student, parent, lecturer } = data;
+
+  // ✅ Mật khẩu mặc định
+  const passwordHash = await bcrypt.hash("11111111", 10);
+
+  // ✅ 1️⃣ Tạo user trước
+  const { data: userInserted, error: userError } = await supabase
+    .from("users")
+    .insert({
+      full_name: user.full_name,
+      password_hash: passwordHash,
+      role: user.role,
+      phone: user.phone,
+      email: user.email,
+      status: "suspended",
+      citizen_id_card: user.citizen_id_card ?? null,
+      address: user.address ?? null,
+      ethnic: user.ethnic ?? null,
+    })
+    .select("id, role")
+    .single();
+
+  if (userError) {
+    console.error("❌ Lỗi khi tạo user:", userError);
+    throw new Error("Lỗi khi tạo user: " + userError.message);
+  }
+
+  const newUserId = userInserted.id;
+
+  try {
+    //  Thêm bảng phụ theo role
+    switch (userInserted.role) {
+      case "student":
+        if (!student) throw new Error("Thiếu dữ liệu sinh viên");
+        {
+          const { error } = await supabase.from("students").insert({
+            id: newUserId,
+            student_code: student.student_code,
+            class_id: student.class_id ?? null,
+            academic_status: student.academic_status ?? "studing", // khớp enum DB
+            date_of_birth: student.date_of_birth ?? null,
+            place_of_birth: student.place_of_birth ?? null,
+            contact_address: student.contact_address ?? null,
+            type_of_tranning: (student as any).type_of_training ?? "regular",
+            training_level: student.training_level ?? "bachelor", // khớp enum DB
+            academic_year: student.academic_year ?? "2025",
+          });
+          if (error) throw new Error("Lỗi khi tạo sinh viên: " + error.message);
+        }
+        break;
+
+      case "parent":
+        if (!parent) throw new Error("Thiếu dữ liệu phụ huynh");
+        {
+          const { error } = await supabase.from("parents").insert({
+            id: newUserId,
+            occupation: parent.occupation ?? null,
+          });
+          if (error) throw new Error("Lỗi khi tạo phụ huynh: " + error.message);
+        }
+        break;
+
+      case "lecturer":
+        if (!lecturer) throw new Error("Thiếu dữ liệu giảng viên");
+        {
+          const { error } = await supabase.from("lecturers").insert({
+            id: newUserId,
+            lecturer_code: lecturer.lecturer_code,
+            academic_rank: lecturer.academic_rank ?? "none",
+            faculty_id: lecturer.faculty_id ?? null,
+          });
+          if (error) throw new Error("Lỗi khi tạo giảng viên: " + error.message);
+        }
+        break;
+
+      default:
+        console.warn(`⚠ Role '${userInserted.role}' chưa được xử lý.`);
+        break;
+    }
+
+    // Thành công
+    return { id: newUserId, ...userInserted } as User;
+
+  } catch (err: any) {
+    console.error("❌ Lỗi khi thêm bảng con, rollback user:", err.message);
+
+    // Rollback: xóa user cha nếu bảng con thêm thất bại
+    await supabase.from("users").delete().eq("id", newUserId);
+
+    throw new Error(err.message);
+  }
+}
+
 }

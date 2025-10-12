@@ -2,6 +2,7 @@ export type ChangeType =
   | "update_information"
   | "status_change"
   | "password_change"
+  | "create_user"
   | "reset_password";
 
 export interface UserAuditLog {

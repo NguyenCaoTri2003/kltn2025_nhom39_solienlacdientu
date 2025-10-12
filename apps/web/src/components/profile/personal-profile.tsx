@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import NavbarClient from "@/components/navbar-client";
+//import NavbarClient from "@/components/navbar-client";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,7 +14,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Calendar, Mail, MapPin, Phone, Save } from "lucide-react";
+import { Mail, MapPin, Phone, Save } from "lucide-react";
 
 import {
   isValidEmail,
@@ -25,7 +25,7 @@ import {
   isValidEthnic,
 } from "@packages/utils/Regex";
 import { getAvatarColor } from "@/utils/color-hash";
-import Navbar from "../navbar";
+//import Navbar from "../navbar";
 
 import {
   translateRole,
