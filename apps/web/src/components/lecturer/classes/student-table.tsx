@@ -61,15 +61,19 @@ export function StudentTable({
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const router = useRouter();
   const [attendanceOpen, setAttendanceOpen] = useState(false);
+  const [attendanceToday, setAttendanceToday] = useState<Record<number, any>>({});
+  const [attendanceLoading, setAttendanceLoading] = useState(false);
 
-  console.log("students", students);
-  console.log("enrollments", enrollments);
-  console.log("practiceGroups", practiceGroups);
+  // console.log("classId", classId);
+
+  // console.log("students", students);
+  // console.log("enrollments", enrollments);
+  // console.log("practiceGroups", practiceGroups);
 
   const practiceGroupMap: Record<number, number> = {};
   practiceGroups.forEach(pg => {
     pg.students.forEach(pe => {
-      practiceGroupMap[pe.enrollment.student_id] = pg.id; 
+      practiceGroupMap[pe.enrollment.student_id] = pg.id;
     });
   });
 
@@ -163,12 +167,103 @@ export function StudentTable({
 
   const hasSelection = selectedIds.length > 0;
 
+  const fetchTodayAttendance = async () => {
+    try {
+      setAttendanceLoading(true);
+
+      const token = localStorage.getItem("token");
+      const currentUser =
+        typeof window !== "undefined"
+          ? JSON.parse(localStorage.getItem("user") || "null")
+          : null;
+      const lecturerId = currentUser?.id;
+
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/attendance?lecturer_id=${lecturerId}&offering_id=${classId}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      if (!res.ok) throw new Error("Không thể tải dữ liệu điểm danh.");
+
+      const resData = await res.json();
+      const data = resData.data || [];
+
+      const today = new Date().toISOString().split("T")[0];
+      const todayMap: Record<number, any> = {};
+
+      data.forEach((record: any) => {
+        const recordDate = record.attendance_date?.split("T")[0];
+        const isToday = recordDate === today;
+        const isSameType = record.type === type; 
+
+        if (isToday && isSameType) {
+          todayMap[record.enrollment.student_id] = record;
+        }
+      });
+
+      setAttendanceToday(todayMap);
+    } catch (err) {
+      console.error("Lỗi tải danh sách điểm danh:", err);
+    } finally {
+      setAttendanceLoading(false);
+    }
+  };
+
+  const openAttendance = async () => {
+    await fetchTodayAttendance();
+    setAttendanceOpen(true);
+  };
+
+  const enrollmentToStudentMap = useMemo(() => {
+    const map: Record<number, number> = {};
+    enrollments.forEach((e) => {
+      map[e.id] = e.students.id; // enrollment_id -> student_id
+    });
+    return map;
+  }, [enrollments]);
+
+
   const handleAttendanceSubmit = async (records: any[]) => {
     try {
+      // const responses = await Promise.all(
+      //   records.map(async (r) => {
+      //     const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/attendance`, {
+      //       method: "POST",
+      //       headers: {
+      //         "Content-Type": "application/json",
+      //         Authorization: `Bearer ${localStorage.getItem("token")}`,
+      //       },
+      //       credentials: "include",
+      //       body: JSON.stringify({
+      //         offeringId: classId,
+      //         ...r,
+      //       }),
+      //     });
+
+      //     if (!res.ok) {
+      //       const error = await res.json().catch(() => ({}));
+      //       throw new Error(error?.message || `Lỗi ${res.status}`);
+      //     }
+      //     return res.json();
+      //   })
+      // );
+
       const responses = await Promise.all(
         records.map(async (r) => {
-          const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/attendance`, {
-            method: "POST",
+          const studentId = enrollmentToStudentMap[r.enrollment_id];
+          const existing = attendanceToday?.[studentId];
+
+          console.log("current record", r);
+          console.log("mapped studentId:", studentId);
+          console.log("existing record", existing);
+
+          const url = `${process.env.NEXT_PUBLIC_API_URL}/api/attendance`;
+          const method = existing ? "PATCH" : "POST";
+
+          const res = await fetch(url, {
+            method,
             headers: {
               "Content-Type": "application/json",
               Authorization: `Bearer ${localStorage.getItem("token")}`,
@@ -176,6 +271,7 @@ export function StudentTable({
             credentials: "include",
             body: JSON.stringify({
               offeringId: classId,
+              ...(existing ? { id: existing.id } : {}),
               ...r,
             }),
           });
@@ -247,7 +343,7 @@ export function StudentTable({
             variant="outline"
             disabled={!hasSelection}
             className="gap-2"
-            onClick={() => setAttendanceOpen(true)}
+            onClick={openAttendance}
           >
             <Calendar className="w-4 h-4" />
             Điểm danh
@@ -439,12 +535,7 @@ export function StudentTable({
         <AttendanceModal
           open={attendanceOpen}
           onClose={() => setAttendanceOpen(false)}
-          // students={
-          //   type === "practice"
-          //     ? practiceGroups.flatMap(pg => pg.students).filter(pe => selectedIds.includes(pe.id))
-          //     : students.filter(s => selectedIds.includes(s.id))
-          // }
-           students={students.filter((s) => selectedIds.includes(s.id))}
+          students={students.filter((s) => selectedIds.includes(s.id))}
           type={type}
           enrollmentMap={enrollments.reduce((map, e) => {
             map[e.students.id] = e.id;
@@ -452,6 +543,8 @@ export function StudentTable({
           }, {} as Record<number, number>)}
           practiceGroupMap={practiceGroupMap}
           onSubmit={handleAttendanceSubmit}
+          attendanceToday={attendanceToday}
+          loadingAttendance={attendanceLoading}
         />
       </div>
     </div>

@@ -51,12 +51,9 @@ export default function ClassDetail() {
   const [activeTab, setActiveTab] = useState("theory");
   const [gradesData, setGradesData] = useState<any[]>([]);
   const [loadingGrades, setLoadingGrades] = useState(false);
-  console.log("offering", offering);
 
   const currentUser = typeof window !== "undefined" ? JSON.parse(localStorage.getItem("user") || "null") : null;
-
   const currentLecturerId = currentUser?.id;
-
   const isTheoryLecturer = offering?.lecturers?.id === currentLecturerId;
 
   const myPracticeGroup = offering?.practice_groups?.find(
@@ -91,8 +88,6 @@ export default function ClassDetail() {
     fetchDetail();
   }, [id]);
 
-  console.log("Offering Data:", offering);  
-
   useEffect(() => {
     if (!id) return;
     const fetchGrades = async () => {
@@ -106,7 +101,6 @@ export default function ClassDetail() {
           }
         );
         const json = await res.json();
-        console.log("Grades Response:", json);
         if (json.returnCode === 0) {
           let data = json.data;
 
@@ -128,8 +122,6 @@ export default function ClassDetail() {
     };
     fetchGrades();
   }, [id, isTheoryLecturer, myPracticeGroup]);
-
-  console.log("Grades Data:", gradesData);
 
   if (loading) return <CourseOfferingSkeleton items={1} />;
   if (!offering)

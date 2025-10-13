@@ -1,236 +1,242 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { format, parseISO } from "date-fns";
-import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Info } from "lucide-react";
+import { toast } from "sonner";
+import { useParams } from "next/navigation";
+import { format, parseISO } from "date-fns";
+import { vi } from "date-fns/locale";
+import { Offering } from "@packages/core/entities/CourseOffering";
 
-type Student = {
+interface Attendance {
   id: number;
-  student_code: string;
+  attendance_date: string;
+  status: "present" | "absent" | "late" | "excused";
+  note?: string;
+  type: "theory" | "practice";
   practice_group_id?: number | null;
-  full_name: string;
-};
-
-type Attendance = {
-  id: number;
-  enrollment_id: number | null;
-  practice_group_id: number | null;
-  attendance_date: string; // ISO
-  type: "theory" | "practice" | string;
-  status: string;
-  note?: string | null;
-  enrollment?: { student_id: number };
-};
+  enrollment: { student_id: number };
+}
 
 export default function AttendanceSummary() {
-  const { id } = useParams();
-  const classId = Number(id);
-
-  const [students, setStudents] = useState<Student[]>([]);
+  const [offering, setOffering] = useState<Offering | null>(null);
   const [attendances, setAttendances] = useState<Attendance[]>([]);
   const [loading, setLoading] = useState(true);
-
-  const user =
-    typeof window !== "undefined"
-      ? JSON.parse(localStorage.getItem("user") || "null")
-      : null;
-  const lecturer_id = user?.id;
+  const [activeTab, setActiveTab] = useState("");
+  const [noteModal, setNoteModal] = useState<{ open: boolean; note?: string }>({ open: false });
+  const params = useParams();
+  const { id } = params;
+  const currentUser = typeof window !== "undefined" ? JSON.parse(localStorage.getItem("user") || "null") : null;
+  const currentLecturerId = currentUser?.id;
 
   useEffect(() => {
     const fetchData = async () => {
-      setLoading(true);
       try {
         const token = localStorage.getItem("token");
-
-        const [res1, res2] = await Promise.all([
-          fetch(
-            `${process.env.NEXT_PUBLIC_API_URL}/api/students?offering_id=${classId}`,
-            { headers: { Authorization: `Bearer ${token}` } }
-          ),
-          fetch(
-            `${process.env.NEXT_PUBLIC_API_URL}/api/attendance?lecturer_id=${lecturer_id}&offering_id=${classId}`,
-            { headers: { Authorization: `Bearer ${token}` } }
-          ),
+        const [offeringRes, attendanceRes] = await Promise.all([
+          fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/course-offerings/${id}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+          fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/attendance?lecturer_id=${currentLecturerId}&offering_id=${id}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
         ]);
 
-        const stuJson = await res1.json();
-        const attJson = await res2.json();
+        if (!offeringRes.ok || !attendanceRes.ok) throw new Error("Lỗi tải dữ liệu");
 
-        const stuData = stuJson?.data ?? [];
-        const attData = attJson?.data ?? [];
+        const offeringData = (await offeringRes.json()).data;
+        const attendanceData = (await attendanceRes.json()).data;
 
-        // debug log (xem console)
-        console.debug("students api returned:", stuData.length, "items");
-        console.debug("attendance api returned:", attData.length, "items");
-
-        setStudents(
-          stuData.map((e: any) => ({
-            id: e.students.id,
-            student_code: e.students.student_code,
-            full_name: e.students.users.full_name,
-            practice_group_id: e.practice_group_id ?? null,
-          }))
-        );
-
-        setAttendances(attData as Attendance[]);
+        setOffering(offeringData);
+        setAttendances(attendanceData);
       } catch (err) {
         console.error("Lỗi tải dữ liệu:", err);
-        setStudents([]);
-        setAttendances([]);
+        toast.error("Không thể tải dữ liệu điểm danh");
       } finally {
         setLoading(false);
       }
     };
 
     fetchData();
-  }, [classId]);
+  }, [id, currentLecturerId]);
 
-  if (loading) return <div className="p-6 text-center">Đang tải dữ liệu...</div>;
+  useEffect(() => {
+    if (!offering) return;
 
-  // --- Build unique date keys in ISO yyyy-MM-dd format (safe across timezones)
-  const dateKeys = Array.from(
-    new Set(
-      attendances.map((a) => {
-        try {
-          return format(parseISO(a.attendance_date), "yyyy-MM-dd");
-        } catch {
-          // fallback if parseISO fails
-          return format(new Date(a.attendance_date), "yyyy-MM-dd");
-        }
-      })
-    )
-  ).sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
+    const isTheoryLecturer = offering.lecturers?.id === currentLecturerId;
 
-  // Helper: format key for header (dd/MM/yyyy)
-  const formatKeyForHeader = (key: string) => {
-    return format(new Date(key + "T00:00:00"), "dd/MM/yyyy");
-  };
-
-  // Helper: get newest attendance for studentId/date/type
-  const getNewestRecord = (studentId: number, dateKey: string, type: string) => {
-    const records = attendances.filter((a) => {
-      const ak = (() => {
-        try {
-          return format(parseISO(a.attendance_date), "yyyy-MM-dd");
-        } catch {
-          return format(new Date(a.attendance_date), "yyyy-MM-dd");
-        }
-      })();
-      return (
-        ak === dateKey &&
-        a.type === type &&
-        (a.enrollment?.student_id ?? null) === studentId
+    if (isTheoryLecturer) {
+      setActiveTab("theory");
+    } else {
+      const myPracticeGroup = offering.practice_groups?.find(
+        (g: any) => g.lecturers?.id === currentLecturerId
       );
-    });
+      if (myPracticeGroup) {
+        setActiveTab(`practice-${myPracticeGroup.id}`);
+      }
+    }
+  }, [offering, currentLecturerId]);
 
-    if (records.length === 0) return null;
+  if (loading) return <div className="p-4">Đang tải...</div>;
+  if (!offering) return <div className="p-4">Không tìm thấy lớp học phần</div>;
 
-    // pick the newest by attendance_date
-    records.sort((x, y) => {
-      const tx = Date.parse(x.attendance_date);
-      const ty = Date.parse(y.attendance_date);
-      return tx - ty;
-    });
+  const allStudents = offering.students.map((s: any) => ({
+    id: s.students.id,
+    studentCode: s.students.student_code,
+    fullName: s.students.users.full_name,
+  }));
 
-    return records[records.length - 1];
+  const theoryDates = Array.from(
+    new Set(attendances.filter(a => a.type === "theory").map(a => a.attendance_date.split("T")[0]))
+  ).sort();
+
+  const practiceDates = Array.from(
+    new Set(attendances.filter(a => a.type === "practice").map(a => a.attendance_date.split("T")[0]))
+  ).sort();
+
+  const attendanceMap: Record<number, Record<string, Attendance[]>> = {};
+  attendances.forEach((a) => {
+    const studentId = a.enrollment?.student_id;
+    if (!studentId) return;
+    const dateKey = a.attendance_date.split("T")[0];
+    if (!attendanceMap[studentId]) attendanceMap[studentId] = {};
+    if (!attendanceMap[studentId][dateKey]) attendanceMap[studentId][dateKey] = [];
+    attendanceMap[studentId][dateKey].push(a);
+  });
+
+  const isTheoryLecturer = offering.lecturers?.id === currentLecturerId;
+
+  const availablePracticeGroups = offering.practice_groups?.filter(
+    (g: any) => g.lecturers?.id === currentLecturerId || isTheoryLecturer
+  );
+
+  const groupTabs = [
+    ...(isTheoryLecturer
+      ? [
+        {
+          key: "theory",
+          label: "Lý thuyết",
+          students: allStudents,
+          dates: theoryDates,
+        },
+      ]
+      : []),
+    ...(availablePracticeGroups ?? []).map((g: any) => {
+      const studentIds = g.students.map((pgs: any) => pgs.enrollment.student_id);
+      const groupStudents = allStudents.filter((s: any) => studentIds.includes(s.id));
+      return {
+        key: `practice-${g.id}`,
+        label: `Nhóm thực hành ${g.group_number}`,
+        students: groupStudents,
+        groupId: g.id,
+        dates: practiceDates,
+      };
+    }),
+  ];
+
+  const getBadge = (status: Attendance["status"]) => {
+    switch (status) {
+      case "present":
+        return <Badge className="bg-green-100 text-green-700 border border-green-200">Có mặt</Badge>;
+      case "absent":
+        return <Badge className="bg-red-100 text-red-700 border border-red-200">Vắng</Badge>;
+      case "late":
+        return <Badge className="bg-yellow-100 text-yellow-700 border border-yellow-200">Trễ</Badge>;
+      case "excused":
+        return <Badge className="bg-blue-100 text-blue-700 border border-blue-200">Có phép</Badge>;
+      default:
+        return <Badge className="bg-gray-100 text-gray-700 border border-gray-200">-</Badge>;
+    }
   };
 
-  const statusColor: Record<string, string> = {
-    present: "bg-green-100 text-green-700",
-    absent: "bg-red-100 text-red-700",
-    late: "bg-yellow-100 text-yellow-700",
-  };
-
-  const statusLabel: Record<string, string> = {
-    present: "Có mặt",
-    absent: "Vắng",
-    late: "Trễ",
-  };
+  const formatVNDate = (dateStr: string) => format(parseISO(dateStr), "dd/MM/yyyy", { locale: vi });
 
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-semibold mb-6">Bảng tổng hợp điểm danh</h1>
+    <div className="p-4">
+      <h2 className="text-lg font-semibold mb-4">{offering.name}</h2>
 
-      <div className="overflow-x-auto">
-        <Table className="border rounded-lg">
-          <TableHeader>
-            <TableRow>
-              <TableHead className="text-center w-[60px]">STT</TableHead>
-              <TableHead>Họ và tên</TableHead>
-              <TableHead>Mã SV</TableHead>
-              <TableHead className="text-center w-[100px]">Nhóm TH</TableHead>
-              {dateKeys.map((key) => (
-                <TableHead key={key} className="text-center">
-                  {formatKeyForHeader(key)}
-                  <div className="text-xs text-muted-foreground">(LT / TH)</div>
-                </TableHead>
-              ))}
-            </TableRow>
-          </TableHeader>
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList>
+          {groupTabs.map((g) => (
+            <TabsTrigger key={g.key} value={g.key}>
+              {g.label}
+            </TabsTrigger>
+          ))}
+        </TabsList>
 
-          <TableBody>
-            {students.map((s, idx) => (
-              <TableRow key={s.id}>
-                <TableCell className="text-center">{idx + 1}</TableCell>
-                <TableCell>{s.full_name}</TableCell>
-                <TableCell>{s.student_code}</TableCell>
-                <TableCell className="text-center">{s.practice_group_id ?? "-"}</TableCell>
-
-                {dateKeys.map((key) => {
-                  const theory = getNewestRecord(s.id, key, "theory");
-                  const practice = getNewestRecord(s.id, key, "practice");
-
-                  const renderCell = (rec: Attendance | null) => {
-                    if (!rec) return "-";
-                    const label = statusLabel[rec.status] ?? rec.status;
-                    const cls = statusColor[rec.status] ?? "bg-gray-100 text-gray-700";
-                    return (
-                      <div className="inline-flex items-center gap-1">
-                        <Dialog>
-                          <DialogTrigger asChild>
-                            <Badge className={`cursor-pointer ${cls} px-2 py-0.5`}>
-                              {label}
-                              {rec.note ? <Info className="ml-1 w-3 h-3 inline-block" /> : null}
-                            </Badge>
-                          </DialogTrigger>
-                          {rec.note && (
-                            <DialogContent>
-                              <DialogHeader>
-                                <DialogTitle>Ghi chú</DialogTitle>
-                              </DialogHeader>
-                              <div className="mt-1 text-sm text-muted-foreground">{rec.note}</div>
-                            </DialogContent>
-                          )}
-                        </Dialog>
-                      </div>
-                    );
-                  };
-
-                  return (
-                    <TableCell key={key} className="text-center">
-                      <div className="flex flex-col items-center gap-1">
-                        <div className="text-xs">LT: {renderCell(theory)}</div>
-                        <div className="text-xs">TH: {renderCell(practice)}</div>
-                      </div>
+        {groupTabs.map((group) => (
+          <TabsContent key={group.key} value={group.key}>
+            <Table className="mt-4">
+              <TableHeader>
+                <TableRow>
+                  <TableHead>STT</TableHead>
+                  <TableHead>MSSV</TableHead>
+                  <TableHead>Họ và tên</TableHead>
+                  {group.dates.map((d) => (
+                    <TableHead key={d}>{formatVNDate(d)}</TableHead>
+                  ))}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {group.students.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={3 + group.dates.length} className="text-center">
+                      Không có sinh viên nào trong nhóm này
                     </TableCell>
-                  );
-                })}
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+                  </TableRow>
+                ) : (
+                  group.students.map((s, idx) => (
+                    <TableRow key={s.id}>
+                      <TableCell>{idx + 1}</TableCell>
+                      <TableCell>{s.studentCode}</TableCell>
+                      <TableCell>{s.fullName}</TableCell>
+                      {group.dates.map((date) => {
+                        const records = attendanceMap[s.id]?.[date] || [];
+                        const record = records.find((r) =>
+                          group.key === "theory"
+                            ? r.type === "theory"
+                            : "groupId" in group && r.practice_group_id === group.groupId
+                        );
+                        return (
+                          <TableCell key={date}>
+                            {record ? (
+                              <div className="flex items-center gap-1">
+                                {getBadge(record.status)}
+                                {record.note && (
+                                  <Info
+                                    className="w-4 h-4 text-gray-500 cursor-pointer"
+                                    onClick={() => setNoteModal({ open: true, note: record.note })}
+                                  />
+                                )}
+                              </div>
+                            ) : (
+                              "-"
+                            )}
+                          </TableCell>
+                        );
+                      })}
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </TabsContent>
+        ))}
+      </Tabs>
+
+      {/* Modal ghi chú */}
+      <Dialog open={noteModal.open} onOpenChange={(open: any) => setNoteModal({ open })}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Ghi chú điểm danh</DialogTitle>
+          </DialogHeader>
+          <p className="mt-2">{noteModal.note || "Không có ghi chú"}</p>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
