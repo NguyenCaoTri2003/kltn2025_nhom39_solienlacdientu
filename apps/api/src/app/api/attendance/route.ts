@@ -8,7 +8,9 @@ const usecase = new AttendanceUseCase(repo);
 
 export async function GET(req: NextRequest) {
   try {
-    const user = authenticate(req); 
+    console.log("==> [API] /api/attendance called");
+
+    const user = authenticate(req); // nếu bạn chưa cần auth có thể comment dòng này
     const { searchParams } = new URL(req.url);
 
     const studentId = searchParams.get("student_id")
@@ -24,6 +26,7 @@ export async function GET(req: NextRequest) {
     const endDate = searchParams.get("end_date") ?? undefined;
     const date = searchParams.get("date") ?? undefined;
 
+    // ✅ Lấy điểm danh của sinh viên cụ thể
     if (studentId) {
       const result = await usecase.getStudentAttendance(
         studentId,
@@ -32,25 +35,42 @@ export async function GET(req: NextRequest) {
         endDate,
         offeringId
       );
-      return NextResponse.json(result);
+
+      return NextResponse.json({
+        returnCode: 0,
+        message: "OK",
+        data: result,
+      });
     }
 
+    // ✅ Lấy điểm danh của lớp học phần
     if (lecturerId && offeringId) {
       const result = await usecase.getOfferingAttendance(
         lecturerId,
         offeringId,
         date
       );
-      return NextResponse.json(result);
+
+      return NextResponse.json({
+        returnCode: 0,
+        message: "OK",
+        data: result,
+      });
     }
 
+    // ❌ Thiếu tham số
     return NextResponse.json(
-      { error: "Missing required params" },
+      { returnCode: 1, message: "Missing required params", data: null },
       { status: 400 }
     );
   } catch (e: any) {
+    console.error("==> [API Error] /api/attendance:", e);
     return NextResponse.json(
-      { error: e.message },
+      {
+        returnCode: 1,
+        message: e.message || "Internal Server Error",
+        data: null,
+      },
       { status: e.message === "Forbidden" ? 403 : 500 }
     );
   }

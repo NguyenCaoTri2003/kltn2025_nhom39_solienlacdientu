@@ -27,6 +27,7 @@ import {
   X,
   Search,
   Loader2,
+  CalendarRange,
 } from "lucide-react";
 import Pagination from "@/components/pagination";
 import { Student } from "@packages/core/entities/Student";
@@ -254,14 +255,15 @@ export function StudentTable({
           </Button>
           <Button
             variant="outline"
-            disabled={!hasSelection}
+            // disabled={!hasSelection}
             className="gap-2"
+            onClick={() => router.push(`/lecturer/classes/${classId}/attendance`)}
           >
-            <MessageSquare className="w-4 h-4" />
-            Liên hệ chung{" "}
-            {selectedIds.length > 0 && (
+            <CalendarRange className="w-4 h-4" />
+            Chi tiết điểm danh{" "}
+            {/* {selectedIds.length > 0 && (
               <span className="ml-1">({selectedIds.length})</span>
-            )}
+            )} */}
           </Button>
           <Button
             variant="outline"

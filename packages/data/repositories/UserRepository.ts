@@ -150,15 +150,14 @@ export class UserRepository {
   }
 
   async getAllUsers(): Promise<UserPublic[]> {
-  const { data, error } = await supabase
-    .from("users")
-    .select(
-      "id, full_name, email, phone, role, status, address, ethnic, citizen_id_card, created_at, last_login"
-    )
-    .order("id", { ascending: true });
+    const { data, error } = await supabase
+      .from("users")
+      .select(
+        "id, full_name, email, phone, role, status, address, ethnic, citizen_id_card, created_at, last_login"
+      )
+      .order("id", { ascending: true });
 
-  if (error) throw error;
-  return data ?? [];
-}
-
+    if (error) throw error;
+    return data ?? [];
+  }
 }
