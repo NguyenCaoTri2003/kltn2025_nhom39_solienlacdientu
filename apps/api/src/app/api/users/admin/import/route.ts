@@ -227,13 +227,13 @@ export async function POST(req: NextRequest) {
 
       // parent
       occupation: row["Nghề nghiệp"],
-      student_id: row["Mã sinh viên con"] || row["Student ID"], 
-      relationship: row["Quan hệ"] || row["Relationship"],     
+      student_id: row["Mã sinh viên con*"] || row["ID sinh viên con*"] || row["Student ID"], 
+      relationship: row["Mối quan hệ"] || row["Mối quan hệ*"] || row["Relationship"],
 
       // lecturer
-      lecturer_code: row["Mã giảng viên"],
+      lecturer_code: row["Mã giảng viên"] || row["Mã giảng viên*"],
       faculty_id: row["Mã khoa"],
-      academic_rank: row["Học hàm"],
+      academic_rank: row["Học hàm"] || row["Học hàm*"],
     });
 
     let successCount = 0;

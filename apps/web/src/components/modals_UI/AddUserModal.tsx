@@ -79,14 +79,13 @@ export function AddUserModal({ open, onClose, onSuccess }: AddUserModalProps) {
             sum && sum.failed > 0 ? `, lỗi: ${sum.failed}` : ""
           }`
         );
-        onSuccess?.();
-        // Không tự đóng để người dùng xem chi tiết nếu có lỗi
+
       } else {
         // TODO: Thêm đơn - gọi API tạo user đơn lẻ
         await new Promise((r) => setTimeout(r, 800));
         toast.success("Đã thêm người dùng");
         onSuccess?.();
-        onClose();
+        onClose(); 
       }
     } catch (err) {
       console.error(err);
@@ -139,11 +138,10 @@ export function AddUserModal({ open, onClose, onSuccess }: AddUserModalProps) {
 
   // Download template tương ứng với role
   const handleDownloadTemplate = () => {
-    // Map role -> file name in public/templates
     const roleToFile: Record<typeof role, string | null> = {
       student: "Student_Account_Import_Template.xlsx",
-      lecturer: null, // Chưa có file mẫu cho giảng viên
-      parent: null,   // Chưa có file mẫu cho phụ huynh
+      lecturer: "Lecturer_Account_Import_Template.xlsx", 
+      parent: "Parent_Account_Import_Template.xlsx",
       admin: "Admin_Account_Import_Template.xlsx",
     };
 
