@@ -1,16 +1,19 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Info } from "lucide-react";
+import { Search, X } from "lucide-react";
 import { toast } from "sonner";
 import { useParams } from "next/navigation";
-import { format, parseISO } from "date-fns";
-import { vi } from "date-fns/locale";
 import { Offering } from "@packages/core/entities/CourseOffering";
+import Pagination from "@/components/pagination";
+import { PageBreadcrumb } from "@/components/page-breadcrumb";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import AttendanceTable from "./attendance-table";
+import AttendanceModal from "./attendance-modal";
+import { Student } from "@packages/core/entities/Student";
 
 interface Attendance {
   id: number;
@@ -28,58 +31,71 @@ export default function AttendanceSummary() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("");
   const [noteModal, setNoteModal] = useState<{ open: boolean; note?: string }>({ open: false });
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 5;
+
+  const [searchText, setSearchText] = useState("");
+  const [filteredStudents, setFilteredStudents] = useState<any[]>([]);
+  const [selectedStudents, setSelectedStudents] = useState<Set<number>>(new Set());
+
+  const [attendanceOpen, setAttendanceOpen] = useState(false);
+  const [attendanceToday, setAttendanceToday] = useState<Record<number, any>>({});
+  const [attendanceLoading, setAttendanceLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const params = useParams();
   const { id } = params;
   const currentUser = typeof window !== "undefined" ? JSON.parse(localStorage.getItem("user") || "null") : null;
   const currentLecturerId = currentUser?.id;
 
+  const fetchData = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const [offeringRes, attendanceRes] = await Promise.all([
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/course-offerings/${id}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/attendance?lecturer_id=${currentLecturerId}&offering_id=${id}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+      ]);
+
+      if (!offeringRes.ok || !attendanceRes.ok) throw new Error("Lỗi tải dữ liệu");
+
+      const offeringData = (await offeringRes.json()).data;
+      const attendanceData = (await attendanceRes.json()).data;
+
+      setOffering(offeringData);
+      setAttendances(attendanceData);
+    } catch (err) {
+      console.error("Lỗi tải dữ liệu:", err);
+      toast.error("Không thể tải dữ liệu điểm danh");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        const [offeringRes, attendanceRes] = await Promise.all([
-          fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/course-offerings/${id}`, {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
-          fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/attendance?lecturer_id=${currentLecturerId}&offering_id=${id}`, {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
-        ]);
-
-        if (!offeringRes.ok || !attendanceRes.ok) throw new Error("Lỗi tải dữ liệu");
-
-        const offeringData = (await offeringRes.json()).data;
-        const attendanceData = (await attendanceRes.json()).data;
-
-        setOffering(offeringData);
-        setAttendances(attendanceData);
-      } catch (err) {
-        console.error("Lỗi tải dữ liệu:", err);
-        toast.error("Không thể tải dữ liệu điểm danh");
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchData();
   }, [id, currentLecturerId]);
 
   useEffect(() => {
     if (!offering) return;
-
     const isTheoryLecturer = offering.lecturers?.id === currentLecturerId;
-
-    if (isTheoryLecturer) {
-      setActiveTab("theory");
-    } else {
-      const myPracticeGroup = offering.practice_groups?.find(
-        (g: any) => g.lecturers?.id === currentLecturerId
-      );
-      if (myPracticeGroup) {
-        setActiveTab(`practice-${myPracticeGroup.id}`);
-      }
+    if (isTheoryLecturer) setActiveTab("theory");
+    else {
+      const myPracticeGroup = offering.practice_groups?.find((g: any) => g.lecturers?.id === currentLecturerId);
+      if (myPracticeGroup) setActiveTab(`practice-${myPracticeGroup.id}`);
     }
   }, [offering, currentLecturerId]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+    setSearchText("");
+    setFilteredStudents([]);
+    setSelectedStudents(new Set());
+  }, [activeTab]);
 
   if (loading) return <div className="p-4">Đang tải...</div>;
   if (!offering) return <div className="p-4">Không tìm thấy lớp học phần</div>;
@@ -109,123 +125,261 @@ export default function AttendanceSummary() {
   });
 
   const isTheoryLecturer = offering.lecturers?.id === currentLecturerId;
-
   const availablePracticeGroups = offering.practice_groups?.filter(
     (g: any) => g.lecturers?.id === currentLecturerId || isTheoryLecturer
   );
 
   const groupTabs = [
     ...(isTheoryLecturer
-      ? [
-        {
-          key: "theory",
-          label: "Lý thuyết",
-          students: allStudents,
-          dates: theoryDates,
-        },
-      ]
+      ? [{ key: "theory", label: "Lý thuyết", students: allStudents, dates: theoryDates }]
       : []),
     ...(availablePracticeGroups ?? []).map((g: any) => {
       const studentIds = g.students.map((pgs: any) => pgs.enrollment.student_id);
       const groupStudents = allStudents.filter((s: any) => studentIds.includes(s.id));
-      return {
-        key: `practice-${g.id}`,
-        label: `Nhóm thực hành ${g.group_number}`,
-        students: groupStudents,
-        groupId: g.id,
-        dates: practiceDates,
-      };
+      return { key: `practice-${g.id}`, label: `Nhóm thực hành ${g.group_number}`, students: groupStudents, groupId: g.id, dates: practiceDates };
     }),
   ];
 
-  const getBadge = (status: Attendance["status"]) => {
-    switch (status) {
-      case "present":
-        return <Badge className="bg-green-100 text-green-700 border border-green-200">Có mặt</Badge>;
-      case "absent":
-        return <Badge className="bg-red-100 text-red-700 border border-red-200">Vắng</Badge>;
-      case "late":
-        return <Badge className="bg-yellow-100 text-yellow-700 border border-yellow-200">Trễ</Badge>;
-      case "excused":
-        return <Badge className="bg-blue-100 text-blue-700 border border-blue-200">Có phép</Badge>;
-      default:
-        return <Badge className="bg-gray-100 text-gray-700 border border-gray-200">-</Badge>;
+  const sortByLastName = (students: typeof allStudents) => {
+    return [...students].sort((a, b) => {
+      const lastNameA = a.fullName.split(" ").slice(-1)[0].toLowerCase();
+      const lastNameB = b.fullName.split(" ").slice(-1)[0].toLowerCase();
+      return lastNameA.localeCompare(lastNameB);
+    });
+  };
+
+  const getPaginatedStudents = (students: typeof allStudents, page: number, pageSize: number) => {
+    const startIdx = (page - 1) * pageSize;
+    return students.slice(startIdx, startIdx + pageSize);
+  };
+
+  const handleSearch = (students: typeof allStudents) => {
+    const filtered = students.filter((s) =>
+      s.fullName.toLowerCase().includes(searchText.toLowerCase()) ||
+      s.studentCode.toLowerCase().includes(searchText.toLowerCase())
+    );
+    setFilteredStudents(filtered);
+    setCurrentPage(1);
+  };
+
+  const handleResetSearch = () => {
+    setSearchText("");
+    setFilteredStudents([]);
+    setCurrentPage(1);
+  };
+
+  const toggleSelectStudent = (id: number) => {
+    const newSet = new Set(selectedStudents);
+    if (newSet.has(id)) newSet.delete(id);
+    else newSet.add(id);
+    setSelectedStudents(newSet);
+  };
+
+  const toggleSelectAll = (students: typeof allStudents) => {
+    const allIds = students.map((s) => s.id);
+    const allSelected = allIds.every((id) => selectedStudents.has(id));
+    const newSet = new Set(selectedStudents);
+    if (allSelected) allIds.forEach((id) => newSet.delete(id));
+    else allIds.forEach((id) => newSet.add(id));
+    setSelectedStudents(newSet);
+  };
+
+  const fetchTodayAttendance = async (type: "theory" | "practice", groupId?: number) => {
+    try {
+      setAttendanceLoading(true);
+      const token = localStorage.getItem("token");
+      const currentUser = typeof window !== "undefined" ? JSON.parse(localStorage.getItem("user") || "null") : null;
+      const lecturerId = currentUser?.id;
+
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/attendance?lecturer_id=${lecturerId}&offering_id=${id}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      if (!res.ok) throw new Error("Không thể tải dữ liệu điểm danh.");
+
+      const resData = await res.json();
+      const data = resData.data || [];
+      const today = new Date().toISOString().split("T")[0];
+
+      const todayMap: Record<number, any> = {};
+      data.forEach((record: any) => {
+        const recordDate = record.attendance_date?.split("T")[0];
+        const isToday = recordDate === today;
+        const isSameType = record.type === type;
+        const isSameGroup = type === "practice" ? record.practice_group_id === groupId : true;
+        if (isToday && isSameType && isSameGroup) todayMap[record.enrollment.student_id] = record;
+      });
+
+      setAttendanceToday(todayMap);
+    } catch (err) {
+      console.error("Lỗi tải danh sách điểm danh:", err);
+    } finally {
+      setAttendanceLoading(false);
     }
   };
 
-  const formatVNDate = (dateStr: string) => format(parseISO(dateStr), "dd/MM/yyyy", { locale: vi });
+  const openAttendance = async (type: "theory" | "practice", groupId?: number) => {
+    await fetchTodayAttendance(type, groupId);
+    setAttendanceOpen(true);
+  };
+
+  const enrollments = offering.students
+    .filter((e) => e.students !== undefined)
+    .map((e) => ({ id: e.id, students: e.students as Student }));
+
+  const enrollmentToStudentMap: Record<number, number> = {};
+  enrollments.forEach((e: any) => {
+    enrollmentToStudentMap[e.id] = e.students.id;
+  });
+
+  const enrollmentMap: Record<number, number> = {};
+  offering.students.forEach((os: any) => {
+    if (os.enrollment) {
+      enrollmentMap[os.students.id] = os.enrollment.id;
+    }
+  });
+
+  const practiceGroups = offering.practice_groups || [];
+
+  const practiceGroupMap: Record<number, number> = {};
+  practiceGroups.forEach(pg => {
+    pg.students.forEach(pe => {
+      practiceGroupMap[pe.enrollment.student_id] = pg.id;
+    });
+  });
+
+  const handleAttendanceSubmit = async (records: any[]) => {
+    try {
+      setIsSubmitting(true);
+      const token = localStorage.getItem("token");
+
+      const responses = await Promise.all(
+        records.map(async (r) => {
+          const studentId = enrollmentToStudentMap[r.enrollment_id];
+          const existing = attendanceToday?.[studentId];
+
+          console.log("Submitting record:", {
+            offeringId: id,
+            ...(existing ? { id: existing.id } : {}),
+            ...r,
+          });
+
+          const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/attendance`, {
+            method: existing ? "PATCH" : "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            credentials: "include",
+            body: JSON.stringify({ offeringId: id, ...(existing ? { id: existing.id } : {}), ...r }),
+          });
+          if (!res.ok) throw new Error(`Lỗi ${res.status}`);
+          return res.json();
+        })
+      );
+
+      toast.success("Điểm danh thành công", {
+        description: `Đã điểm danh ${responses.length} sinh viên.`,
+      });
+
+      setAttendanceOpen(false);
+      await fetchData();
+      setSelectedStudents(new Set());
+      setFilteredStudents([]);
+      setSearchText("");
+      setCurrentPage(1);
+      setAttendanceToday({});
+    } catch (err: any) {
+      console.error(err);
+      toast.error("Không thể điểm danh", {
+        description: err.message || "Vui lòng thử lại sau.",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const currentGroup = groupTabs.find(g => g.key === activeTab);
+  const modalStudents = selectedStudents.size > 0
+    ? currentGroup?.students.filter(s => selectedStudents.has(s.id)) || []
+    : currentGroup?.students || [];
 
   return (
-    <div className="p-4">
-      <h2 className="text-lg font-semibold mb-4">{offering.name}</h2>
+    <div className="space-y-10">
+      <PageBreadcrumb
+        items={[
+          { label: "Lớp học phần", href: "/lecturer/classes" },
+          { label: offering.name },
+          { label: "Danh sách điểm danh" },
+        ]}
+      />
+
+      <h2 className="text-lg font-semibold mb-4">
+        Danh sách điểm danh của lớp {offering.name} ({offering.class_code})
+      </h2>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
           {groupTabs.map((g) => (
-            <TabsTrigger key={g.key} value={g.key}>
-              {g.label}
-            </TabsTrigger>
+            <TabsTrigger key={g.key} value={g.key}>{g.label}</TabsTrigger>
           ))}
         </TabsList>
 
-        {groupTabs.map((group) => (
-          <TabsContent key={group.key} value={group.key}>
-            <Table className="mt-4">
-              <TableHeader>
-                <TableRow>
-                  <TableHead>STT</TableHead>
-                  <TableHead>MSSV</TableHead>
-                  <TableHead>Họ và tên</TableHead>
-                  {group.dates.map((d) => (
-                    <TableHead key={d}>{formatVNDate(d)}</TableHead>
-                  ))}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {group.students.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={3 + group.dates.length} className="text-center">
-                      Không có sinh viên nào trong nhóm này
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  group.students.map((s, idx) => (
-                    <TableRow key={s.id}>
-                      <TableCell>{idx + 1}</TableCell>
-                      <TableCell>{s.studentCode}</TableCell>
-                      <TableCell>{s.fullName}</TableCell>
-                      {group.dates.map((date) => {
-                        const records = attendanceMap[s.id]?.[date] || [];
-                        const record = records.find((r) =>
-                          group.key === "theory"
-                            ? r.type === "theory"
-                            : "groupId" in group && r.practice_group_id === group.groupId
-                        );
-                        return (
-                          <TableCell key={date}>
-                            {record ? (
-                              <div className="flex items-center gap-1">
-                                {getBadge(record.status)}
-                                {record.note && (
-                                  <Info
-                                    className="w-4 h-4 text-gray-500 cursor-pointer"
-                                    onClick={() => setNoteModal({ open: true, note: record.note })}
-                                  />
-                                )}
-                              </div>
-                            ) : (
-                              "-"
-                            )}
-                          </TableCell>
-                        );
-                      })}
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </TabsContent>
-        ))}
+        {groupTabs.map((group) => {
+          let students = filteredStudents.length > 0 ? filteredStudents : group.students;
+          const sortedStudents = sortByLastName(students);
+          const paginatedStudents = getPaginatedStudents(sortedStudents, currentPage, pageSize);
+
+          return (
+            <TabsContent key={group.key} value={group.key}>
+              {/* Nút điểm danh hôm nay */}
+              <div className="flex justify-end mb-4">
+                <Button onClick={() => openAttendance(group.key === "theory" ? "theory" : "practice", group.groupId)}>
+                  Điểm danh hôm nay
+                </Button>
+              </div>
+
+              {/* Search */}
+              <div className="flex gap-2 mb-4">
+                <Input
+                  placeholder="Tìm theo tên hoặc MSSV"
+                  value={searchText}
+                  onChange={(e) => setSearchText(e.target.value)}
+                  className="flex-1"
+                />
+                <Button onClick={() => handleSearch(group.students)}>
+                  <Search className="w-4 h-4 mr-1" /> Tìm
+                </Button>
+                <Button variant="secondary" onClick={handleResetSearch}>
+                  <X className="w-4 h-4 mr-1" /> Reset
+                </Button>
+              </div>
+
+              {/* Table */}
+              <AttendanceTable
+                students={paginatedStudents}
+                attendanceMap={attendanceMap}
+                group={group}
+                currentPage={currentPage}
+                pageSize={pageSize}
+                selectedStudents={selectedStudents}
+                toggleSelectStudent={toggleSelectStudent}
+                toggleSelectAll={toggleSelectAll}
+                onOpenNote={(note) => setNoteModal({ open: true, note })}
+                loading={isSubmitting}
+              />
+
+              <Pagination
+                totalItems={students.length}
+                pageSize={pageSize}
+                currentPage={currentPage}
+                onChange={setCurrentPage}
+                item="sinh viên"
+              />
+            </TabsContent>
+          );
+        })}
       </Tabs>
 
       {/* Modal ghi chú */}
@@ -237,6 +391,22 @@ export default function AttendanceSummary() {
           <p className="mt-2">{noteModal.note || "Không có ghi chú"}</p>
         </DialogContent>
       </Dialog>
+
+      {/* Modal điểm danh */}
+      <AttendanceModal
+        open={attendanceOpen}
+        onClose={() => setAttendanceOpen(false)}
+        students={modalStudents}
+        type={activeTab === "theory" ? "theory" : "practice"}
+        enrollmentMap={enrollments.reduce((map, e) => {
+          map[e.students.id] = e.id;
+          return map;
+        }, {} as Record<number, number>)}
+        practiceGroupMap={practiceGroupMap}
+        attendanceToday={attendanceToday}
+        loadingAttendance={attendanceLoading}
+        onSubmit={handleAttendanceSubmit}
+      />
     </div>
   );
 }

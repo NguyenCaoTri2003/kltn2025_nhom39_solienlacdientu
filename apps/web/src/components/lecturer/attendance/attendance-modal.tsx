@@ -17,12 +17,12 @@ import { format } from "date-fns";
 interface AttendanceModalProps {
   open: boolean;
   onClose: () => void;
-  students: Student[];
+  students: { id: number; studentCode: string; fullName: string }[];
   type: string; // 'theory' hoặc 'practice'
   enrollmentMap?: Record<number, number>;
   practiceGroupMap?: Record<number, number>;
   onSubmit: (records: any[]) => Promise<void>;
-  attendanceToday?: Record<number, any>; // key = student_id
+  attendanceToday?: Record<number, any>; 
   loadingAttendance?: boolean;
 }
 
@@ -40,7 +40,8 @@ export default function AttendanceModal({
   const [records, setRecords] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // Khi mở modal: chuẩn bị danh sách điểm danh hôm nay
+  console.log("enrollmentMap:", enrollmentMap);
+
   useEffect(() => {
     if (open && students.length > 0) {
       const getLastName = (fullName?: string) => {
@@ -50,14 +51,14 @@ export default function AttendanceModal({
       };
 
       const sorted = [...students].sort((a, b) => {
-        const nameA = getLastName(a.users?.full_name);
-        const nameB = getLastName(b.users?.full_name);
+        const nameA = getLastName(a.fullName);
+        const nameB = getLastName(b.fullName);
         return nameA.localeCompare(nameB, "vi", { sensitivity: "base" });
       });
 
       setRecords(
         sorted.map((s) => {
-          const existing = attendanceToday?.[s.id]; // Nếu sinh viên đã điểm danh hôm nay
+          const existing = attendanceToday?.[s.id]; 
           return {
             id: existing?.id || null,
             student: s,
@@ -86,8 +87,10 @@ export default function AttendanceModal({
         const enrollment_id = enrollmentMap?.[r.student.id];
         const practice_group_id = practiceGroupMap?.[r.student.id];
 
+        console.log("Mapping for student:", r.student.id, { enrollment_id, practice_group_id });
+
         return {
-          id: r.id || undefined, // có id thì BE hiểu là update (ghi đè)
+          id: r.id || undefined,
           type,
           attendance_date: format(new Date(), "yyyy-MM-dd'T'HH:mm:ssXXX"),
           note: r.note || null,
@@ -97,6 +100,7 @@ export default function AttendanceModal({
         };
       });
 
+      console.log("Final data sent to API:", JSON.stringify(data, null, 2));
       await onSubmit(data);
       onClose();
     } finally {
@@ -165,9 +169,9 @@ export default function AttendanceModal({
                 className="flex items-start justify-between gap-3 border rounded-md p-2"
               >
                 <div className="flex-1">
-                  <p className="font-medium">{r.student.users?.full_name}</p>
+                  <p className="font-medium">{r.student.fullName}</p>
                   <p className="text-sm text-muted-foreground">
-                    MSSV: {r.student.student_code}
+                    MSSV: {r.student.studentCode}
                   </p>
 
                   {r.id && (

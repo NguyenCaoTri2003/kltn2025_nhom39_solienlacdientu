@@ -35,7 +35,7 @@ import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { normalize } from "@/utils/normalize";
-import AttendanceModal from "./attendance-modal";
+import AttendanceModal from "../attendance/attendance-modal";
 import { toast } from "sonner";
 import { PracticeGroup } from "@packages/core/entities/PracticeGroup";
 
@@ -227,37 +227,10 @@ export function StudentTable({
 
   const handleAttendanceSubmit = async (records: any[]) => {
     try {
-      // const responses = await Promise.all(
-      //   records.map(async (r) => {
-      //     const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/attendance`, {
-      //       method: "POST",
-      //       headers: {
-      //         "Content-Type": "application/json",
-      //         Authorization: `Bearer ${localStorage.getItem("token")}`,
-      //       },
-      //       credentials: "include",
-      //       body: JSON.stringify({
-      //         offeringId: classId,
-      //         ...r,
-      //       }),
-      //     });
-
-      //     if (!res.ok) {
-      //       const error = await res.json().catch(() => ({}));
-      //       throw new Error(error?.message || `Lỗi ${res.status}`);
-      //     }
-      //     return res.json();
-      //   })
-      // );
-
       const responses = await Promise.all(
         records.map(async (r) => {
           const studentId = enrollmentToStudentMap[r.enrollment_id];
           const existing = attendanceToday?.[studentId];
-
-          console.log("current record", r);
-          console.log("mapped studentId:", studentId);
-          console.log("existing record", existing);
 
           const url = `${process.env.NEXT_PUBLIC_API_URL}/api/attendance`;
           const method = existing ? "PATCH" : "POST";
@@ -386,6 +359,7 @@ export function StudentTable({
                   onCheckedChange={toggleSelectAll}
                 />
               </TableHead>
+              <TableHead>STT</TableHead>
               <TableHead className="w-[100px]">Mã SV</TableHead>
               <TableHead>Họ và tên</TableHead>
               <TableHead>Email</TableHead>
@@ -416,7 +390,7 @@ export function StudentTable({
                 </TableCell>
               </TableRow>
             ) : (
-              currentData.map((s) => {
+              currentData.map((s, idx) => {
                 const parents =
                   s.student_parent?.map((sp) => ({
                     name: sp.parents?.users?.full_name,
@@ -432,6 +406,7 @@ export function StudentTable({
                         onCheckedChange={() => toggleSelect(s.id)}
                       />
                     </TableCell>
+                    <TableCell>{(currentPage - 1) * pageSize + idx + 1}</TableCell>
                     <TableCell className="whitespace-nowrap">
                       {s.student_code}
                     </TableCell>
@@ -532,7 +507,7 @@ export function StudentTable({
           />
         )}
 
-        <AttendanceModal
+        {/* <AttendanceModal
           open={attendanceOpen}
           onClose={() => setAttendanceOpen(false)}
           students={students.filter((s) => selectedIds.includes(s.id))}
@@ -545,7 +520,7 @@ export function StudentTable({
           onSubmit={handleAttendanceSubmit}
           attendanceToday={attendanceToday}
           loadingAttendance={attendanceLoading}
-        />
+        /> */}
       </div>
     </div>
   );
