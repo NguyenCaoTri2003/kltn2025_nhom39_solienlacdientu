@@ -1,43 +1,51 @@
-import { NextRequest, NextResponse } from "next/server"
-import { getAllUsers } from "@packages/core/usecases/UsersUseCase"
-import { authenticate } from "@packages/utils/auth"
+import { NextRequest, NextResponse } from "next/server";
+import { authenticate } from "@packages/utils/auth";
+import { UserRepository } from "@packages/data/repositories/UserRepository";
 
-// GET http://localhost:3000/api/users
+// GET /api/users?page=1&limit=10&search=nguyet
+const userRepo = new UserRepository();
+
 export async function GET(req: NextRequest) {
   try {
-    //  Kiểm tra token
-    const user = authenticate(req)
-
-    //  Chỉ cho phép admin truy cập
-    if (user.role !== "admin") {
-      throw new Error("You do not have access!")
-    }
-
-    // Lấy danh sách user từ DB
-    const users = await getAllUsers()
-
-    if (!users || (Array.isArray(users) && users.length === 0)) {
+    const user = authenticate(req);
+    if (!user) {
       return NextResponse.json(
-        { returnCode: 1, message: "No users found", data: null },
-        { status: 404 }
-      )
+        { returnCode: -1, message: "Invalid token", data: null },
+        { status: 401 }
+      );
     }
 
-    //  Trả về kết quả
-    return NextResponse.json({ returnCode: 0, message: "OK", data: users })
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Unknown error"
-    const isUnauthorized = message === "No token" || message === "Invalid token"
-    const status =
-      message === "You do not have access!"
-        ? 403
-        : isUnauthorized
-        ? 401
-        : 500
+    if (user.role !== "admin") {
+      return NextResponse.json(
+        { returnCode: -1, message: "You do not have access!", data: null },
+        { status: 403 }
+      );
+    }
 
+    // Lấy query params
+    const { searchParams } = new URL(req.url);
+      const page = Number(searchParams.get("page") || 1);
+      const limit = Number(searchParams.get("limit") || 10);
+      const search = String(searchParams.get("search") || "");
+      const role = searchParams.get("role") || undefined;
+      const status = searchParams.get("status") || undefined;
+
+    // Gọi Repository
+      const result = await userRepo.getAllUsersWithPagination(page, limit, search, role as any, status as any);
+
+    return NextResponse.json({
+      returnCode: 0,
+      message: "OK",
+      data: {
+        users: result.users,
+        pagination: { page, limit, total: result.total, totalPages: result.totalPages },
+      },
+    });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Unknown error";
     return NextResponse.json(
       { returnCode: -1, message, data: null },
-      { status }
-    )
+      { status: 500 }
+    );
   }
 }

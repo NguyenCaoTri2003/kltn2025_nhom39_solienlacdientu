@@ -91,6 +91,8 @@ export default function ClassDetail() {
     fetchDetail();
   }, [id]);
 
+  console.log("Offering Data:", offering);  
+
   useEffect(() => {
     if (!id) return;
     const fetchGrades = async () => {

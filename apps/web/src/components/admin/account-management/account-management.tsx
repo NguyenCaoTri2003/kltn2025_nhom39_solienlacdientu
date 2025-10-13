@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { toast } from "sonner";
+import { useState } from "react";
 import {
   Card,
   CardContent,
@@ -26,8 +27,6 @@ import {
   UserX,
   Clock,
   MoreHorizontal,
-  Shield,
-  User,
   Eye,
   Pencil,
   Lock,
@@ -36,8 +35,10 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronsRight,
-  Plus,
   FileClock,
+  Loader2,
+  RotateCcw,
+  AlertTriangle,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -54,13 +55,19 @@ import {
 } from "@/components/ui/select";
 
 import { translateRole, translateStatus } from "@packages/utils/translations";
+// Allow using process.env in client without Node types
+declare const process: { env: Record<string, string | undefined> };
+import type { ChangeEvent, KeyboardEvent } from "react";
+
+import { ResetPasswordModal } from "@/components/modals_UI/ResetPasswordModal";
 
 interface Account {
   id: string;
+  code?: string;
   name: string;
   role: "admin" | "lecturer" | "student" | "parent";
   status: "active" | "inactive" | "suspended";
-  lastLogin: string;
+  lastLogin: string | null;
   email: string;
 }
 
@@ -72,161 +79,240 @@ type ApiUser = {
   role: Account["role"] | string;
   status: Account["status"] | string;
   last_login?: string | null;
+  _code?: string | null;
+};
+
+type ApiPagination = {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
 };
 
 export function AccountManagement() {
-  const [searchTerm, setSearchTerm] = useState("");
-  type AccountStatusFilter = "all" | "active" | "inactive" | "suspended";
-  const [statusFilter, setStatusFilter] = useState<AccountStatusFilter>("all");
-  type AccountRoleFilter = "all" | "admin" | "lecturer" | "student" | "parent";
-  const [roleFilter, setRoleFilter] = useState<AccountRoleFilter>("all");
+  type RoleOption = "all" | "admin" | "lecturer" | "student" | "parent";
+  type StatusOption = "all" | "active" | "inactive" | "suspended";
+  // Từ khóa người dùng nhập
+  const [searchInput, setSearchInput] = useState("");
+  // Từ khóa đã áp dụng để gọi API
+  const [query, setQuery] = useState("");
   const [page, setPage] = useState<number>(1);
   const [pageSize, setPageSize] = useState<number>(10);
+  const [total, setTotal] = useState<number>(0);
+  const [totalPages, setTotalPages] = useState<number>(1);
+  const [hasSearched, setHasSearched] = useState<boolean>(false);
+  // Bộ lọc role/status
+  const [roleFilter, setRoleFilter] = useState<RoleOption>("all");
+  const [statusFilter, setStatusFilter] = useState<StatusOption>("all");
 
-  // const [accounts] = useState<Account[]>([
-  //   {
-  //     id: "admin",
-  //     name: "Administrator",
-  //     role: "admin",
-  //     status: "active",
-  //     lastLogin: "2024-01-15 09:30",
-  //     email: "admin@school.edu.vn",
-  //   },
-  //   {
-  //     id: "GV001",
-  //     name: "Nguyễn Văn An",
-  //     role: "lecturer",
-  //     status: "suspended",
-  //     lastLogin: "2024-01-15 08:45",
-  //     email: "nva@school.edu.vn",
-  //   },
-  //   {
-  //     id: "GV002",
-  //     name: "Trần Thị Bình",
-  //     role: "lecturer",
-  //     status: "active",
-  //     lastLogin: "2024-01-14 16:20",
-  //     email: "ttb@school.edu.vn",
-  //   },
-  //   {
-  //     id: "GV003",
-  //     name: "Lê Văn Cường",
-  //     role: "lecturer",
-  //     status: "inactive",
-  //     lastLogin: "2024-01-10 14:15",
-  //     email: "lvc@school.edu.vn",
-  //   },
-  //   {
-  //     id: "GV004",
-  //     name: "Phạm Thị Dung",
-  //     role: "lecturer",
-  //     status: "suspended",
-  //     lastLogin: "Chưa đăng nhập",
-  //     email: "ptd@school.edu.vn",
-  //   },
-  //   // Ví dụ thêm role sinh viên và phụ huynh
-  //   {
-  //     id: "SV001",
-  //     name: "Phạm Quốc Huy",
-  //     role: "student",
-  //     status: "active",
-  //     lastLogin: "2024-01-12 10:05",
-  //     email: "pqh@student.edu.vn",
-  //   },
-  //   {
-  //     id: "PH001",
-  //     name: "Trần Văn Nam",
-  //     role: "parent",
-  //     status: "inactive",
-  //     lastLogin: "2024-01-09 18:22",
-  //     email: "tvn@parent.edu.vn",
-  //   },
-  // ]);
+  // Model reset password
+  const [resetOpen, setResetOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
 
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [rowActionId, setRowActionId] = useState<string | null>(null);
 
-  // ✅ Gọi API khi load trang
-  useEffect(() => {
+  // Hiển thị xác nhận bằng toast (Sonner)
+  const confirmWithToast = (message: string): Promise<boolean> => {
+    return new Promise((resolve) => {
+      toast.custom(
+        (t) => (
+          <div
+            className="flex flex-col gap-3 bg-popover text-popover-foreground
+                     border border-border rounded-lg p-4 shadow-xl min-w-[340px]"
+          >
+            {/* Header */}
+            <div className="flex items-center gap-3">
+              <div className="flex items-center justify-center w-10 h-10 rounded-full bg-yellow-100/10 text-yellow-500">
+                <AlertTriangle className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="font-semibold text-base">Xác nhận hành động</p>
+                <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
+                  {message}
+                </p>
+              </div>
+            </div>
+
+            {/* Buttons */}
+            <div className="flex justify-end gap-2 pt-2">
+              <Button
+                size="sm"
+                variant="outline"
+                className="border-border text-muted-foreground hover:bg-muted"
+                onClick={() => {
+                  toast.dismiss(t);
+                  resolve(false);
+                }}
+              >
+                Hủy
+              </Button>
+              <Button
+                size="sm"
+                className="bg-primary hover:bg-primary/90 text-primary-foreground"
+                onClick={() => {
+                  toast.dismiss(t);
+                  resolve(true);
+                }}
+              >
+                Xác nhận
+              </Button>
+            </div>
+          </div>
+        ),
+        { duration: Infinity }
+      );
+    });
+  };
+
+  // Hàm gọi API server-side pagination
+  const loadAccounts = async (
+    nextPage: number,
+    nextPageSize: number,
+    nextQuery: string,
+    nextRole: string = roleFilter,
+    nextStatus: string = statusFilter
+  ) => {
     const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
-    const fetchUsers = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-
-        const res = await fetch(`${API_BASE}/api/users`, {
-          // Sử dụng cookie httpOnly từ đăng nhập -> cần gửi kèm credentials
-          credentials: "include",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        });
-
-        const result = await res.json().catch(() => ({}));
-
-        if (res.ok && result.returnCode === 0 && Array.isArray(result.data)) {
-          // map từ JSON thành Account interface
-          const mapped = (result.data as ApiUser[]).map(
-            (u: ApiUser): Account => ({
-              id: String(u.id),
-              name: u.full_name,
-              role: u.role as Account["role"],
-              status: u.status as Account["status"],
-              email: u.email,
-              lastLogin: u.last_login
-                ? new Date(u.last_login).toLocaleString("vi-VN")
-                : "Chưa đăng nhập",
-            })
-          );
-          setAccounts(mapped);
+    try {
+      setLoading(true);
+      setError(null);
+      const params = new URLSearchParams();
+      params.set("page", String(nextPage));
+      params.set("limit", String(nextPageSize));
+      if (nextQuery) params.set("search", nextQuery);
+      if (nextRole && nextRole !== "all") params.set("role", nextRole);
+      if (nextStatus && nextStatus !== "all") params.set("status", nextStatus);
+      const res = await fetch(`${API_BASE}/api/users?${params.toString()}`, {
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+      const result = await res.json().catch(() => ({}));
+      if (
+        res.ok &&
+        result.returnCode === 0 &&
+        Array.isArray(result.data?.users)
+      ) {
+        const pag: ApiPagination | undefined = result.data?.pagination;
+        const mapped = (result.data.users as ApiUser[]).map(
+          (u: ApiUser): Account => ({
+            id: String(u.id),
+            code: u._code ?? undefined,
+            name: u.full_name,
+            role: u.role as Account["role"],
+            status: u.status as Account["status"],
+            email: u.email,
+            lastLogin: u.last_login ?? null,
+          })
+        );
+        setAccounts(mapped);
+        if (pag) {
+          setTotal(pag.total);
+          setTotalPages(pag.totalPages);
+          setPage(pag.page);
+          setPageSize(pag.limit);
         } else {
-          // Ưu tiên hiển thị thông điệp cụ thể từ server
-          if (res.status === 401) {
-            setError("Bạn chưa đăng nhập hoặc phiên đăng nhập đã hết hạn (401)");
-          } else if (res.status === 403) {
-            setError("Bạn không có quyền truy cập tài nguyên này (403)");
-          } else {
-            setError(result.message || "Không thể tải danh sách người dùng");
-          }
+          // Fallback nếu BE không trả pagination
+          setTotal(mapped.length);
+          setTotalPages(1);
         }
-      } catch {
-        setError("Lỗi kết nối máy chủ");
-      } finally {
-        setLoading(false);
+      } else {
+        if (res.status === 401)
+          setError("Bạn chưa đăng nhập hoặc phiên đăng nhập đã hết hạn (401)");
+        else if (res.status === 403)
+          setError("Bạn không có quyền truy cập tài nguyên này (403)");
+        else setError(result.message || "Không thể tải danh sách người dùng");
+        setAccounts([]);
+        setTotal(0);
+        setTotalPages(1);
       }
-    };
+    } catch {
+      setError("Lỗi kết nối máy chủ");
+      setAccounts([]);
+      setTotal(0);
+      setTotalPages(1);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    fetchUsers();
-  }, []); 
-
-  const filteredAccounts = accounts.filter((account) => {
-    const matchSearch =
-      account.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      account.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      account.email.toLowerCase().includes(searchTerm.toLowerCase());
-
-    const matchStatus =
-      statusFilter === "all" || account.status === statusFilter;
-    const matchRole = roleFilter === "all" || account.role === roleFilter;
-    return matchSearch && matchStatus && matchRole;
-  });
-
-  const total = filteredAccounts.length;
-  const totalPages = Math.max(1, Math.ceil(total / pageSize));
   const currentPage = Math.min(page, totalPages);
-  const startIndex = (currentPage - 1) * pageSize;
-  const pagedAccounts = filteredAccounts.slice(
-    startIndex,
-    startIndex + pageSize
-  );
+  // startIndex không còn dùng để tính hiển thị local
 
-  const goFirst = () => setPage(1);
-  const goPrev = () => setPage((p) => Math.max(1, p - 1));
-  const goNext = () => setPage((p) => Math.min(totalPages, p + 1));
-  const goLast = () => setPage(totalPages);
+  const handleSearch = async () => {
+    setHasSearched(true);
+    const nextQuery = searchInput.trim();
+    setQuery(nextQuery);
+    await loadAccounts(1, pageSize, nextQuery);
+  };
 
-  // ⚙️ Dùng translateStatus trong Badge
+  const handleRetry = async () => {
+    await loadAccounts(page, pageSize, query);
+  };
+
+  const changePage = async (newPage: number) => {
+    await loadAccounts(newPage, pageSize, query);
+  };
+
+  const changePageSize = async (newSize: number) => {
+    setPageSize(newSize);
+    await loadAccounts(1, newSize, query);
+  };
+
+  // Call API to change status and update local state
+  const changeUserStatus = async (
+    accountId: string,
+    nextStatus: Account["status"]
+  ): Promise<{ ok: boolean; message?: string }> => {
+    const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
+    try {
+      setRowActionId(accountId);
+      setError(null);
+      const res = await fetch(`${API_BASE}/api/users/${accountId}/status`, {
+        method: "PATCH",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ status: nextStatus }),
+      });
+      const result = await res.json().catch(() => ({}));
+      if (res.ok && result?.returnCode === 0) {
+        const updatedStatus: Account["status"] =
+          result?.data?.status || nextStatus;
+        setAccounts((prev) =>
+          prev.map((a) =>
+            a.id === accountId ? { ...a, status: updatedStatus } : a
+          )
+        );
+        return { ok: true };
+      } else {
+        let msg = "Không thể cập nhật trạng thái người dùng";
+        if (res.status === 401)
+          msg = "Bạn chưa đăng nhập hoặc phiên đã hết hạn (401)";
+        else if (res.status === 403)
+          msg = "Bạn không có quyền cập nhật trạng thái (403)";
+        else if (result?.message) msg = result.message;
+        setError(msg);
+        return { ok: false, message: msg };
+      }
+    } catch {
+      const msg = "Lỗi kết nối máy chủ khi cập nhật trạng thái";
+      setError(msg);
+      return { ok: false, message: msg };
+    } finally {
+      setRowActionId(null);
+    }
+  };
+
+  //  Dùng translateStatus trong Badge
   const getStatusBadge = (status: string) => {
     const text = translateStatus(status);
     switch (status) {
@@ -253,17 +339,7 @@ export function AccountManagement() {
     }
   };
 
-  const getRoleIcon = (role: string) => {
-    switch (role) {
-      case "admin":
-        return <Shield className="h-4 w-4" />;
-      case "lecturer":
-      case "student":
-      case "parent":
-      default:
-        return <User className="h-4 w-4" />;
-    }
-  };
+  // Đã bỏ icon vai trò để gọn giao diện danh sách
 
   const activeCount = accounts.filter((a) => a.status === "active").length;
   const inactiveCount = accounts.filter((a) => a.status === "inactive").length;
@@ -350,80 +426,82 @@ export function AccountManagement() {
               <div className="relative">
                 <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Tìm kiếm tài khoản..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 w-64 bg-input border-border"
+                  placeholder="Nhập tên, email, số điện thoại hoặc mã số..."
+                  value={searchInput}
+                  onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                    setSearchInput(e.target.value)
+                  }
+                  onKeyDown={(e: KeyboardEvent<HTMLInputElement>) => {
+                    if (e.key === "Enter") handleSearch();
+                  }}
+                  className="pl-10 w-80 bg-input border-border"
                 />
               </div>
-
-              {/* Bộ lọc trạng thái */}
-              <Select
-                value={statusFilter}
-                onValueChange={(value: AccountStatusFilter) => {
-                  setStatusFilter(value);
-                  setPage(1);
-                }}
-              >
-                <SelectTrigger className="w-40 bg-input border-border">
-                  <SelectValue placeholder="Trạng thái" />
-                </SelectTrigger>
-                <SelectContent className="bg-popover border-border">
-                  <SelectItem value="all">Tất cả</SelectItem>
-                  <SelectItem value="active">
-                    {translateStatus("active")}
-                  </SelectItem>
-                  <SelectItem value="inactive">
-                    {translateStatus("inactive")}
-                  </SelectItem>
-                  <SelectItem value="suspended">
-                    {translateStatus("suspended")}
-                  </SelectItem>
-                </SelectContent>
-              </Select>
 
               {/* Bộ lọc vai trò */}
               <Select
                 value={roleFilter}
-                onValueChange={(value: AccountRoleFilter) => {
-                  setRoleFilter(value);
-                  setPage(1);
-                }}
+                onValueChange={(v: string) => setRoleFilter(v as RoleOption)}
               >
-                <SelectTrigger className="w-40 bg-input border-border">
-                  <SelectValue placeholder="Vai trò" />
+                <SelectTrigger className="w-[160px] bg-input border-border">
+                  <SelectValue placeholder="Lọc theo vai trò" />
                 </SelectTrigger>
                 <SelectContent className="bg-popover border-border">
                   <SelectItem value="all">Tất cả vai trò</SelectItem>
-                  <SelectItem value="admin">
-                    {translateRole("admin")}
-                  </SelectItem>
-                  <SelectItem value="lecturer">
-                    {translateRole("lecturer")}
-                  </SelectItem>
-                  <SelectItem value="student">
-                    {translateRole("student")}
-                  </SelectItem>
-                  <SelectItem value="parent">
-                    {translateRole("parent")}
-                  </SelectItem>
+                  <SelectItem value="student">Sinh viên</SelectItem>
+                  <SelectItem value="lecturer">Giảng viên</SelectItem>
+                  <SelectItem value="parent">Phụ huynh</SelectItem>
+                  <SelectItem value="admin">Quản trị viên</SelectItem>
+                </SelectContent>
+              </Select>
+
+              {/* Bộ lọc trạng thái */}
+              <Select
+                value={statusFilter}
+                onValueChange={(v: string) =>
+                  setStatusFilter(v as StatusOption)
+                }
+              >
+                <SelectTrigger className="w-[160px] bg-input border-border">
+                  <SelectValue placeholder="Lọc theo trạng thái" />
+                </SelectTrigger>
+                <SelectContent className="bg-popover border-border">
+                  <SelectItem value="all">Tất cả trạng thái</SelectItem>
+                  <SelectItem value="active">Hoạt động</SelectItem>
+                  <SelectItem value="inactive">Bị khóa</SelectItem>
+                  <SelectItem value="suspended">Chờ kích hoạt</SelectItem>
                 </SelectContent>
               </Select>
 
               <Button
                 variant="outline"
                 onClick={() => {
-                  setSearchTerm("");
-                  setStatusFilter("all");
+                  setSearchInput("");
+                  setQuery("");
                   setRoleFilter("all");
-                  setPage(1);
+                  setStatusFilter("all");
+                  setAccounts([]);
+                  setTotal(0);
+                  setTotalPages(1);
+                  setHasSearched(false);
                 }}
               >
                 Đặt lại
               </Button>
 
+              <Button
+                onClick={async () => {
+                  setHasSearched(true);
+                  setQuery(searchInput.trim());
+                  await loadAccounts(1, pageSize, searchInput.trim());
+                }}
+                disabled={loading}
+                className="bg-primary hover:bg-primary/90 text-primary-foreground"
+              >
+                Tìm kiếm
+              </Button>
               <Button className="bg-primary hover:bg-primary/90 text-primary-foreground">
-                <Plus className="w-4 h-4 mr-2" /> Thêm tài khoản
+                Thêm tài khoản
               </Button>
             </div>
           </div>
@@ -440,188 +518,245 @@ export function AccountManagement() {
                 variant="outline"
                 className="border-red-500/40 text-red-300 hover:bg-red-500/10"
                 onClick={() => {
-                  // Thử lại
                   setError(null);
-                  // Gọi lại API bằng cách tạm set loading và rerun logic
-                  // Tái sử dụng logic trong useEffect bằng cách gọi lại tương tự
-                  // Đơn giản nhất: lặp lại nội dung fetch ở đây
-                  (async () => {
-                    try {
-                      setLoading(true);
-                      const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
-                      const res = await fetch(`${API_BASE}/api/users`, {
-                        credentials: "include",
-                        headers: { "Content-Type": "application/json" },
-                      });
-                      const result = await res.json().catch(() => ({}));
-                      if (res.ok && result.returnCode === 0 && Array.isArray(result.data)) {
-                        const mapped = (result.data as ApiUser[]).map((u: ApiUser): Account => ({
-                          id: String(u.id),
-                          name: u.full_name,
-                          role: u.role as Account["role"],
-                          status: u.status as Account["status"],
-                          email: u.email,
-                          lastLogin: u.last_login
-                            ? new Date(u.last_login).toLocaleString("vi-VN")
-                            : "Chưa đăng nhập",
-                        }));
-                        setAccounts(mapped);
-                      } else {
-                        setError(result.message || `Lỗi tải dữ liệu (HTTP ${res.status})`);
-                      }
-                    } catch {
-                      setError("Lỗi kết nối máy chủ");
-                    } finally {
-                      setLoading(false);
-                    }
-                  })();
+                  handleRetry();
                 }}
               >
                 Thử lại
               </Button>
             </div>
           )}
-         <div className="rounded-md border border-border overflow-hidden">
-  {/* ✅ Thêm cả cuộn dọc & ngang */}
-  <div className="overflow-x-auto overflow-y-auto max-h-[65vh]">
-    <Table className="min-w-[800px]"> {/* min width để cuộn ngang có tác dụng */}
-      <TableHeader>
-        <TableRow className="border-border sticky top-0 bg-card z-10">
-          <TableHead className="text-muted-foreground">Mã số</TableHead>
-          <TableHead className="text-muted-foreground">Họ tên</TableHead>
-          <TableHead className="text-muted-foreground">Vai trò</TableHead>
-          <TableHead className="text-muted-foreground w-[100px]">Email</TableHead>
-          <TableHead className="text-muted-foreground">Trạng thái</TableHead>
-          <TableHead className="text-muted-foreground">Đăng nhập cuối</TableHead>
-          <TableHead className="text-muted-foreground">Thao tác</TableHead>
-        </TableRow>
-      </TableHeader>
+          <div className="rounded-md border border-border overflow-hidden">
+            <div className="overflow-x-auto overflow-y-auto max-h-[65vh]">
+              <Table className="min-w-[800px]">
+                <TableHeader>
+                  <TableRow className="border-border sticky top-0 bg-card z-10">
+                    <TableHead className="text-muted-foreground w-[50px] text-center">
+                      STT
+                    </TableHead>
+                    <TableHead className="text-muted-foreground">
+                      Mã số
+                    </TableHead>
+                    <TableHead className="text-muted-foreground text-center">
+                      Họ tên
+                    </TableHead>
+                    <TableHead className="text-muted-foreground">
+                      Vai trò
+                    </TableHead>
+                    <TableHead className="text-muted-foreground w-[100px] text-center">
+                      Email
+                    </TableHead>
+                    <TableHead className="text-muted-foreground">
+                      Trạng thái
+                    </TableHead>
+                    <TableHead className="text-muted-foreground">
+                      Đăng nhập cuối
+                    </TableHead>
+                    <TableHead className="text-muted-foreground">
+                      Thao tác
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
 
-      <TableBody>
-        {loading && (
-          <>
-            {Array.from({ length: 5 }).map((_, idx) => (
-              <TableRow key={`sk-${idx}`} className="border-border">
-                <TableCell className="w-[120px]">
-                  <Skeleton className="h-4 w-24" />
-                </TableCell>
-                <TableCell>
-                  <Skeleton className="h-4 w-48" />
-                </TableCell>
-                <TableCell>
-                  <Skeleton className="h-4 w-28" />
-                </TableCell>
-                <TableCell>
-                  <Skeleton className="h-4 w-64" />
-                </TableCell>
-                <TableCell>
-                  <Skeleton className="h-6 w-24" />
-                </TableCell>
-                <TableCell>
-                  <Skeleton className="h-4 w-40" />
-                </TableCell>
-                <TableCell>
-                  <Skeleton className="h-6 w-8" />
-                </TableCell>
-              </TableRow>
-            ))}
-          </>
-        )}
-
-        {pagedAccounts.map((account) => (
-          <TableRow
-            key={account.id}
-            className="border-border hover:bg-accent/40 transition-colors"
-          >
-            <TableCell className="font-medium text-card-foreground">
-              {account.id}
-            </TableCell>
-
-            <TableCell className="text-card-foreground">
-              {account.name}
-            </TableCell>
-
-            <TableCell>
-              <div className="flex items-center space-x-2">
-
-                <span className="text-card-foreground">
-                  {translateRole(account.role)}
-                </span>
-              </div>
-            </TableCell>
-
-            <TableCell className="text-muted-foreground max-w-[200px] whitespace-normal break-words">
-              {account.email}
-            </TableCell>
-
-            <TableCell>{getStatusBadge(account.status)}</TableCell>
-
-            <TableCell className="text-muted-foreground">
-              {account.lastLogin}
-            </TableCell>
-
-            <TableCell>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm">
-                    <MoreHorizontal className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-
-                <DropdownMenuContent
-                  align="end"
-                  className="bg-popover border-border min-w-48"
-                >
-                  <DropdownMenuItem className="text-popover-foreground hover:bg-accent">
-                    <Eye className="w-4 h-4 mr-2" /> Xem chi tiết
-                  </DropdownMenuItem>
-                  <DropdownMenuItem className="text-popover-foreground hover:bg-accent">
-                    <Pencil className="w-4 h-4 mr-2" /> Chỉnh sửa
-                  </DropdownMenuItem>
-
-                  {account.status === "active" ? (
-                    <DropdownMenuItem className="text-red-400 hover:bg-accent">
-                      <Lock className="w-4 h-4 mr-2" /> Khóa tài khoản
-                    </DropdownMenuItem>
-                  ) : (
-                    <DropdownMenuItem className="text-green-400 hover:bg-accent">
-                      <Unlock className="w-4 h-4 mr-2" /> Kích hoạt tài khoản
-                    </DropdownMenuItem>
+                <TableBody>
+                  {loading && (
+                    <>
+                      {Array.from({ length: 5 }).map((_, idx) => (
+                        <TableRow key={`sk-${idx}`} className="border-border">
+                          <TableCell className="w-[70px] text-center">
+                            <Skeleton className="h-4 w-8 mx-auto" />
+                          </TableCell>
+                          <TableCell className="w-[120px]">
+                            <Skeleton className="h-4 w-24" />
+                          </TableCell>
+                          <TableCell>
+                            <Skeleton className="h-4 w-48" />
+                          </TableCell>
+                          <TableCell>
+                            <Skeleton className="h-4 w-28" />
+                          </TableCell>
+                          <TableCell>
+                            <Skeleton className="h-4 w-64" />
+                          </TableCell>
+                          <TableCell>
+                            <Skeleton className="h-6 w-24" />
+                          </TableCell>
+                          <TableCell>
+                            <Skeleton className="h-4 w-40" />
+                          </TableCell>
+                          <TableCell className="sticky right-0 bg-card z-10 border-l border-border">
+                            <Skeleton className="h-6 w-8 ml-auto" />
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </>
                   )}
 
-                  <DropdownMenuItem className="text-popover-foreground hover:bg-accent">
-                    <FileClock className="w-4 h-4 mr-2" /> Lịch sử đăng nhập
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </TableCell>
-          </TableRow>
-        ))}
+                  {accounts.map((account, idx) => (
+                    <TableRow
+                      key={account.id}
+                      className="border-border hover:bg-accent/40 transition-colors"
+                    >
+                      <TableCell className="text-center text-card-foreground">
+                        {(page - 1) * pageSize + idx + 1}
+                      </TableCell>
+                      <TableCell className="font-medium text-card-foreground">
+                        {account.code || account.id}
+                      </TableCell>
 
-        {total === 0 && (
-          <TableRow>
-            <TableCell
-              colSpan={7}
-              className="text-center text-muted-foreground py-8"
-            >
-              {loading
-                ? "Đang tải dữ liệu..."
-                : "Không có tài khoản nào phù hợp. Hãy thử thay đổi bộ lọc."}
-            </TableCell>
-          </TableRow>
-        )}
-      </TableBody>
-    </Table>
-  </div>
-</div>
+                      <TableCell className="text-card-foreground">
+                        {account.name}
+                      </TableCell>
 
+                      <TableCell>
+                        <div className="flex items-center space-x-2">
+                          <span className="text-card-foreground">
+                            {translateRole(account.role)}
+                          </span>
+                        </div>
+                      </TableCell>
+
+                      <TableCell className="text-muted-foreground max-w-[200px] whitespace-normal break-words">
+                        {account.email}
+                      </TableCell>
+
+                      <TableCell>{getStatusBadge(account.status)}</TableCell>
+
+                      <TableCell className="text-muted-foreground">
+                        <span suppressHydrationWarning>
+                          {account.lastLogin
+                            ? new Date(account.lastLogin).toLocaleString(
+                                "vi-VN"
+                              )
+                            : "Chưa đăng nhập"}
+                        </span>
+                      </TableCell>
+
+                      <TableCell className="text-muted-foreground">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              disabled={rowActionId === account.id}
+                            >
+                              {rowActionId === account.id ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <MoreHorizontal className="h-4 w-4" />
+                              )}
+                            </Button>
+                          </DropdownMenuTrigger>
+
+                          <DropdownMenuContent
+                            align="end"
+                            className="bg-popover border-border min-w-48"
+                          >
+                            <DropdownMenuItem className="text-popover-foreground hover:bg-accent">
+                              <Eye className="w-4 h-4 mr-2" /> Xem chi tiết
+                            </DropdownMenuItem>
+                            <DropdownMenuItem className="text-popover-foreground hover:bg-accent">
+                              <Pencil className="w-4 h-4 mr-2" /> Chỉnh sửa
+                            </DropdownMenuItem>
+
+                            {account.status === "active" ? (
+                              <DropdownMenuItem
+                                className="text-red-400 hover:bg-accent"
+                                onClick={async () => {
+                                  const ok = await confirmWithToast(
+                                    "Bạn có chắc muốn khóa tài khoản này?"
+                                  );
+                                  if (!ok) return;
+                                  const res = await changeUserStatus(
+                                    account.id,
+                                    "inactive"
+                                  );
+                                  if (res.ok)
+                                    toast.success("Đã khóa tài khoản");
+                                  else
+                                    toast.error(
+                                      res.message ||
+                                        "Không thể cập nhật trạng thái"
+                                    );
+                                }}
+                                disabled={rowActionId === account.id}
+                              >
+                                <Lock className="w-4 h-4 mr-2" /> Khóa tài khoản
+                              </DropdownMenuItem>
+                            ) : (
+                              <DropdownMenuItem
+                                className="text-green-400 hover:bg-accent"
+                                onClick={async () => {
+                                  const ok = await confirmWithToast(
+                                    "Kích hoạt tài khoản này?"
+                                  );
+                                  if (!ok) return;
+                                  const res = await changeUserStatus(
+                                    account.id,
+                                    "active"
+                                  );
+                                  if (res.ok)
+                                    toast.success("Đã kích hoạt tài khoản");
+                                  else
+                                    toast.error(
+                                      res.message ||
+                                        "Không thể cập nhật trạng thái"
+                                    );
+                                }}
+                                disabled={rowActionId === account.id}
+                              >
+                                <Unlock className="w-4 h-4 mr-2" /> Kích hoạt
+                                tài khoản
+                              </DropdownMenuItem>
+                            )}
+                            <DropdownMenuItem
+                              className="text-popover-foreground hover:bg-accent"
+                              onClick={() => {
+                                setSelectedUser({
+                                  id: account.id,
+                                  name: account.name,
+                                });
+                                setResetOpen(true);
+                              }}
+                            >
+                              <RotateCcw className="w-4 h-4 mr-2" /> Đặt lại mật
+                              khẩu
+                            </DropdownMenuItem>
+
+                            <DropdownMenuItem className="text-popover-foreground hover:bg-accent">
+                              <FileClock className="w-4 h-4 mr-2" /> Lịch sử
+                              đăng nhập
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+
+                  {total === 0 && (
+                    <TableRow>
+                      <TableCell
+                        colSpan={8}
+                        className="text-center text-muted-foreground py-8"
+                      >
+                        {loading
+                          ? "Đang tải dữ liệu..."
+                          : hasSearched
+                          ? "Không có tài khoản nào phù hợp. Hãy thay đổi từ khóa và thử lại."
+                          : "Chưa có dữ liệu. Nhập điều kiện và nhấn Tìm kiếm để tải danh sách."}
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
 
           {/* Pagination */}
           {total > 0 && (
             <div className="flex items-center justify-between mt-4 gap-3 flex-wrap">
               <div className="text-sm text-muted-foreground">
-                Hiển thị {startIndex + 1}-
-                {Math.min(startIndex + pageSize, total)} trên {total}
+                Trang {currentPage}/{totalPages} • Tổng: {total}
               </div>
               <div className="flex items-center gap-3">
                 <div className="flex items-center gap-2">
@@ -630,9 +765,8 @@ export function AccountManagement() {
                   </span>
                   <Select
                     value={String(pageSize)}
-                    onValueChange={(v: string) => {
-                      setPageSize(Number(v));
-                      setPage(1);
+                    onValueChange={async (v: string) => {
+                      await changePageSize(Number(v));
                     }}
                   >
                     <SelectTrigger className="w-20 bg-input border-border">
@@ -651,7 +785,7 @@ export function AccountManagement() {
                     variant="outline"
                     size="icon"
                     className="h-8 w-8 mr-1"
-                    onClick={goFirst}
+                    onClick={async () => changePage(1)}
                     disabled={currentPage === 1}
                   >
                     <ChevronsLeft className="h-4 w-4" />
@@ -660,7 +794,9 @@ export function AccountManagement() {
                     variant="outline"
                     size="icon"
                     className="h-8 w-8"
-                    onClick={goPrev}
+                    onClick={async () =>
+                      changePage(Math.max(1, currentPage - 1))
+                    }
                     disabled={currentPage === 1}
                   >
                     <ChevronLeft className="h-4 w-4" />
@@ -672,7 +808,9 @@ export function AccountManagement() {
                     variant="outline"
                     size="icon"
                     className="h-8 w-8"
-                    onClick={goNext}
+                    onClick={async () =>
+                      changePage(Math.min(totalPages, currentPage + 1))
+                    }
                     disabled={currentPage === totalPages}
                   >
                     <ChevronRight className="h-4 w-4" />
@@ -681,7 +819,7 @@ export function AccountManagement() {
                     variant="outline"
                     size="icon"
                     className="h-8 w-8 ml-1"
-                    onClick={goLast}
+                    onClick={async () => changePage(totalPages)}
                     disabled={currentPage === totalPages}
                   >
                     <ChevronsRight className="h-4 w-4" />
@@ -692,6 +830,16 @@ export function AccountManagement() {
           )}
         </CardContent>
       </Card>
+      {/* Modal đặt lại mật khẩu */}
+      <ResetPasswordModal
+        open={resetOpen}
+        onClose={() => setResetOpen(false)}
+        userId={selectedUser?.id || null}
+        userName={selectedUser?.name}
+        onSuccess={() => {
+          toast.success("Đặt lại mật khẩu thành công!");
+        }}
+      />
     </div>
   );
 }

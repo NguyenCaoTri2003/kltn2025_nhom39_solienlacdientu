@@ -1,4 +1,3 @@
-import { NextRequest } from "next/server";
 import jwt from "jsonwebtoken";
 
 const JWT_SECRET = process.env.JWT_SECRET!;
@@ -8,7 +7,12 @@ export interface JwtPayload {
   role: string;
 }
 
-export function authenticate(req: NextRequest): JwtPayload {
+type RequestLike = {
+  headers: Headers;
+  cookies: { get(name: string): { value: string } | undefined };
+};
+
+export function authenticate(req: RequestLike): JwtPayload {
   const authHeader = req.headers.get("Authorization");
   // Prefer Authorization header; fallback to cookie named 'token'
   const headerToken = authHeader?.replace("Bearer ", "").trim();
