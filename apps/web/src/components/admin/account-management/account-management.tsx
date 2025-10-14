@@ -60,6 +60,7 @@ declare const process: { env: Record<string, string | undefined> };
 import type { ChangeEvent, KeyboardEvent } from "react";
 
 import { ResetPasswordModal } from "@/components/modals_UI/ResetPasswordModal";
+import { AddUserModal } from "@/components/modals_UI/AddUserModal";
 
 interface Account {
   id: string;
@@ -111,6 +112,9 @@ export function AccountManagement() {
     id: string;
     name: string;
   } | null>(null);
+
+  // Model add user
+  const [addUserOpen, setAddUserOpen] = useState(false);
 
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
@@ -219,7 +223,7 @@ export function AccountManagement() {
           setPage(pag.page);
           setPageSize(pag.limit);
         } else {
-          // Fallback nếu BE không trả pagination
+
           setTotal(mapped.length);
           setTotalPages(1);
         }
@@ -500,9 +504,13 @@ export function AccountManagement() {
               >
                 Tìm kiếm
               </Button>
-              <Button className="bg-primary hover:bg-primary/90 text-primary-foreground">
-                Thêm tài khoản
-              </Button>
+             <Button
+  className="bg-primary hover:bg-primary/90 text-primary-foreground"
+  onClick={() => setAddUserOpen(true)}
+>
+  Thêm tài khoản
+</Button>
+
             </div>
           </div>
         </CardHeader>
@@ -840,6 +848,16 @@ export function AccountManagement() {
           toast.success("Đặt lại mật khẩu thành công!");
         }}
       />
+      {/* Modal thêm người dùng */}
+      <AddUserModal
+  open={addUserOpen}
+  onClose={() => setAddUserOpen(false)}
+  onSuccess={() => {
+    toast.success("Tạo tài khoản mới thành công!");
+    loadAccounts(page, pageSize, query); // reload danh sách
+  }}
+/>
+
     </div>
   );
 }
