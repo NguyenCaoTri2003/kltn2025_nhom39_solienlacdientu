@@ -31,7 +31,6 @@ export default function StudentDetail() {
                 const json = await res.json()
                 if (json?.data) setData(json.data)
             } catch (e) {
-                console.log("Error fetching class detail:", e);
                 console.error(e)
             } finally {
                 setLoading(false)
@@ -45,8 +44,6 @@ export default function StudentDetail() {
     if (!data) return <p className="text-center mt-10 text-destructive">Không tìm thấy sinh viên.</p>
 
     const { student, parents, grades, offering, practice_groups } = data
-
-    console.log("Student Detail Data:", data)
 
     return (
         <div className="space-y-8">

@@ -57,8 +57,6 @@ export default function OfferingsList() {
     fetchOfferings();
   }, [selectedSemester]);
 
-  console.log("Offerings:", offerings);
-
   useEffect(() => {
     setPage(1);
   }, [selectedSemester?.id, searchTerm]);

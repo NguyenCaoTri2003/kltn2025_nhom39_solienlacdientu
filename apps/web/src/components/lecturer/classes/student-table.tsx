@@ -35,7 +35,7 @@ import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { normalize } from "@/utils/normalize";
-import AttendanceModal from "./attendance-modal";
+import AttendanceModal from "../attendance/attendance-modal";
 import { toast } from "sonner";
 import { PracticeGroup } from "@packages/core/entities/PracticeGroup";
 
@@ -60,16 +60,11 @@ export function StudentTable({
   const [isLoading, setIsLoading] = useState(false);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const router = useRouter();
-  const [attendanceOpen, setAttendanceOpen] = useState(false);
-
-  console.log("students", students);
-  console.log("enrollments", enrollments);
-  console.log("practiceGroups", practiceGroups);
 
   const practiceGroupMap: Record<number, number> = {};
   practiceGroups.forEach(pg => {
     pg.students.forEach(pe => {
-      practiceGroupMap[pe.enrollment.student_id] = pg.id; 
+      practiceGroupMap[pe.enrollment.student_id] = pg.id;
     });
   });
 
@@ -163,44 +158,6 @@ export function StudentTable({
 
   const hasSelection = selectedIds.length > 0;
 
-  const handleAttendanceSubmit = async (records: any[]) => {
-    try {
-      const responses = await Promise.all(
-        records.map(async (r) => {
-          const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/attendance`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${localStorage.getItem("token")}`,
-            },
-            credentials: "include",
-            body: JSON.stringify({
-              offeringId: classId,
-              ...r,
-            }),
-          });
-
-          if (!res.ok) {
-            const error = await res.json().catch(() => ({}));
-            throw new Error(error?.message || `Lỗi ${res.status}`);
-          }
-          return res.json();
-        })
-      );
-
-      setAttendanceOpen(false);
-      setSelectedIds([]);
-      toast.success("Điểm danh thành công", {
-        description: `Đã điểm danh ${responses.length} sinh viên.`,
-      });
-    } catch (err: any) {
-      console.error("Lỗi điểm danh:", err);
-      toast.error("Không thể điểm danh", {
-        description: err.message || "Vui lòng thử lại sau.",
-      });
-    }
-  };
-
   if (!students || students.length === 0) {
     return (
       <div className="text-center text-muted-foreground py-6">
@@ -245,25 +202,11 @@ export function StudentTable({
         <div className="flex items-center gap-2">
           <Button
             variant="outline"
-            disabled={!hasSelection}
-            className="gap-2"
-            onClick={() => setAttendanceOpen(true)}
-          >
-            <Calendar className="w-4 h-4" />
-            Điểm danh
-            {selectedIds.length > 0 && <span className="ml-1">({selectedIds.length})</span>}
-          </Button>
-          <Button
-            variant="outline"
-            // disabled={!hasSelection}
             className="gap-2"
             onClick={() => router.push(`/lecturer/classes/${classId}/attendance`)}
           >
             <CalendarRange className="w-4 h-4" />
             Chi tiết điểm danh{" "}
-            {/* {selectedIds.length > 0 && (
-              <span className="ml-1">({selectedIds.length})</span>
-            )} */}
           </Button>
           <Button
             variant="outline"
@@ -290,6 +233,7 @@ export function StudentTable({
                   onCheckedChange={toggleSelectAll}
                 />
               </TableHead>
+              <TableHead>STT</TableHead>
               <TableHead className="w-[100px]">Mã SV</TableHead>
               <TableHead>Họ và tên</TableHead>
               <TableHead>Email</TableHead>
@@ -320,7 +264,7 @@ export function StudentTable({
                 </TableCell>
               </TableRow>
             ) : (
-              currentData.map((s) => {
+              currentData.map((s, idx) => {
                 const parents =
                   s.student_parent?.map((sp) => ({
                     name: sp.parents?.users?.full_name,
@@ -336,6 +280,7 @@ export function StudentTable({
                         onCheckedChange={() => toggleSelect(s.id)}
                       />
                     </TableCell>
+                    <TableCell>{(currentPage - 1) * pageSize + idx + 1}</TableCell>
                     <TableCell className="whitespace-nowrap">
                       {s.student_code}
                     </TableCell>
@@ -435,24 +380,6 @@ export function StudentTable({
             item="sinh viên"
           />
         )}
-
-        <AttendanceModal
-          open={attendanceOpen}
-          onClose={() => setAttendanceOpen(false)}
-          // students={
-          //   type === "practice"
-          //     ? practiceGroups.flatMap(pg => pg.students).filter(pe => selectedIds.includes(pe.id))
-          //     : students.filter(s => selectedIds.includes(s.id))
-          // }
-           students={students.filter((s) => selectedIds.includes(s.id))}
-          type={type}
-          enrollmentMap={enrollments.reduce((map, e) => {
-            map[e.students.id] = e.id;
-            return map;
-          }, {} as Record<number, number>)}
-          practiceGroupMap={practiceGroupMap}
-          onSubmit={handleAttendanceSubmit}
-        />
       </div>
     </div>
   );
