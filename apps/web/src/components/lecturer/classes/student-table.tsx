@@ -60,6 +60,9 @@ export function StudentTable({
   const [isLoading, setIsLoading] = useState(false);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const router = useRouter();
+  const [messageModalOpen, setMessageModalOpen] = useState(false);
+  const [messageTarget, setMessageTarget] = useState<"student" | "parent" | null>(null);
+  const [messageContent, setMessageContent] = useState("");
 
   const practiceGroupMap: Record<number, number> = {};
   practiceGroups.forEach(pg => {
@@ -158,6 +161,64 @@ export function StudentTable({
 
   const hasSelection = selectedIds.length > 0;
 
+  const handleOpenMessageModal = (target: "student" | "parent") => {
+    setMessageTarget(target);
+    setMessageModalOpen(true);
+  };
+
+  const handleSendMessages = async () => {
+    try {
+      setIsLoading(true);
+
+      // lấy danh sách người nhận
+      const receivers: number[] = [];
+      selectedIds.forEach((sid) => {
+        const student = students.find((s) => s.id === sid);
+        console.log("student", student);
+        if (!student) return;
+
+        if (messageTarget === "student") {
+          if (student?.id) receivers.push(student.id);
+        } else if (messageTarget === "parent") {
+          student.student_parent?.forEach((sp) => {
+            if (sp.parents?.users?.id) receivers.push(sp.parents.users.id);
+          });
+        }
+      });
+
+      if (receivers.length === 0) {
+        toast.error("Không tìm thấy người nhận hợp lệ.");
+        setIsLoading(false);
+        return;
+      }
+      const token = localStorage.getItem("token");
+      if (!token) {
+        toast.error("Bạn chưa đăng nhập.");
+        setIsLoading(false);
+        return;
+      }
+      await Promise.all(
+        receivers.map(async (receiverId) => {
+          await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/messages`, {
+            method: "POST",
+            headers: { Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ receiverId, content: messageContent }),
+          });
+        })
+      );
+
+      toast.success("Gửi tin nhắn thành công!");
+      setMessageModalOpen(false);
+      setMessageContent("");
+      router.push("/lecturer/communications");
+    } catch (err) {
+      console.error(err);
+      toast.error("Lỗi khi gửi tin nhắn");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   if (!students || students.length === 0) {
     return (
       <div className="text-center text-muted-foreground py-6">
@@ -208,7 +269,7 @@ export function StudentTable({
             <CalendarRange className="w-4 h-4" />
             Chi tiết điểm danh{" "}
           </Button>
-          <Button
+          {/* <Button
             variant="outline"
             disabled={!hasSelection}
             className="gap-2"
@@ -219,7 +280,33 @@ export function StudentTable({
             {selectedIds.length > 0 && (
               <span className="ml-1">({selectedIds.length})</span>
             )}
+          </Button> */}
+          <Button
+            variant="outline"
+            disabled={!hasSelection}
+            className="gap-2"
+            onClick={() => handleOpenMessageModal("student")}
+          >
+            <MessageSquare className="w-4 h-4" />
+            Nhắn tin sinh viên
+            {selectedIds.length > 0 && (
+              <span className="ml-1">({selectedIds.length})</span>
+            )}
           </Button>
+
+          <Button
+            variant="outline"
+            disabled={!hasSelection}
+            className="gap-2"
+            onClick={() => handleOpenMessageModal("parent")}
+          >
+            <MessageCircle className="w-4 h-4" />
+            Nhắn tin phụ huynh
+            {selectedIds.length > 0 && (
+              <span className="ml-1">({selectedIds.length})</span>
+            )}
+          </Button>
+
         </div>
       </div>
 
@@ -380,6 +467,36 @@ export function StudentTable({
             item="sinh viên"
           />
         )}
+
+        {messageModalOpen && (
+          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
+            <div className="bg-white rounded-xl shadow-lg w-full max-w-lg p-6 space-y-4">
+              <h2 className="text-lg font-semibold">
+                {messageTarget === "student" ? "Nhắn tin cho sinh viên" : "Nhắn tin cho phụ huynh"}
+              </h2>
+
+              <textarea
+                className="w-full border rounded-md p-2 h-32 focus:outline-none focus:ring-2 focus:ring-primary"
+                placeholder="Nhập nội dung tin nhắn..."
+                value={messageContent}
+                onChange={(e) => setMessageContent(e.target.value)}
+              />
+
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setMessageModalOpen(false)}>
+                  Hủy
+                </Button>
+                <Button
+                  disabled={!messageContent.trim()}
+                  onClick={handleSendMessages}
+                >
+                  Gửi
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
       </div>
     </div>
   );

@@ -11,15 +11,15 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { identifier, password, role } = body;
 
-    const { user, token } = await authUseCase.loginLecturerOrAdmin(identifier, password);
+    const { user, token } = await authUseCase.loginStudentOrParent(identifier, password);
 
     const status = String((user as any)?.status || "").toLowerCase();
-    if (status === "inactive") {
-      return NextResponse.json(
-        { error: "Tài khoản của bạn đang bị khóa. Vui lòng liên hệ quản trị viên." },
-        { status: 403 }
-      );
-    }
+    // if (status === "inactive") {
+    //   return NextResponse.json(
+    //     { error: "Tài khoản của bạn đang bị khóa. Vui lòng liên hệ quản trị viên." },
+    //     { status: 403 }
+    //   );
+    // }
 
     if (status === "suspended") {
       const oldStatus = user.status;
