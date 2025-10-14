@@ -40,8 +40,6 @@ export default function AttendanceModal({
   const [records, setRecords] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
-  console.log("enrollmentMap:", enrollmentMap);
-
   useEffect(() => {
     if (open && students.length > 0) {
       const getLastName = (fullName?: string) => {

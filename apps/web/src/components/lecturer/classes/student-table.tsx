@@ -64,12 +64,6 @@ export function StudentTable({
   const [attendanceToday, setAttendanceToday] = useState<Record<number, any>>({});
   const [attendanceLoading, setAttendanceLoading] = useState(false);
 
-  // console.log("classId", classId);
-
-  // console.log("students", students);
-  // console.log("enrollments", enrollments);
-  // console.log("practiceGroups", practiceGroups);
-
   const practiceGroupMap: Record<number, number> = {};
   practiceGroups.forEach(pg => {
     pg.students.forEach(pe => {

@@ -59,7 +59,7 @@ export default function AttendanceTable({
     toggleSelectStudent,
     toggleSelectAll,
     onOpenNote,
-    loading = false,
+    loading = false, // có thể dùng cho search + save
 }: AttendanceTableProps) {
     const formatVNDate = (dateStr: string) =>
         format(parseISO(dateStr), "dd/MM/yyyy", { locale: vi });
@@ -67,35 +67,15 @@ export default function AttendanceTable({
     const getBadge = (status: AttendanceRecord["status"]) => {
         switch (status) {
             case "present":
-                return (
-                    <Badge className="bg-green-100 text-green-700 border border-green-200">
-                        Có mặt
-                    </Badge>
-                );
+                return <Badge className="bg-green-100 text-green-700 border border-green-200">Có mặt</Badge>;
             case "absent":
-                return (
-                    <Badge className="bg-red-100 text-red-700 border border-red-200">
-                        Vắng
-                    </Badge>
-                );
+                return <Badge className="bg-red-100 text-red-700 border border-red-200">Vắng</Badge>;
             case "late":
-                return (
-                    <Badge className="bg-yellow-100 text-yellow-700 border border-yellow-200">
-                        Trễ
-                    </Badge>
-                );
+                return <Badge className="bg-yellow-100 text-yellow-700 border border-yellow-200">Trễ</Badge>;
             case "excused":
-                return (
-                    <Badge className="bg-blue-100 text-blue-700 border border-blue-200">
-                        Có phép
-                    </Badge>
-                );
+                return <Badge className="bg-blue-100 text-blue-700 border border-blue-200">Có phép</Badge>;
             default:
-                return (
-                    <Badge className="bg-gray-100 text-gray-700 border border-gray-200">
-                        -
-                    </Badge>
-                );
+                return <Badge className="bg-gray-100 text-gray-700 border border-gray-200">-</Badge>;
         }
     };
 
@@ -103,14 +83,6 @@ export default function AttendanceTable({
 
     return (
         <div className="relative">
-            {/* Overlay loading spinner */}
-            {loading && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/70 dark:bg-gray-900/50 backdrop-blur-sm z-10 rounded-md">
-                    <Loader2 className="w-6 h-6 animate-spin text-gray-600 mb-2" />
-                    <p className="text-sm text-gray-600">Đang lưu điểm danh...</p>
-                </div>
-            )}
-
             <Table className={`mt-4 transition-opacity ${loading ? "opacity-50 pointer-events-none" : "opacity-100"}`}>
                 <TableHeader>
                     <TableRow>
@@ -180,6 +152,14 @@ export default function AttendanceTable({
                     )}
                 </TableBody>
             </Table>
+
+            {/* Overlay loading kiểu StudentTable */}
+            {loading && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/70 backdrop-blur-sm z-10 rounded-md">
+                    <Loader2 className="w-6 h-6 animate-spin text-gray-600 mb-2" />
+                    <p className="text-sm text-gray-600">Đang tải dữ liệu...</p>
+                </div>
+            )}
         </div>
     );
 }

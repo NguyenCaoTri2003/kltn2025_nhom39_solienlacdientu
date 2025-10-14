@@ -14,6 +14,8 @@ import { Input } from "@/components/ui/input";
 import AttendanceTable from "./attendance-table";
 import AttendanceModal from "./attendance-modal";
 import { Student } from "@packages/core/entities/Student";
+import AttendanceEditModal from "./attendance-edit-modal";
+import { normalize } from "@/utils/normalize";
 
 interface Attendance {
   id: number;
@@ -33,9 +35,10 @@ export default function AttendanceSummary() {
   const [noteModal, setNoteModal] = useState<{ open: boolean; note?: string }>({ open: false });
 
   const [currentPage, setCurrentPage] = useState(1);
-  const pageSize = 5;
+  const pageSize = 20;
 
   const [searchText, setSearchText] = useState("");
+  const [hasSearched, setHasSearched] = useState(false);
   const [filteredStudents, setFilteredStudents] = useState<any[]>([]);
   const [selectedStudents, setSelectedStudents] = useState<Set<number>>(new Set());
 
@@ -43,6 +46,8 @@ export default function AttendanceSummary() {
   const [attendanceToday, setAttendanceToday] = useState<Record<number, any>>({});
   const [attendanceLoading, setAttendanceLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [editAttendanceOpen, setEditAttendanceOpen] = useState(false);
 
   const params = useParams();
   const { id } = params;
@@ -50,6 +55,7 @@ export default function AttendanceSummary() {
   const currentLecturerId = currentUser?.id;
 
   const fetchData = async () => {
+    setLoading(true);
     try {
       const token = localStorage.getItem("token");
       const [offeringRes, attendanceRes] = await Promise.all([
@@ -114,6 +120,20 @@ export default function AttendanceSummary() {
     new Set(attendances.filter(a => a.type === "practice").map(a => a.attendance_date.split("T")[0]))
   ).sort();
 
+  const practiceGroups = offering.practice_groups || [];
+
+  const groupPracticeDatesMap: Record<number, string[]> = {}; 
+  practiceGroups.forEach(pg => {
+    const groupDates = Array.from(
+      new Set(
+        attendances
+          .filter(a => a.type === "practice" && a.practice_group_id === pg.id)
+          .map(a => a.attendance_date.split("T")[0])
+      )
+    ).sort();
+    groupPracticeDatesMap[pg.id] = groupDates;
+  });
+
   const attendanceMap: Record<number, Record<string, Attendance[]>> = {};
   attendances.forEach((a) => {
     const studentId = a.enrollment?.student_id;
@@ -136,7 +156,7 @@ export default function AttendanceSummary() {
     ...(availablePracticeGroups ?? []).map((g: any) => {
       const studentIds = g.students.map((pgs: any) => pgs.enrollment.student_id);
       const groupStudents = allStudents.filter((s: any) => studentIds.includes(s.id));
-      return { key: `practice-${g.id}`, label: `Nhóm thực hành ${g.group_number}`, students: groupStudents, groupId: g.id, dates: practiceDates };
+      return { key: `practice-${g.id}`, label: `Nhóm thực hành ${g.group_number}`, students: groupStudents, groupId: g.id, dates: groupPracticeDatesMap[g.id] || [] };
     }),
   ];
 
@@ -154,18 +174,26 @@ export default function AttendanceSummary() {
   };
 
   const handleSearch = (students: typeof allStudents) => {
-    const filtered = students.filter((s) =>
-      s.fullName.toLowerCase().includes(searchText.toLowerCase()) ||
-      s.studentCode.toLowerCase().includes(searchText.toLowerCase())
-    );
-    setFilteredStudents(filtered);
-    setCurrentPage(1);
+    setIsLoading(true);
+    setTimeout(() => {
+      const normalizedQuery = normalize(searchText); 
+      const filtered = students.filter((s) =>
+        normalize(s.fullName).includes(normalizedQuery) ||
+        normalize(s.studentCode).includes(normalizedQuery)
+      );
+      setFilteredStudents(filtered);
+      setCurrentPage(1);
+      setHasSearched(true);
+      setIsLoading(false);
+    }, 300);
   };
 
   const handleResetSearch = () => {
     setSearchText("");
     setFilteredStudents([]);
     setCurrentPage(1);
+    setHasSearched(false);
+    setSelectedStudents(new Set());
   };
 
   const toggleSelectStudent = (id: number) => {
@@ -233,14 +261,10 @@ export default function AttendanceSummary() {
     enrollmentToStudentMap[e.id] = e.students.id;
   });
 
-  const enrollmentMap: Record<number, number> = {};
-  offering.students.forEach((os: any) => {
-    if (os.enrollment) {
-      enrollmentMap[os.students.id] = os.enrollment.id;
-    }
-  });
-
-  const practiceGroups = offering.practice_groups || [];
+  const enrollmentMap = enrollments.reduce((map, e) => {
+    map[e.students.id] = e.id; // student_id -> enrollment_id
+    return map;
+  }, {} as Record<number, number>);
 
   const practiceGroupMap: Record<number, number> = {};
   practiceGroups.forEach(pg => {
@@ -258,12 +282,6 @@ export default function AttendanceSummary() {
         records.map(async (r) => {
           const studentId = enrollmentToStudentMap[r.enrollment_id];
           const existing = attendanceToday?.[studentId];
-
-          console.log("Submitting record:", {
-            offeringId: id,
-            ...(existing ? { id: existing.id } : {}),
-            ...r,
-          });
 
           const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/attendance`, {
             method: existing ? "PATCH" : "POST",
@@ -300,6 +318,79 @@ export default function AttendanceSummary() {
     }
   };
 
+  const handleAttendanceUpdate = async (records: any[]) => {
+    try {
+      setIsSubmitting(true);
+      const token = localStorage.getItem("token");
+
+      console.table(records);
+
+      const responses = await Promise.all(
+        records.map(async (r, i) => {
+          if (r.id) {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/attendance`, {
+              method: "PATCH",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+              credentials: "include",
+              body: JSON.stringify({
+                offeringId: id,
+                id: r.id,
+                status: r.status,
+                note: r.note ?? null,
+                attendance_date: r.attendance_date,
+                type: r.type,
+                practice_group_id: r.practice_group_id ?? null,
+              }),
+            });
+            const data = await res.json();
+            return data;
+          } else {
+            const enrollmentId = enrollmentMap[r.student_id] ?? enrollmentMap[r.students?.id] ?? null;
+            const payload: any = {
+              offeringId: id,
+              enrollment_id: enrollmentId,
+              status: r.status,
+              note: r.note ?? null,
+              attendance_date: r.attendance_date,
+              type: r.type,
+              practice_group_id: r.practice_group_id ?? null,
+            };
+
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/attendance`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+              credentials: "include",
+              body: JSON.stringify(payload),
+            });
+            if (!res.ok) {
+              throw new Error(`Lỗi ${res.status}`);
+            }
+            const data = await res.json();
+            return data;
+          }
+        })
+      );
+      toast.success("Cập nhật điểm danh thành công!");
+      setEditAttendanceOpen(false);
+      await fetchData();
+      setSelectedStudents(new Set());
+      setFilteredStudents([]);
+      setSearchText("");
+      setCurrentPage(1);
+      setAttendanceToday({});
+    } catch (error) {
+      toast.error("Có lỗi xảy ra khi lưu điểm danh");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const currentGroup = groupTabs.find(g => g.key === activeTab);
   const modalStudents = selectedStudents.size > 0
     ? currentGroup?.students.filter(s => selectedStudents.has(s.id)) || []
@@ -310,7 +401,7 @@ export default function AttendanceSummary() {
       <PageBreadcrumb
         items={[
           { label: "Lớp học phần", href: "/lecturer/classes" },
-          { label: offering.name },
+          { label: offering.name, href: `/lecturer/classes/${offering.id}` },
           { label: "Danh sách điểm danh" },
         ]}
       />
@@ -333,32 +424,49 @@ export default function AttendanceSummary() {
 
           return (
             <TabsContent key={group.key} value={group.key}>
-              {/* Nút điểm danh hôm nay */}
-              <div className="flex justify-end mb-4">
-                <Button onClick={() => openAttendance(group.key === "theory" ? "theory" : "practice", group.groupId)}>
-                  Điểm danh hôm nay
-                </Button>
+              <div className="flex justify-between items-center mb-4">
+                <div className="flex gap-2 items-center">
+                  <div className="relative w-64">
+                    <Input
+                      placeholder="Tìm theo tên hoặc MSSV"
+                      value={searchText}
+                      onChange={(e) => setSearchText(e.target.value)}
+                      className="pr-8"
+                    />
+                    {searchText && (
+                      <button
+                        type="button"
+                        onClick={() => setSearchText("")}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+
+                  <Button onClick={() => handleSearch(group.students)}>
+                    <Search className="w-4 h-4 mr-2" /> Tìm kiếm
+                  </Button>
+
+                  {hasSearched && (
+                    <Button variant="destructive" onClick={handleResetSearch}>
+                      Xóa tìm kiếm
+                    </Button>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <Button onClick={() => openAttendance(group.key === "theory" ? "theory" : "practice", "groupId" in group ? group.groupId : undefined)}>
+                    Điểm danh hôm nay
+                  </Button>
+                  <Button variant="secondary" onClick={() => setEditAttendanceOpen(true)}>
+                    Chỉnh sửa điểm danh
+                  </Button>
+                </div>
               </div>
 
-              {/* Search */}
-              <div className="flex gap-2 mb-4">
-                <Input
-                  placeholder="Tìm theo tên hoặc MSSV"
-                  value={searchText}
-                  onChange={(e) => setSearchText(e.target.value)}
-                  className="flex-1"
-                />
-                <Button onClick={() => handleSearch(group.students)}>
-                  <Search className="w-4 h-4 mr-1" /> Tìm
-                </Button>
-                <Button variant="secondary" onClick={handleResetSearch}>
-                  <X className="w-4 h-4 mr-1" /> Reset
-                </Button>
-              </div>
-
-              {/* Table */}
               <AttendanceTable
-                students={paginatedStudents}
+                students={hasSearched ? filteredStudents : paginatedStudents}
                 attendanceMap={attendanceMap}
                 group={group}
                 currentPage={currentPage}
@@ -367,11 +475,10 @@ export default function AttendanceSummary() {
                 toggleSelectStudent={toggleSelectStudent}
                 toggleSelectAll={toggleSelectAll}
                 onOpenNote={(note) => setNoteModal({ open: true, note })}
-                loading={isSubmitting}
+                loading={isSubmitting || isLoading || attendanceLoading}
               />
-
               <Pagination
-                totalItems={students.length}
+                totalItems={hasSearched ? filteredStudents.length : students.length}
                 pageSize={pageSize}
                 currentPage={currentPage}
                 onChange={setCurrentPage}
@@ -384,7 +491,7 @@ export default function AttendanceSummary() {
 
       {/* Modal ghi chú */}
       <Dialog open={noteModal.open} onOpenChange={(open: any) => setNoteModal({ open })}>
-        <DialogContent>
+        <DialogContent className="max-w-3xl">
           <DialogHeader>
             <DialogTitle>Ghi chú điểm danh</DialogTitle>
           </DialogHeader>
@@ -406,6 +513,22 @@ export default function AttendanceSummary() {
         attendanceToday={attendanceToday}
         loadingAttendance={attendanceLoading}
         onSubmit={handleAttendanceSubmit}
+      />
+
+      {/* Modal chỉnh sửa điểm danh */}
+      <AttendanceEditModal
+        open={editAttendanceOpen}
+        onClose={() => setEditAttendanceOpen(false)}
+        offeringId={Number(id)}
+        lecturerId={currentLecturerId}
+        type={activeTab === "theory" ? "theory" : "practice"}
+        groupId={currentGroup && "groupId" in currentGroup ? (currentGroup as { groupId: any }).groupId : undefined}
+        students={modalStudents}
+        enrollmentMap={enrollments.reduce((map, e) => {
+          map[e.students.id] = e.id;
+          return map;
+        }, {} as Record<number, number>)}
+        onSubmit={handleAttendanceUpdate}
       />
     </div>
   );
