@@ -60,9 +60,6 @@ export function StudentTable({
   const [isLoading, setIsLoading] = useState(false);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const router = useRouter();
-  const [attendanceOpen, setAttendanceOpen] = useState(false);
-  const [attendanceToday, setAttendanceToday] = useState<Record<number, any>>({});
-  const [attendanceLoading, setAttendanceLoading] = useState(false);
 
   const practiceGroupMap: Record<number, number> = {};
   practiceGroups.forEach(pg => {
@@ -161,109 +158,6 @@ export function StudentTable({
 
   const hasSelection = selectedIds.length > 0;
 
-  const fetchTodayAttendance = async () => {
-    try {
-      setAttendanceLoading(true);
-
-      const token = localStorage.getItem("token");
-      const currentUser =
-        typeof window !== "undefined"
-          ? JSON.parse(localStorage.getItem("user") || "null")
-          : null;
-      const lecturerId = currentUser?.id;
-
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/attendance?lecturer_id=${lecturerId}&offering_id=${classId}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-
-      if (!res.ok) throw new Error("Không thể tải dữ liệu điểm danh.");
-
-      const resData = await res.json();
-      const data = resData.data || [];
-
-      const today = new Date().toISOString().split("T")[0];
-      const todayMap: Record<number, any> = {};
-
-      data.forEach((record: any) => {
-        const recordDate = record.attendance_date?.split("T")[0];
-        const isToday = recordDate === today;
-        const isSameType = record.type === type; 
-
-        if (isToday && isSameType) {
-          todayMap[record.enrollment.student_id] = record;
-        }
-      });
-
-      setAttendanceToday(todayMap);
-    } catch (err) {
-      console.error("Lỗi tải danh sách điểm danh:", err);
-    } finally {
-      setAttendanceLoading(false);
-    }
-  };
-
-  const openAttendance = async () => {
-    await fetchTodayAttendance();
-    setAttendanceOpen(true);
-  };
-
-  const enrollmentToStudentMap = useMemo(() => {
-    const map: Record<number, number> = {};
-    enrollments.forEach((e) => {
-      map[e.id] = e.students.id; // enrollment_id -> student_id
-    });
-    return map;
-  }, [enrollments]);
-
-
-  const handleAttendanceSubmit = async (records: any[]) => {
-    try {
-      const responses = await Promise.all(
-        records.map(async (r) => {
-          const studentId = enrollmentToStudentMap[r.enrollment_id];
-          const existing = attendanceToday?.[studentId];
-
-          const url = `${process.env.NEXT_PUBLIC_API_URL}/api/attendance`;
-          const method = existing ? "PATCH" : "POST";
-
-          const res = await fetch(url, {
-            method,
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${localStorage.getItem("token")}`,
-            },
-            credentials: "include",
-            body: JSON.stringify({
-              offeringId: classId,
-              ...(existing ? { id: existing.id } : {}),
-              ...r,
-            }),
-          });
-
-          if (!res.ok) {
-            const error = await res.json().catch(() => ({}));
-            throw new Error(error?.message || `Lỗi ${res.status}`);
-          }
-          return res.json();
-        })
-      );
-
-      setAttendanceOpen(false);
-      setSelectedIds([]);
-      toast.success("Điểm danh thành công", {
-        description: `Đã điểm danh ${responses.length} sinh viên.`,
-      });
-    } catch (err: any) {
-      console.error("Lỗi điểm danh:", err);
-      toast.error("Không thể điểm danh", {
-        description: err.message || "Vui lòng thử lại sau.",
-      });
-    }
-  };
-
   if (!students || students.length === 0) {
     return (
       <div className="text-center text-muted-foreground py-6">
@@ -308,25 +202,11 @@ export function StudentTable({
         <div className="flex items-center gap-2">
           <Button
             variant="outline"
-            disabled={!hasSelection}
-            className="gap-2"
-            onClick={openAttendance}
-          >
-            <Calendar className="w-4 h-4" />
-            Điểm danh
-            {selectedIds.length > 0 && <span className="ml-1">({selectedIds.length})</span>}
-          </Button>
-          <Button
-            variant="outline"
-            // disabled={!hasSelection}
             className="gap-2"
             onClick={() => router.push(`/lecturer/classes/${classId}/attendance`)}
           >
             <CalendarRange className="w-4 h-4" />
             Chi tiết điểm danh{" "}
-            {/* {selectedIds.length > 0 && (
-              <span className="ml-1">({selectedIds.length})</span>
-            )} */}
           </Button>
           <Button
             variant="outline"
@@ -500,21 +380,6 @@ export function StudentTable({
             item="sinh viên"
           />
         )}
-
-        {/* <AttendanceModal
-          open={attendanceOpen}
-          onClose={() => setAttendanceOpen(false)}
-          students={students.filter((s) => selectedIds.includes(s.id))}
-          type={type}
-          enrollmentMap={enrollments.reduce((map, e) => {
-            map[e.students.id] = e.id;
-            return map;
-          }, {} as Record<number, number>)}
-          practiceGroupMap={practiceGroupMap}
-          onSubmit={handleAttendanceSubmit}
-          attendanceToday={attendanceToday}
-          loadingAttendance={attendanceLoading}
-        /> */}
       </div>
     </div>
   );
