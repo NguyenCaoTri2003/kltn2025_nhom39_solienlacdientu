@@ -298,6 +298,9 @@ export default function AppointmentModal({
                     {selectedIds.length > 0 && (
                         <div className="space-y-2">
                             <LabelRequired required>Chọn phụ huynh cho sinh viên</LabelRequired>
+                            {errors.students && (
+                                <p className="text-sm text-red-500 mt-1">{errors.students}</p>
+                            )}
                             {selectedIds.map((sid) => {
                                 const s = students.find((st) => st.id === sid);
                                 if (!s) return null;
@@ -327,9 +330,6 @@ export default function AppointmentModal({
                                     </div>
                                 );
                             })}
-                            {errors.students && (
-                                <p className="text-sm text-red-500 mt-1">{errors.students}</p>
-                            )}
                         </div>
                     )}
                 </div>
