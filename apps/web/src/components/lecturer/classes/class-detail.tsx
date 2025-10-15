@@ -29,6 +29,7 @@ import { Offering } from "@packages/core/entities/CourseOffering";
 import { StudentTable } from "./student-table";
 import { PageBreadcrumb } from "@/components/page-breadcrumb";
 import { GradeTableCard } from "./grade-table-card";
+import { toast } from "sonner";
 
 function mapGroupStudents(
   group: PracticeGroup,
@@ -69,6 +70,12 @@ export default function ClassDetail() {
       setLoading(true);
       try {
         const token = localStorage.getItem("token");
+        if (!token) {
+          toast.error("Bạn chưa đăng nhập.");
+          setOffering(null);
+          setLoading(false);
+          return;
+        }
         const res = await fetch(
           `${process.env.NEXT_PUBLIC_API_URL}/api/course-offerings/${id}`,
           {

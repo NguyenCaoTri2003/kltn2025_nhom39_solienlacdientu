@@ -102,7 +102,6 @@ export function GradeTableCard({
     XLSX.writeFile(workbook, `Bảng điểm lớp ${offeringName}${Date.now()}.xlsx`);
   };
 
-  // Lấy danh sách nhóm thực hành duy nhất (vd: [1, 2, 3])
   const practiceGroups = useMemo(() => {
     const unique = Array.from(
       new Set(grades.map((s) => s.practice_group_number).filter(Boolean))

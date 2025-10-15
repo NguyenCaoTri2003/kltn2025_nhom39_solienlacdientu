@@ -76,6 +76,12 @@ body {
   word-break: break-word;         
 }
 
+.break-anywhere {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  white-space: pre-wrap;
+}
+
 .dark {
   /* Dark theme */
   --background: oklch(0.08 0.01 240);

@@ -10,6 +10,7 @@ import {
   Info,
   Search,
   X,
+  BookText,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import WeeklyScheduleList from "./weekly-schedule-list";
@@ -20,6 +21,7 @@ import CourseOfferingSkeleton from "@/components/skeleton/course-offering-skelet
 import Pagination from "@/components/pagination";
 import { Offering } from "@packages/core/entities/CourseOffering";
 import { useRouter } from "next/navigation";
+import EmptyState from "@/components/empty-state";
 
 export default function OfferingsList() {
   const [offerings, setOfferings] = useState<Offering[]>([]);
@@ -124,9 +126,10 @@ export default function OfferingsList() {
       {loading ? (
         <CourseOfferingSkeleton items={6} />
       ) : filteredOfferings.length === 0 ? (
-        <div className="text-center text-muted-foreground py-12">
-          Không có lớp học phần nào trong học kỳ này.
-        </div>
+        <EmptyState
+          icon={<BookText className="w-10 h-10" />}
+          text="Không có lớp học phần nào phù hợp"
+        />
       ) : (
         <section ref={topRef}>
           {selectedSemester && (

@@ -28,6 +28,7 @@ import {
   Search,
   Loader2,
   CalendarRange,
+  CalendarPlus,
 } from "lucide-react";
 import Pagination from "@/components/pagination";
 import { Student } from "@packages/core/entities/Student";
@@ -38,6 +39,11 @@ import { normalize } from "@/utils/normalize";
 import AttendanceModal from "../attendance/attendance-modal";
 import { toast } from "sonner";
 import { PracticeGroup } from "@packages/core/entities/PracticeGroup";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { LabelRequired } from "@/components/ui/label-requied";
+import AppointmentModal from "../appointment/appointment-modal";
 
 export function StudentTable({
   classId,
@@ -60,6 +66,14 @@ export function StudentTable({
   const [isLoading, setIsLoading] = useState(false);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const router = useRouter();
+
+  const [singleTargetId, setSingleTargetId] = useState<number | null>(null);
+
+  const [messageModalOpen, setMessageModalOpen] = useState(false);
+  const [messageTarget, setMessageTarget] = useState<"student" | "parent" | null>(null);
+  const [messageContent, setMessageContent] = useState("");
+
+  const [appointmentModalOpen, setAppointmentModalOpen] = useState(false);
 
   const practiceGroupMap: Record<number, number> = {};
   practiceGroups.forEach(pg => {
@@ -158,6 +172,86 @@ export function StudentTable({
 
   const hasSelection = selectedIds.length > 0;
 
+  const handleOpenMessageModal = (
+    target: "student" | "parent",
+    studentId?: number
+  ) => {
+    setMessageTarget(target);
+    if (studentId) {
+      setSingleTargetId(studentId);
+      setSelectedIds([]);
+    } else {
+      setSingleTargetId(null);
+    }
+    setMessageModalOpen(true);
+  };
+
+  const handleSendMessages = async () => {
+    try {
+      setIsLoading(true);
+      const receivers: number[] = [];
+
+      if (singleTargetId) {
+        const student = students.find((s) => s.id === singleTargetId);
+        if (!student) throw new Error("Không tìm thấy sinh viên");
+
+        if (messageTarget === "student") {
+          receivers.push(student.id);
+        } else if (messageTarget === "parent") {
+          student.student_parent?.forEach((sp) => {
+            if (sp.parents?.id) receivers.push(sp.parents.id);
+          });
+        }
+      } else {
+        selectedIds.forEach((sid) => {
+          const student = students.find((s) => s.id === sid);
+          if (!student) return;
+
+          if (messageTarget === "student") {
+            if (student?.id) receivers.push(student.id);
+          } else if (messageTarget === "parent") {
+            student.student_parent?.forEach((sp) => {
+              if (sp.parents?.id) receivers.push(sp.parents.id);
+            });
+          }
+        });
+      }
+
+      if (receivers.length === 0) {
+        toast.error("Không tìm thấy người nhận hợp lệ.");
+        setIsLoading(false);
+        return;
+      }
+
+      const token = localStorage.getItem("token");
+      if (!token) {
+        toast.error("Bạn chưa đăng nhập.");
+        setIsLoading(false);
+        return;
+      }
+
+      await Promise.all(
+        receivers.map(async (receiverId) => {
+          await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/messages`, {
+            method: "POST",
+            headers: { Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ receiverId, content: messageContent }),
+          });
+        })
+      );
+
+      setMessageModalOpen(false);
+      toast.success("Gửi tin nhắn thành công!");
+      setMessageContent("");
+      router.push("/lecturer/communications");
+    } catch (err) {
+      console.error(err);
+      toast.error("Lỗi khi gửi tin nhắn");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   if (!students || students.length === 0) {
     return (
       <div className="text-center text-muted-foreground py-6">
@@ -170,7 +264,7 @@ export function StudentTable({
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-          <div className="relative w-[420px]">
+          <div className="relative w-[400px] md:max-w-sm">
             <Input
               placeholder="Tìm theo MSSV, họ tên, email, phụ huynh..."
               value={searchTerm}
@@ -212,14 +306,42 @@ export function StudentTable({
             variant="outline"
             disabled={!hasSelection}
             className="gap-2"
+            onClick={() => handleOpenMessageModal("student")}
           >
-            <Mail className="w-4 h-4" />
-            Gửi email
-            {" "}
+            <MessageSquare className="w-4 h-4" />
+            Nhắn tin sinh viên
             {selectedIds.length > 0 && (
               <span className="ml-1">({selectedIds.length})</span>
             )}
           </Button>
+
+          <Button
+            variant="outline"
+            disabled={!hasSelection}
+            className="gap-2"
+            onClick={() => handleOpenMessageModal("parent")}
+          >
+            <MessageCircle className="w-4 h-4" />
+            Nhắn tin phụ huynh
+            {selectedIds.length > 0 && (
+              <span className="ml-1">({selectedIds.length})</span>
+            )}
+          </Button>
+
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={!hasSelection}
+            className="gap-2"
+            onClick={() => setAppointmentModalOpen(true)}
+          >
+            <CalendarPlus className="w-4 h-4" />
+            Đặt lịch hẹn
+            {selectedIds.length > 0 && (
+              <span className="ml-1">({selectedIds.length})</span>
+            )}
+          </Button>
+
         </div>
       </div>
 
@@ -332,7 +454,7 @@ export function StudentTable({
 
                         <DropdownMenuContent
                           align="end"
-                          className="w-[180px] rounded-lg border border-border bg-background/95 backdrop-blur-sm shadow-lg p-1"
+                          className="w-[200px] rounded-lg border border-border bg-background/95 backdrop-blur-sm shadow-lg p-1"
                         >
                           <DropdownMenuItem
                             onClick={() =>
@@ -344,22 +466,14 @@ export function StudentTable({
                             <Eye className="w-4 h-4 mr-2" />
                             Chi tiết
                           </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            <Calendar className="w-4 h-4 mr-2" />
-                            Điểm danh
-                          </DropdownMenuItem>
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleOpenMessageModal("student", s.id)}>
                             <MessageSquare className="w-4 h-4 mr-2" />
                             Nhắn tin
                           </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            <Mail className="w-4 h-4 mr-2" />
-                            Gửi email
-                          </DropdownMenuItem>
-                          <DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleOpenMessageModal("parent", s.id)}>
                             <MessageCircle className="w-4 h-4 mr-2" />
-                            Gửi SMS
+                            Nhắn tin phụ huynh
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -380,6 +494,42 @@ export function StudentTable({
             item="sinh viên"
           />
         )}
+
+        {messageModalOpen && (
+          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
+            <div className="bg-white rounded-xl shadow-lg w-full max-w-lg p-6 space-y-4">
+              <h2 className="text-lg font-semibold">
+                {messageTarget === "student" ? "Nhắn tin cho sinh viên" : "Nhắn tin cho phụ huynh"}
+              </h2>
+
+              <textarea
+                className="w-full border rounded-md p-2 h-32 focus:outline-none focus:ring-2 focus:ring-primary"
+                placeholder="Nhập nội dung tin nhắn..."
+                value={messageContent}
+                onChange={(e) => setMessageContent(e.target.value)}
+              />
+
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setMessageModalOpen(false)}>
+                  Hủy
+                </Button>
+                <Button
+                  disabled={!messageContent.trim()}
+                  onClick={handleSendMessages}
+                >
+                  Gửi
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <AppointmentModal 
+          appointmentModalOpen={appointmentModalOpen} 
+          setAppointmentModalOpen={setAppointmentModalOpen}
+          selectedIds={selectedIds}
+          students={students}
+        />
       </div>
     </div>
   );
