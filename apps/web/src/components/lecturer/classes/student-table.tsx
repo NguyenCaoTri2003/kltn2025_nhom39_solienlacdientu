@@ -63,6 +63,7 @@ export function StudentTable({
   const [messageModalOpen, setMessageModalOpen] = useState(false);
   const [messageTarget, setMessageTarget] = useState<"student" | "parent" | null>(null);
   const [messageContent, setMessageContent] = useState("");
+  const [singleTargetId, setSingleTargetId] = useState<number | null>(null);
 
   const practiceGroupMap: Record<number, number> = {};
   practiceGroups.forEach(pg => {
@@ -161,42 +162,64 @@ export function StudentTable({
 
   const hasSelection = selectedIds.length > 0;
 
-  const handleOpenMessageModal = (target: "student" | "parent") => {
+  const handleOpenMessageModal = (
+    target: "student" | "parent",
+    studentId?: number
+  ) => {
     setMessageTarget(target);
+    if (studentId) {
+      setSingleTargetId(studentId);
+      setSelectedIds([]);
+    } else {
+      setSingleTargetId(null);
+    }
     setMessageModalOpen(true);
   };
 
   const handleSendMessages = async () => {
     try {
       setIsLoading(true);
-
-      // lấy danh sách người nhận
       const receivers: number[] = [];
-      selectedIds.forEach((sid) => {
-        const student = students.find((s) => s.id === sid);
-        console.log("student", student);
-        if (!student) return;
+
+      if (singleTargetId) {
+        const student = students.find((s) => s.id === singleTargetId);
+        if (!student) throw new Error("Không tìm thấy sinh viên");
 
         if (messageTarget === "student") {
-          if (student?.id) receivers.push(student.id);
+          receivers.push(student.id);
         } else if (messageTarget === "parent") {
           student.student_parent?.forEach((sp) => {
             if (sp.parents?.id) receivers.push(sp.parents.id);
           });
         }
-      });
+      } else {
+        selectedIds.forEach((sid) => {
+          const student = students.find((s) => s.id === sid);
+          if (!student) return;
+
+          if (messageTarget === "student") {
+            if (student?.id) receivers.push(student.id);
+          } else if (messageTarget === "parent") {
+            student.student_parent?.forEach((sp) => {
+              if (sp.parents?.id) receivers.push(sp.parents.id);
+            });
+          }
+        });
+      }
 
       if (receivers.length === 0) {
         toast.error("Không tìm thấy người nhận hợp lệ.");
         setIsLoading(false);
         return;
       }
+
       const token = localStorage.getItem("token");
       if (!token) {
         toast.error("Bạn chưa đăng nhập.");
         setIsLoading(false);
         return;
       }
+
       await Promise.all(
         receivers.map(async (receiverId) => {
           await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/messages`, {
@@ -207,8 +230,8 @@ export function StudentTable({
         })
       );
 
-      toast.success("Gửi tin nhắn thành công!");
       setMessageModalOpen(false);
+      toast.success("Gửi tin nhắn thành công!");
       setMessageContent("");
       router.push("/lecturer/communications");
     } catch (err) {
@@ -269,18 +292,6 @@ export function StudentTable({
             <CalendarRange className="w-4 h-4" />
             Chi tiết điểm danh{" "}
           </Button>
-          {/* <Button
-            variant="outline"
-            disabled={!hasSelection}
-            className="gap-2"
-          >
-            <Mail className="w-4 h-4" />
-            Gửi email
-            {" "}
-            {selectedIds.length > 0 && (
-              <span className="ml-1">({selectedIds.length})</span>
-            )}
-          </Button> */}
           <Button
             variant="outline"
             disabled={!hasSelection}
@@ -419,7 +430,7 @@ export function StudentTable({
 
                         <DropdownMenuContent
                           align="end"
-                          className="w-[180px] rounded-lg border border-border bg-background/95 backdrop-blur-sm shadow-lg p-1"
+                          className="w-[200px] rounded-lg border border-border bg-background/95 backdrop-blur-sm shadow-lg p-1"
                         >
                           <DropdownMenuItem
                             onClick={() =>
@@ -431,22 +442,14 @@ export function StudentTable({
                             <Eye className="w-4 h-4 mr-2" />
                             Chi tiết
                           </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            <Calendar className="w-4 h-4 mr-2" />
-                            Điểm danh
-                          </DropdownMenuItem>
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleOpenMessageModal("student", s.id)}>
                             <MessageSquare className="w-4 h-4 mr-2" />
                             Nhắn tin
                           </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            <Mail className="w-4 h-4 mr-2" />
-                            Gửi email
-                          </DropdownMenuItem>
-                          <DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleOpenMessageModal("parent", s.id)}>
                             <MessageCircle className="w-4 h-4 mr-2" />
-                            Gửi SMS
+                            Nhắn tin phụ huynh
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
