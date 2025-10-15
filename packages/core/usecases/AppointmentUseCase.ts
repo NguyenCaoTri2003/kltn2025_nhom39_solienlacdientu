@@ -7,8 +7,12 @@ export class AppointmentUseCase {
     async lecturerCreateAppointments(
         lecturerId: number,
         studentIds: number[],
-        date: string,
-        note?: string
+        parentIds: number[], 
+        title: string,
+        content: string,
+        start_time: string,
+        end_time: string,
+        location?: string
     ) {
         const { data: offeringData, error: offeringError } = await supabase
             .from("course_offerings")
@@ -19,7 +23,7 @@ export class AppointmentUseCase {
             throw new Error("Không tìm thấy lớp học phần của giảng viên này");
         }
 
-        const offeringIds = offeringData.map(o => o.id);
+        const offeringIds = offeringData.map((o) => o.id);
 
         const { data: teaches } = await supabase
             .from("enrollment")
@@ -34,18 +38,23 @@ export class AppointmentUseCase {
         const { data: parents } = await supabase
             .from("student_parent")
             .select("student_id, parent_id")
-            .in("student_id", teaches.map(t => t.student_id));
+            .in("student_id", teaches.map((t) => t.student_id));
 
         if (!parents) throw new Error("Không tìm thấy phụ huynh");
 
-        const records = parents.map(p => ({
-            lecturer_id: lecturerId,
-            parent_id: p.parent_id,
-            student_id: p.student_id,
-            date,
-            note: note ?? null,
-            status: "pending",
-        }));
+        const records = parents
+            .filter((p) => parentIds.includes(p.parent_id))
+            .map((p) => ({
+                lecturer_id: lecturerId,
+                parent_id: p.parent_id,
+                student_id: p.student_id,
+                title,
+                content,
+                start_time,
+                end_time,
+                location: location ?? null,
+                status: "pending",
+            }));
 
         return this.repo.createAppointments(records);
     }
@@ -54,10 +63,13 @@ export class AppointmentUseCase {
         parentId: number,
         studentId: number,
         lecturerId: number,
-        date: string,
-        note?: string
+        title: string,
+        content: string,
+        start_time: string,
+        end_time: string,
+        location?: string
     ) {
-        const { data: sp, error: spError } = await supabase
+        const { data: sp } = await supabase
             .from("student_parent")
             .select("student_id, parent_id")
             .eq("parent_id", parentId)
@@ -66,16 +78,16 @@ export class AppointmentUseCase {
 
         if (!sp) throw new Error("Bạn không phải phụ huynh của học sinh này");
 
-        const { data: offeringData, error: offeringError } = await supabase
+        const { data: offeringData } = await supabase
             .from("course_offerings")
             .select("id")
             .eq("lecturer_id", lecturerId);
 
-        if (offeringError || !offeringData) {
+        if (!offeringData) {
             throw new Error("Không tìm thấy lớp học phần của giảng viên này");
         }
 
-        const offeringIds = offeringData.map(o => o.id);
+        const offeringIds = offeringData.map((o) => o.id);
 
         const { data: teaches } = await supabase
             .from("enrollment")
@@ -91,8 +103,11 @@ export class AppointmentUseCase {
                 lecturer_id: lecturerId,
                 parent_id: parentId,
                 student_id: studentId,
-                date,
-                note: note ?? null,
+                title,
+                content,
+                start_time,
+                end_time,
+                location: location ?? null,
                 status: "pending",
             },
         ]);
@@ -102,7 +117,17 @@ export class AppointmentUseCase {
         return this.repo.getAppointmentsByUser(user.id, user.role);
     }
 
-    async updateAppointment(id: number, updates: Partial<{ status: string; note: string }>) {
+    async updateAppointment(
+        id: number,
+        updates: Partial<{
+            title: string;
+            content: string;
+            start_time: string;
+            end_time: string;
+            status: string;
+            location: string;
+        }>
+    ) {
         return this.repo.updateAppointment(id, updates);
     }
 
@@ -126,5 +151,4 @@ export class AppointmentUseCase {
 
         return this.repo.deleteAppointment(id);
     }
-
 }
