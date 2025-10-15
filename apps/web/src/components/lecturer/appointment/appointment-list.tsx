@@ -17,6 +17,7 @@ import { cn } from "@/lib/utils";
 import { formatDateTimeVN, formatTimeVN } from "@/utils/format-time";
 import { normalize } from "@/utils/normalize";
 import EmptyState from "@/components/empty-state";
+import { useRouter } from "next/navigation";
 
 interface Appointment {
   id: number;
@@ -38,6 +39,7 @@ export default function AppointmentList() {
   const [search, setSearch] = useState("");
   const [filterDate, setFilterDate] = useState("");
   const [hasSearched, setHasSearched] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
     const fetchAppointments = async () => {
@@ -128,10 +130,14 @@ export default function AppointmentList() {
 
   if (appointments.length === 0)
     return (
-      <EmptyState
-        icon={<Calendar className="w-10 h-10" />}
-        text="Không có lịch hẹn nào"
-      />
+      <div className="flex flex-col items-center text-muted-foreground gap-2 text-center mt-2">
+        <EmptyState
+            icon={<Calendar className="w-10 h-10" />}
+            text="Không có lịch hẹn nào"
+            className="py-1"
+        />
+        <Button onClick={() => router.push("/lecturer/classes")}>Đến lớp học</Button>
+      </div>
     );
 
   return (
