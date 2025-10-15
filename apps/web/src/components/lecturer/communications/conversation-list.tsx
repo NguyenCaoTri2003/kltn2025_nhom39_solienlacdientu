@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { Conversation } from "./communication-panel";
-import { getAvatarColor } from "@/utils/color-hash"; // ⚠️ cần có hàm này (xem bên dưới)
-import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
+import { getAvatarColor } from "@/utils/color-hash"; 
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface ConversationListProps {
     conversations: Conversation[];

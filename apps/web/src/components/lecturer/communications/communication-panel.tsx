@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import ConversationList from "./conversation-list";
 import ChatWindow from "./chat-window";
 import { supabase } from "@packages/data/supabaseClient";
+import EmptyState from "@/components/empty-state";
 
 export interface User {
   avatar_url: string;
@@ -83,10 +84,13 @@ export default function CommunicationPanel() {
             <Loader2 className="w-5 h-5 animate-spin mr-2" /> Đang tải...
           </div>
         ) : conversations.length === 0 ? (
-          <div className="flex flex-col items-center justify-center text-muted-foreground gap-3 text-center px-4">
-            <MessageCircle className="w-10 h-10 text-muted-foreground/70" />
-            <p>Chưa có tin nhắn nào.</p>
-            <Button onClick={() => router.push("/classes")}>Đến lớp học</Button>
+          <div className="flex flex-col items-center text-muted-foreground gap-1 text-center mt-2">
+            <EmptyState
+              icon={<MessageCircle className="w-10 h-10" />}
+              text="Không có cuộc trò chuyện nào"
+              className="py-1"
+            />
+            <Button onClick={() => router.push("/lecturer/classes")}>Đến lớp học</Button>
           </div>
         ) : (
           <ConversationList
