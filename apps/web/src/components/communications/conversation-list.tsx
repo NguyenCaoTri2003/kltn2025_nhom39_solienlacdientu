@@ -78,7 +78,6 @@ export default function ConversationList({
                     return parts[parts.length - 1]?.[0]?.toUpperCase() ?? "?";
                 }, [other.full_name]);
 
-                // 🎨 Màu nền fallback cho avatar
                 const bgColor = useMemo(
                     () =>
                         getAvatarColor(
@@ -108,8 +107,11 @@ export default function ConversationList({
 
                         {/* Nội dung */}
                         <div className="flex-1 min-w-0">
-                            <div className="font-medium">
-                                {other.full_name} ({getRoleLabel(other.role)})
+                            <div className=" flex gap-1 items-center">
+                                <p className="font-medium single-ellipsis">{other.full_name} </p>
+                                <span className="text-xs text-muted-foreground ml-1">
+                                    ({getRoleLabel(other.role)})
+                                </span>
                             </div>
 
                             <div className="text-sm text-muted-foreground flex justify-between items-center">

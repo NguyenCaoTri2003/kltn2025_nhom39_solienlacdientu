@@ -28,6 +28,7 @@ import {
   Search,
   Loader2,
   CalendarRange,
+  CalendarPlus,
 } from "lucide-react";
 import Pagination from "@/components/pagination";
 import { Student } from "@packages/core/entities/Student";
@@ -38,6 +39,11 @@ import { normalize } from "@/utils/normalize";
 import AttendanceModal from "../attendance/attendance-modal";
 import { toast } from "sonner";
 import { PracticeGroup } from "@packages/core/entities/PracticeGroup";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { LabelRequired } from "@/components/ui/label-requied";
+import AppointmentModal from "../appointment/appointment-modal";
 
 export function StudentTable({
   classId,
@@ -60,10 +66,14 @@ export function StudentTable({
   const [isLoading, setIsLoading] = useState(false);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const router = useRouter();
+
+  const [singleTargetId, setSingleTargetId] = useState<number | null>(null);
+
   const [messageModalOpen, setMessageModalOpen] = useState(false);
   const [messageTarget, setMessageTarget] = useState<"student" | "parent" | null>(null);
   const [messageContent, setMessageContent] = useState("");
-  const [singleTargetId, setSingleTargetId] = useState<number | null>(null);
+
+  const [appointmentModalOpen, setAppointmentModalOpen] = useState(false);
 
   const practiceGroupMap: Record<number, number> = {};
   practiceGroups.forEach(pg => {
@@ -254,7 +264,7 @@ export function StudentTable({
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-          <div className="relative w-[420px]">
+          <div className="relative w-[400px] md:max-w-sm">
             <Input
               placeholder="Tìm theo MSSV, họ tên, email, phụ huynh..."
               value={searchTerm}
@@ -313,6 +323,20 @@ export function StudentTable({
           >
             <MessageCircle className="w-4 h-4" />
             Nhắn tin phụ huynh
+            {selectedIds.length > 0 && (
+              <span className="ml-1">({selectedIds.length})</span>
+            )}
+          </Button>
+
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={!hasSelection}
+            className="gap-2"
+            onClick={() => setAppointmentModalOpen(true)}
+          >
+            <CalendarPlus className="w-4 h-4" />
+            Đặt lịch hẹn
             {selectedIds.length > 0 && (
               <span className="ml-1">({selectedIds.length})</span>
             )}
@@ -500,6 +524,12 @@ export function StudentTable({
           </div>
         )}
 
+        <AppointmentModal 
+          appointmentModalOpen={appointmentModalOpen} 
+          setAppointmentModalOpen={setAppointmentModalOpen}
+          selectedIds={selectedIds}
+          students={students}
+        />
       </div>
     </div>
   );
