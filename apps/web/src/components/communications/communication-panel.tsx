@@ -10,12 +10,14 @@ import ChatWindow from "./chat-window";
 import { supabase } from "@packages/data/supabaseClient";
 
 export interface User {
+  avatar_url: string;
   id: number;
   full_name: string;
   role?: string;
 }
 
 export interface Message {
+  type: string;
   id: number;
   sender_id: number;
   content: string;

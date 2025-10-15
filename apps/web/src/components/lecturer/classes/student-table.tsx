@@ -181,7 +181,7 @@ export function StudentTable({
           if (student?.id) receivers.push(student.id);
         } else if (messageTarget === "parent") {
           student.student_parent?.forEach((sp) => {
-            if (sp.parents?.users?.id) receivers.push(sp.parents.users.id);
+            if (sp.parents?.id) receivers.push(sp.parents.id);
           });
         }
       });
