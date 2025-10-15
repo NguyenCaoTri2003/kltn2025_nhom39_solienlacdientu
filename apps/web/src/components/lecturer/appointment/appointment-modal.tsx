@@ -156,8 +156,11 @@ export default function AppointmentModal({
                 .map((sid) => students.find((s) => s.id === sid))
                 .filter(Boolean);
 
-            const start_time = `${date}T${start}`;
-            const end_time = `${date}T${end}`;
+            const toUTCString = (date: string, time: string) =>
+                new Date(`${date}T${time}:00+07:00`).toISOString();
+
+            const start_time = toUTCString(date, start);
+            const end_time = toUTCString(date, end);
 
             const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/appointments`, {
                 method: "POST",
@@ -181,8 +184,15 @@ export default function AppointmentModal({
 
             toast.success("Đặt lịch hẹn thành công!");
             setAppointmentModalOpen(false);
-            setAppointmentData({ title: "", date: "", start: "", end: "", content: "", location: "" });
-            router.push("/appointments");
+            setAppointmentData({
+                title: "",
+                date: "",
+                start: "",
+                end: "",
+                content: "",
+                location: "",
+            });
+            router.push("/lecturer/appointments");
         } catch (err) {
             console.error(err);
             toast.error("Lỗi khi tạo lịch hẹn");

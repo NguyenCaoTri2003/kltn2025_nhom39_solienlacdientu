@@ -9,7 +9,7 @@ import { supabase } from "@packages/data/supabaseClient";
 import { Conversation, Message } from "./communication-panel";
 import { FileIcon, defaultStyles } from "react-file-icon";
 import { getAvatarColor } from "@/utils/color-hash";
-import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface ChatWindowProps {
     selectedConversation: Conversation | null;

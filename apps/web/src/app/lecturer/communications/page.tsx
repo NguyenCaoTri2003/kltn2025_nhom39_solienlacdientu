@@ -1,4 +1,4 @@
-import CommunicationPanel from "@/components/communications/communication-panel"
+import CommunicationPanel from "@/components/lecturer/communications/communication-panel" 
 import Navbar from "@/components/navbar"
 
 export default async function CommunicationPage() {
