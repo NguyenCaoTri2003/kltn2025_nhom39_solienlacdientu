@@ -49,7 +49,7 @@ NEXT_PUBLIC_FRONTEND_URL=http://localhost:3001
 SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
 SMTP_USER=nguyencaotri26092003@gmail.com
-SMTP_PASS=hlev lgin khdl disx
+SMTP_PASS=
 FROM_EMAIL="Hệ thống Sổ Liên Lạc IUH"
 ```
 
