@@ -44,6 +44,13 @@
 NEXT_PUBLIC_SUPABASE_URL=https://ceocmvtxpdqgmremuqgb.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNlb2NtdnR4cGRxZ21yZW11cWdiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUwNzc4NDYsImV4cCI6MjA3MDY1Mzg0Nn0._TewLybeTBvwJRFHTLldjiR5HJhvVZnLsZ3UTiAaeds
 PORT=3000
+JWT_SECRET=1ibdbWjLV3dRBHyvxYisAWrXJWPU2hKvb5idPkCUpwFknR6JPXwz2xRfU8DQomrmYMAsAvlEuqZXX2jfStC9gwy==
+NEXT_PUBLIC_FRONTEND_URL=http://localhost:3001
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=nguyencaotri26092003@gmail.com
+SMTP_PASS=hlev lgin khdl disx
+FROM_EMAIL="Hệ thống Sổ Liên Lạc IUH"
 ```
 
 * Thêm vào mobile
@@ -60,6 +67,8 @@ vào cmd gõ ipconfig lấy link ở đây
 ```
 PORT=3001
 NEXT_PUBLIC_API_URL=http://localhost:3000
+NEXT_PUBLIC_SUPABASE_URL=https://ceocmvtxpdqgmremuqgb.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNlb2NtdnR4cGRxZ21yZW11cWdiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUwNzc4NDYsImV4cCI6MjA3MDY1Mzg0Nn0._TewLybeTBvwJRFHTLldjiR5HJhvVZnLsZ3UTiAaeds
 ```
 
 _Tài liệu này sẽ được cập nhật liên tục để phản ánh những thay đổi mới nhất của dự án._
