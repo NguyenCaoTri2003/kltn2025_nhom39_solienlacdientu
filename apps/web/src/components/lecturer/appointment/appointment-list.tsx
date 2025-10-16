@@ -116,7 +116,6 @@ export default function AppointmentList() {
     try {
       const token = localStorage.getItem("token");
 
-      // 🧹 Chỉ gửi các field đơn giản
       const payload = {
         id: updated.id,
         title: updated.title,
