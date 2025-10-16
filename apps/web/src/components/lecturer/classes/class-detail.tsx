@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
@@ -16,6 +16,9 @@ import {
   GraduationCap,
   Users,
   BookOpen,
+  CalendarRange,
+  Loader2,
+  BookText,
 } from "lucide-react";
 import WeeklyScheduleList from "@/components/lecturer/classes/weekly-schedule-list";
 import CourseOfferingSkeleton from "@/components/skeleton/course-offering-skeleton";
@@ -30,6 +33,8 @@ import { StudentTable } from "./student-table";
 import { PageBreadcrumb } from "@/components/page-breadcrumb";
 import { GradeTableCard } from "./grade-table-card";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import EmptyState from "@/components/empty-state";
 
 function mapGroupStudents(
   group: PracticeGroup,
@@ -50,8 +55,6 @@ export default function ClassDetail() {
   const [offering, setOffering] = useState<Offering | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("theory");
-  const [gradesData, setGradesData] = useState<any[]>([]);
-  const [loadingGrades, setLoadingGrades] = useState(false);
 
   const currentUser = typeof window !== "undefined" ? JSON.parse(localStorage.getItem("user") || "null") : null;
   const currentLecturerId = currentUser?.id;
@@ -62,6 +65,7 @@ export default function ClassDetail() {
   );
 
   const isPracticeOnly = !isTheoryLecturer && !!myPracticeGroup;
+  const router = useRouter()
 
   useEffect(() => {
     if (!id) return;
@@ -95,47 +99,18 @@ export default function ClassDetail() {
     fetchDetail();
   }, [id]);
 
-  useEffect(() => {
-    if (!id) return;
-    const fetchGrades = async () => {
-      setLoadingGrades(true);
-      try {
-        const token = localStorage.getItem("token");
-        const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/grades/lecturer?offering_id=${id}`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        );
-        const json = await res.json();
-        if (json.returnCode === 0) {
-          let data = json.data;
-
-          if (!isTheoryLecturer && myPracticeGroup) {
-            data = data.filter(
-              (g: any) => g.practice_group_number === myPracticeGroup.group_number
-            );
-          }
-
-          setGradesData(data);
-        } else {
-          console.warn("Không lấy được điểm:", json.message);
-        }
-      } catch (error) {
-        console.error("Error fetching grades:", error);
-      } finally {
-        setLoadingGrades(false);
-      }
-    };
-    fetchGrades();
-  }, [id, isTheoryLecturer, myPracticeGroup]);
-
-  if (loading) return <CourseOfferingSkeleton items={1} />;
+  if (loading) return (
+    <div className="flex justify-center items-center h-full text-muted-foreground">
+      <Loader2 className="w-5 h-5 animate-spin mr-2" />
+      Đang tải thông tin chi tiết lớp học phần...
+    </div>)
   if (!offering)
     return (
-      <div className="text-center py-12 text-muted-foreground">
-        Không tìm thấy lớp học phần.
-      </div>
+      <EmptyState
+        icon={<BookText className="w-10 h-10" />}
+        text="Không có lớp học phần nào được tìm thấy."
+        className="py-1"
+      />
     );
 
   return (
@@ -234,6 +209,22 @@ export default function ClassDetail() {
           </div>
         )}
 
+      <div className="flex gap-2">
+        <Button
+          onClick={() => router.push(`/lecturer/classes/${id}/grade`)}
+        >
+          <GraduationCap className="w-4 h-4" />
+          Bảng điểm
+        </Button>
+        <Button
+          className="gap-2"
+          onClick={() => router.push(`/lecturer/classes/${id}/attendance`)}
+        >
+          <CalendarRange className="w-4 h-4" />
+          Chi tiết điểm danh
+        </Button>
+      </div>
+
       <section>
         <h3 className="text-lg font-semibold mb-4">Danh sách sinh viên</h3>
         {(offering.practice_groups?.length ?? 0) > 0 && !isPracticeOnly && offering.practice_groups && offering.practice_groups.length > 0 && (
@@ -314,12 +305,6 @@ export default function ClassDetail() {
           />
         )}
       </section>
-
-      <section>
-        <h3 className="text-lg font-semibold mb-4">Bảng điểm chi tiết của lớp học phần</h3>
-        <GradeTableCard grades={gradesData} offeringName={offering.name} />
-      </section>
-
     </div>
   );
 }

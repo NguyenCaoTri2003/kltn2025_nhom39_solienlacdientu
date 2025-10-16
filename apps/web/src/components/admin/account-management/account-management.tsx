@@ -12,14 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+// Removed direct shadcn Table imports; using custom DataTable wrapper
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Search,
@@ -53,14 +46,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { DataTable } from "@/components/ui/data-table";
 
 import { translateRole, translateStatus } from "@packages/utils/translations";
 // Allow using process.env in client without Node types
 declare const process: { env: Record<string, string | undefined> };
 import type { ChangeEvent, KeyboardEvent } from "react";
 
-import { ResetPasswordModal } from "@/components/modals_UI/ResetPasswordModal";
-import { AddUserModal } from "@/components/modals_UI/AddUserModal";
+import { ResetPasswordModal } from "@/components/admin/modals_UI/ResetPasswordModal";
+import { AddUserModal } from "@/components/admin/modals_UI/AddUserModal";
 
 interface Account {
   id: string;
@@ -223,7 +217,6 @@ export function AccountManagement() {
           setPage(pag.page);
           setPageSize(pag.limit);
         } else {
-
           setTotal(mapped.length);
           setTotalPages(1);
         }
@@ -438,7 +431,7 @@ export function AccountManagement() {
                   onKeyDown={(e: KeyboardEvent<HTMLInputElement>) => {
                     if (e.key === "Enter") handleSearch();
                   }}
-                  className="pl-10 w-80 bg-input border-border"
+                  className="pl-10 w-63 bg-input border-border"
                 />
               </div>
 
@@ -504,13 +497,12 @@ export function AccountManagement() {
               >
                 Tìm kiếm
               </Button>
-             <Button
-  className="bg-primary hover:bg-primary/90 text-primary-foreground"
-  onClick={() => setAddUserOpen(true)}
->
-  Thêm tài khoản
-</Button>
-
+              <Button
+                className="bg-primary hover:bg-primary/90 text-primary-foreground"
+                onClick={() => setAddUserOpen(true)}
+              >
+                Thêm tài khoản
+              </Button>
             </div>
           </div>
         </CardHeader>
@@ -534,231 +526,191 @@ export function AccountManagement() {
               </Button>
             </div>
           )}
-          <div className="rounded-md border border-border overflow-hidden">
-            <div className="overflow-x-auto overflow-y-auto max-h-[65vh]">
-              <Table className="min-w-[800px]">
-                <TableHeader>
-                  <TableRow className="border-border sticky top-0 bg-card z-10">
-                    <TableHead className="text-muted-foreground w-[50px] text-center">
-                      STT
-                    </TableHead>
-                    <TableHead className="text-muted-foreground">
-                      Mã số
-                    </TableHead>
-                    <TableHead className="text-muted-foreground text-center">
-                      Họ tên
-                    </TableHead>
-                    <TableHead className="text-muted-foreground">
-                      Vai trò
-                    </TableHead>
-                    <TableHead className="text-muted-foreground w-[100px] text-center">
-                      Email
-                    </TableHead>
-                    <TableHead className="text-muted-foreground">
-                      Trạng thái
-                    </TableHead>
-                    <TableHead className="text-muted-foreground">
-                      Đăng nhập cuối
-                    </TableHead>
-                    <TableHead className="text-muted-foreground">
-                      Thao tác
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
+          <DataTable
+            headers={[
+              "STT",
+              "Mã số",
+              "Họ tên",
+              "Vai trò",
+              "Email",
+              "Trạng thái",
+              "Đăng nhập cuối",
+              "Thao tác",
+            ]}
+            maxHeight="65vh"
+            maxWidth="100%"
+          >
+            {loading &&
+              Array.from({ length: 5 }).map((_, idx) => (
+                <tr key={`sk-${idx}`} className="border-b last:border-b-0">
+                  <td className="px-4 py-2 text-center">
+                    <Skeleton className="h-4 w-8 mx-auto" />
+                  </td>
+                  <td className="px-4 py-2">
+                    <Skeleton className="h-4 w-24" />
+                  </td>
+                  <td className="px-4 py-2">
+                    <Skeleton className="h-4 w-48" />
+                  </td>
+                  <td className="px-4 py-2">
+                    <Skeleton className="h-4 w-28" />
+                  </td>
+                  <td className="px-4 py-2">
+                    <Skeleton className="h-4 w-64" />
+                  </td>
+                  <td className="px-4 py-2">
+                    <Skeleton className="h-6 w-24" />
+                  </td>
+                  <td className="px-4 py-2">
+                    <Skeleton className="h-4 w-40" />
+                  </td>
+                  <td className="px-4 py-2">
+                    <Skeleton className="h-6 w-8 ml-auto" />
+                  </td>
+                </tr>
+              ))}
 
-                <TableBody>
-                  {loading && (
-                    <>
-                      {Array.from({ length: 5 }).map((_, idx) => (
-                        <TableRow key={`sk-${idx}`} className="border-border">
-                          <TableCell className="w-[70px] text-center">
-                            <Skeleton className="h-4 w-8 mx-auto" />
-                          </TableCell>
-                          <TableCell className="w-[120px]">
-                            <Skeleton className="h-4 w-24" />
-                          </TableCell>
-                          <TableCell>
-                            <Skeleton className="h-4 w-48" />
-                          </TableCell>
-                          <TableCell>
-                            <Skeleton className="h-4 w-28" />
-                          </TableCell>
-                          <TableCell>
-                            <Skeleton className="h-4 w-64" />
-                          </TableCell>
-                          <TableCell>
-                            <Skeleton className="h-6 w-24" />
-                          </TableCell>
-                          <TableCell>
-                            <Skeleton className="h-4 w-40" />
-                          </TableCell>
-                          <TableCell className="sticky right-0 bg-card z-10 border-l border-border">
-                            <Skeleton className="h-6 w-8 ml-auto" />
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </>
-                  )}
-
-                  {accounts.map((account, idx) => (
-                    <TableRow
-                      key={account.id}
-                      className="border-border hover:bg-accent/40 transition-colors"
-                    >
-                      <TableCell className="text-center text-card-foreground">
-                        {(page - 1) * pageSize + idx + 1}
-                      </TableCell>
-                      <TableCell className="font-medium text-card-foreground">
-                        {account.code || account.id}
-                      </TableCell>
-
-                      <TableCell className="text-card-foreground">
-                        {account.name}
-                      </TableCell>
-
-                      <TableCell>
-                        <div className="flex items-center space-x-2">
-                          <span className="text-card-foreground">
-                            {translateRole(account.role)}
-                          </span>
-                        </div>
-                      </TableCell>
-
-                      <TableCell className="text-muted-foreground max-w-[200px] whitespace-normal break-words">
-                        {account.email}
-                      </TableCell>
-
-                      <TableCell>{getStatusBadge(account.status)}</TableCell>
-
-                      <TableCell className="text-muted-foreground">
-                        <span suppressHydrationWarning>
-                          {account.lastLogin
-                            ? new Date(account.lastLogin).toLocaleString(
-                                "vi-VN"
-                              )
-                            : "Chưa đăng nhập"}
-                        </span>
-                      </TableCell>
-
-                      <TableCell className="text-muted-foreground">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              disabled={rowActionId === account.id}
-                            >
-                              {rowActionId === account.id ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                              ) : (
-                                <MoreHorizontal className="h-4 w-4" />
-                              )}
-                            </Button>
-                          </DropdownMenuTrigger>
-
-                          <DropdownMenuContent
-                            align="end"
-                            className="bg-popover border-border min-w-48"
-                          >
-                            <DropdownMenuItem className="text-popover-foreground hover:bg-accent">
-                              <Eye className="w-4 h-4 mr-2" /> Xem chi tiết
-                            </DropdownMenuItem>
-                            <DropdownMenuItem className="text-popover-foreground hover:bg-accent">
-                              <Pencil className="w-4 h-4 mr-2" /> Chỉnh sửa
-                            </DropdownMenuItem>
-
-                            {account.status === "active" ? (
-                              <DropdownMenuItem
-                                className="text-red-400 hover:bg-accent"
-                                onClick={async () => {
-                                  const ok = await confirmWithToast(
-                                    "Bạn có chắc muốn khóa tài khoản này?"
-                                  );
-                                  if (!ok) return;
-                                  const res = await changeUserStatus(
-                                    account.id,
-                                    "inactive"
-                                  );
-                                  if (res.ok)
-                                    toast.success("Đã khóa tài khoản");
-                                  else
-                                    toast.error(
-                                      res.message ||
-                                        "Không thể cập nhật trạng thái"
-                                    );
-                                }}
-                                disabled={rowActionId === account.id}
-                              >
-                                <Lock className="w-4 h-4 mr-2" /> Khóa tài khoản
-                              </DropdownMenuItem>
-                            ) : (
-                              <DropdownMenuItem
-                                className="text-green-400 hover:bg-accent"
-                                onClick={async () => {
-                                  const ok = await confirmWithToast(
-                                    "Kích hoạt tài khoản này?"
-                                  );
-                                  if (!ok) return;
-                                  const res = await changeUserStatus(
-                                    account.id,
-                                    "active"
-                                  );
-                                  if (res.ok)
-                                    toast.success("Đã kích hoạt tài khoản");
-                                  else
-                                    toast.error(
-                                      res.message ||
-                                        "Không thể cập nhật trạng thái"
-                                    );
-                                }}
-                                disabled={rowActionId === account.id}
-                              >
-                                <Unlock className="w-4 h-4 mr-2" /> Kích hoạt
-                                tài khoản
-                              </DropdownMenuItem>
-                            )}
-                            <DropdownMenuItem
-                              className="text-popover-foreground hover:bg-accent"
-                              onClick={() => {
-                                setSelectedUser({
-                                  id: account.id,
-                                  name: account.name,
-                                });
-                                setResetOpen(true);
-                              }}
-                            >
-                              <RotateCcw className="w-4 h-4 mr-2" /> Đặt lại mật
-                              khẩu
-                            </DropdownMenuItem>
-
-                            <DropdownMenuItem className="text-popover-foreground hover:bg-accent">
-                              <FileClock className="w-4 h-4 mr-2" /> Lịch sử
-                              đăng nhập
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-
-                  {total === 0 && (
-                    <TableRow>
-                      <TableCell
-                        colSpan={8}
-                        className="text-center text-muted-foreground py-8"
+            {!loading &&
+              accounts.map((account, idx) => (
+                <tr
+                  key={account.id}
+                  className="hover:bg-accent/40 transition-colors border-b last:border-b-0"
+                >
+                  <td className="px-4 py-2 text-center text-card-foreground">
+                    {(page - 1) * pageSize + idx + 1}
+                  </td>
+                  <td className="px-4 py-2 font-medium text-card-foreground whitespace-nowrap">
+                    {account.code || account.id}
+                  </td>
+                  <td className="px-4 py-2 text-card-foreground max-w-[180px] whitespace-normal break-words">
+                    {account.name}
+                  </td>
+                  <td className="px-4 py-2">
+                    <span className="text-card-foreground">
+                      {translateRole(account.role)}
+                    </span>
+                  </td>
+                  <td className="px-4 py-2 text-muted-foreground max-w-[220px] whitespace-normal break-words">
+                    {account.email}
+                  </td>
+                  <td className="px-4 py-2">
+                    {getStatusBadge(account.status)}
+                  </td>
+                  <td className="px-4 py-2 text-muted-foreground whitespace-nowrap">
+                    <span suppressHydrationWarning>
+                      {account.lastLogin
+                        ? new Date(account.lastLogin).toLocaleString("vi-VN")
+                        : "Chưa đăng nhập"}
+                    </span>
+                  </td>
+                  <td className="px-4 py-2 text-muted-foreground">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          disabled={rowActionId === account.id}
+                        >
+                          {rowActionId === account.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <MoreHorizontal className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent
+                        align="end"
+                        className="bg-popover border-border min-w-48"
                       >
-                        {loading
-                          ? "Đang tải dữ liệu..."
-                          : hasSearched
-                          ? "Không có tài khoản nào phù hợp. Hãy thay đổi từ khóa và thử lại."
-                          : "Chưa có dữ liệu. Nhập điều kiện và nhấn Tìm kiếm để tải danh sách."}
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-          </div>
+                        <DropdownMenuItem className="text-popover-foreground hover:bg-accent">
+                          <Eye className="w-4 h-4 mr-2" /> Xem chi tiết
+                        </DropdownMenuItem>
+                        <DropdownMenuItem className="text-popover-foreground hover:bg-accent">
+                          <Pencil className="w-4 h-4 mr-2" /> Chỉnh sửa
+                        </DropdownMenuItem>
+                        {account.status === "active" ? (
+                          <DropdownMenuItem
+                            className="text-red-400 hover:bg-accent"
+                            onClick={async () => {
+                              const ok = await confirmWithToast(
+                                "Bạn có chắc muốn khóa tài khoản này?"
+                              );
+                              if (!ok) return;
+                              const res = await changeUserStatus(
+                                account.id,
+                                "inactive"
+                              );
+                              if (res.ok) toast.success("Đã khóa tài khoản");
+                              else
+                                toast.error(
+                                  res.message || "Không thể cập nhật trạng thái"
+                                );
+                            }}
+                            disabled={rowActionId === account.id}
+                          >
+                            <Lock className="w-4 h-4 mr-2" /> Khóa tài khoản
+                          </DropdownMenuItem>
+                        ) : (
+                          <DropdownMenuItem
+                            className="text-green-400 hover:bg-accent"
+                            onClick={async () => {
+                              const ok = await confirmWithToast(
+                                "Kích hoạt tài khoản này?"
+                              );
+                              if (!ok) return;
+                              const res = await changeUserStatus(
+                                account.id,
+                                "active"
+                              );
+                              if (res.ok)
+                                toast.success("Đã kích hoạt tài khoản");
+                              else
+                                toast.error(
+                                  res.message || "Không thể cập nhật trạng thái"
+                                );
+                            }}
+                            disabled={rowActionId === account.id}
+                          >
+                            <Unlock className="w-4 h-4 mr-2" /> Kích hoạt tài
+                            khoản
+                          </DropdownMenuItem>
+                        )}
+                        <DropdownMenuItem
+                          className="text-popover-foreground hover:bg-accent"
+                          onClick={() => {
+                            setSelectedUser({
+                              id: account.id,
+                              name: account.name,
+                            });
+                            setResetOpen(true);
+                          }}
+                        >
+                          <RotateCcw className="w-4 h-4 mr-2" /> Đặt lại mật
+                          khẩu
+                        </DropdownMenuItem>
+                        <DropdownMenuItem className="text-popover-foreground hover:bg-accent">
+                          <FileClock className="w-4 h-4 mr-2" /> Lịch sử đăng
+                          nhập
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </td>
+                </tr>
+              ))}
+
+            {!loading && total === 0 && (
+              <tr>
+                <td
+                  colSpan={8}
+                  className="px-4 py-8 text-center text-muted-foreground"
+                >
+                  {hasSearched
+                    ? "Không có tài khoản nào phù hợp. Hãy thay đổi từ khóa và thử lại."
+                    : "Nhập điều kiện và nhấn Tìm kiếm để tải danh sách."}
+                </td>
+              </tr>
+            )}
+          </DataTable>
 
           {/* Pagination */}
           {total > 0 && (
@@ -850,14 +802,13 @@ export function AccountManagement() {
       />
       {/* Modal thêm người dùng */}
       <AddUserModal
-  open={addUserOpen}
-  onClose={() => setAddUserOpen(false)}
-  onSuccess={() => {
-    toast.success("Tạo tài khoản mới thành công!");
-    loadAccounts(page, pageSize, query); // reload danh sách
-  }}
-/>
-
+        open={addUserOpen}
+        onClose={() => setAddUserOpen(false)}
+        onSuccess={() => {
+          toast.success("Tạo tài khoản mới thành công!");
+          loadAccounts(page, pageSize, query); // reload danh sách
+        }}
+      />
     </div>
   );
 }

@@ -8,19 +8,19 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
-} from "../ui/dialog";
-import { Button } from "../ui/button";
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import { Loader2, Upload, PlusCircle } from "lucide-react";
-import { Input } from "../ui/input";
-import { Label } from "../ui/label";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectTrigger,
   SelectContent,
   SelectItem,
   SelectValue,
-} from "../ui/select";
-import { AddSingleUserForm, type SingleFormData } from "../admin/modals_UI/AddSingleUserForm";
+} from "@/components/ui/select";
+import { AddSingleUserForm, type SingleFormData } from "./AddSingleUserForm";
 
 type RoleType = "student" | "lecturer" | "parent" | "admin";
 

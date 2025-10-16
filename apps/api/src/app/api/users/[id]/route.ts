@@ -46,7 +46,7 @@ export async function PATCH(req: NextRequest, { params }: { params: any }) {
     const payload = authenticate(req);
 
     // THÊM DÒNG LOG NÀY
-    console.log("🟩 PATCH /api/users:", {
+    console.log("PATCH /api/users:", {
       id,
       payload,
       body: await req.clone().json(), // clone req để log mà không làm mất body
@@ -56,12 +56,12 @@ export async function PATCH(req: NextRequest, { params }: { params: any }) {
 
     const user = await repo.updateUserFull(Number(id), updates);
 
-    // // 📌 Lấy user cũ trước khi update để biết thay đổi
+    // //  Lấy user cũ trước khi update để biết thay đổi
     // const oldUser = await repo.findById(Number(id));
 
     // const updatedUser = await repo.updateUserFull(Number(id), updates);
 
-    // // 🧾 So sánh để ghi log thay đổi
+    // // So sánh để ghi log thay đổi
     // await logUserChange({
     //   user_id: Number(id),              // người bị thay đổi
     //   changed_by: payload?.id || null,  // người thực hiện thay đổi
@@ -75,11 +75,11 @@ export async function PATCH(req: NextRequest, { params }: { params: any }) {
     // });
 
     // Log sau khi update
-    console.log("✅ Updated user result:", user);
+    console.log("Updated user result:", user);
 
     return NextResponse.json(user);
   } catch (e: any) {
-    console.error("❌ PATCH ERROR:", e);
+    console.error("PATCH ERROR:", e);
     return NextResponse.json(
       { error: e.message },
       { status: e.message === "Invalid token" ? 401 : 400 }

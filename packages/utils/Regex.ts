@@ -61,7 +61,30 @@ export const ADDRESS_REGEX = /^.{1,255}$/;
  */
 export const ETHNIC_REGEX = /^.{1,20}$/;
 
+/**
+ * Mã sinh viên — cho phép rỗng hoặc chữ/số/gạch dưới, tối đa 20 ký tự
+ */
+export const STUDENT_CODE_REGEX = /^([A-Za-z0-9_]{1,20})$/;
 
+/**
+ * Mã giảng viên — cho phép rỗng hoặc chữ/số/gạch dưới, tối đa 20 ký tự
+ */
+export const LECTURER_CODE_REGEX = /^([A-Za-z0-9_]{1,20})$/;
+
+/**
+ * Nghề nghiệp (phụ huynh) — cho phép rỗng hoặc tối đa 100 ký tự
+ */
+export const OCCUPATION_REGEX = /^.{0,100}$/;
+
+/**
+ * Năm học — cho phép rỗng hoặc dạng 2024-2025, 2025...
+ */
+export const ACADEMIC_YEAR_REGEX = /^(|[0-9\-]{4,20})$/;
+
+/**
+ * Nơi sinh / địa chỉ liên lạc — cho phép rỗng hoặc 1–255 ký tự
+ */
+export const PLACE_OR_CONTACT_ADDRESS_REGEX = /^.{0,255}$/;
 
 /**
  * ====== Hàm kiểm tra hợp lệ ======
@@ -95,6 +118,23 @@ export const isValidEthnic = (ethnic: string): boolean => {
   return ETHNIC_REGEX.test(ethnic.trim());
 };
 
+export const isValidStudentCode = (code: string): boolean => {
+  return STUDENT_CODE_REGEX.test(code.trim());
+};
+export const isValidLecturerCode = (code: string): boolean => {
+  return LECTURER_CODE_REGEX.test(code.trim());
+}
+export const isValidOccupation = (occupation: string): boolean => {
+  return OCCUPATION_REGEX.test(occupation.trim());
+};
+
+export const isValidAcademicYear = (year: string): boolean => {
+  return ACADEMIC_YEAR_REGEX.test(year.trim());
+};
+
+export const isValidPlaceOrContactAddress = (address: string): boolean => {
+  return PLACE_OR_CONTACT_ADDRESS_REGEX.test(address.trim());
+};
 
 /**
  * Giữ lại hàm chặn tiếng Việt, nhưng có thể không dùng

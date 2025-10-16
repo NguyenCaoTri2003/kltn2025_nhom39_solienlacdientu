@@ -62,7 +62,7 @@ export default function NavbarClient({ userRole, userName, avatarUrl, userId }: 
     { icon: Users, label: "Lớp học", href: "/lecturer/classes" },
     { icon: Calendar, label: "Lịch hẹn", href: "/lecturer/appointments" },
     { icon: MessageSquare, label: "Tương tác", href: "/lecturer/communications" },
-    { icon: BarChart3, label: "Thống kê", href: "/lecturer/statistics" }
+    // { icon: BarChart3, label: "Thống kê", href: "/lecturer/statistics" }
   ];
 
   // Derived visuals (can be computed even if userRole null)

@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
         },
       });
     } catch (logErr) {
-      console.warn("⚠️ Failed to log password change:", logErr);
+      console.warn("Failed to log password change:", logErr);
     }
 
     return NextResponse.json({ message: "Password changed successfully" });

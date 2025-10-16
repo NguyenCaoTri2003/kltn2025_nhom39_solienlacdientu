@@ -296,14 +296,6 @@ export function StudentTable({
         <div className="flex items-center gap-2">
           <Button
             variant="outline"
-            className="gap-2"
-            onClick={() => router.push(`/lecturer/classes/${classId}/attendance`)}
-          >
-            <CalendarRange className="w-4 h-4" />
-            Chi tiết điểm danh{" "}
-          </Button>
-          <Button
-            variant="outline"
             disabled={!hasSelection}
             className="gap-2"
             onClick={() => handleOpenMessageModal("student")}

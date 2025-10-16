@@ -12,6 +12,15 @@ export class ClassesRepository {
     if (error) throw error;
     return data ?? [];
   }
+
+  async getAllClasses() {
+    const { data, error } = await supabase
+      .from("classes")
+      .select("id, class_code");
+
+    if (error) throw error;
+    return data ?? [];
+  }
 }
 
 
