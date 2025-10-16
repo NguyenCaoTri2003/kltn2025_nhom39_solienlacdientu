@@ -59,7 +59,7 @@ export default function AttendanceTable({
     toggleSelectStudent,
     toggleSelectAll,
     onOpenNote,
-    loading = false, // có thể dùng cho search + save
+    loading = false, 
 }: AttendanceTableProps) {
     const formatVNDate = (dateStr: string) =>
         format(parseISO(dateStr), "dd/MM/yyyy", { locale: vi });

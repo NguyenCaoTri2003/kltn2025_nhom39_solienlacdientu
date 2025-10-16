@@ -17,6 +17,7 @@ import { Student } from "@packages/core/entities/Student";
 import AttendanceEditModal from "./attendance-edit-modal";
 import { normalize } from "@/utils/normalize";
 import EmptyState from "@/components/empty-state";
+import { AttendanceSummaryStats } from "./attendance-summary-stats";
 
 interface Attendance {
   id: number;
@@ -494,6 +495,12 @@ export default function AttendanceSummary() {
                 currentPage={currentPage}
                 onChange={setCurrentPage}
                 item="sinh viên"
+              />
+
+              <AttendanceSummaryStats
+                students={group.students}
+                attendanceMap={attendanceMap}
+                group={group}
               />
             </TabsContent>
           );
