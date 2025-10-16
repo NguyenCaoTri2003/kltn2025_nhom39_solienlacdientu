@@ -18,18 +18,9 @@ import { formatDateTimeVN, formatTimeVN } from "@/utils/format-time";
 import { normalize } from "@/utils/normalize";
 import EmptyState from "@/components/empty-state";
 import { useRouter } from "next/navigation";
-
-interface Appointment {
-  id: number;
-  title: string;
-  content: string;
-  start_time: string;
-  end_time: string;
-  location: string | null;
-  status: string;
-  parent: { users: { full_name: string } } | null;
-  student: { users: { full_name: string } } | null;
-}
+import { Appointment } from "@packages/core/entities/Appointment";
+import { toast } from "sonner";
+import { AppointmentEditModal } from "./appointment-edit-modal";
 
 export default function AppointmentList() {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
@@ -40,6 +31,7 @@ export default function AppointmentList() {
   const [filterDate, setFilterDate] = useState("");
   const [hasSearched, setHasSearched] = useState(false);
   const router = useRouter();
+  const [selected, setSelected] = useState<Appointment | null>(null);
 
   useEffect(() => {
     const fetchAppointments = async () => {
@@ -93,7 +85,7 @@ export default function AppointmentList() {
   const handleSearch = async () => {
     setHasSearched(true);
     setIsSearching(true);
-    await new Promise((res) => setTimeout(res, 300)); 
+    await new Promise((res) => setTimeout(res, 300));
 
     const lower = normalize(search);
 
@@ -120,6 +112,47 @@ export default function AppointmentList() {
     setHasSearched(false);
   };
 
+  const handleSave = async (updated: Appointment) => {
+    try {
+      const token = localStorage.getItem("token");
+
+      // 🧹 Chỉ gửi các field đơn giản
+      const payload = {
+        id: updated.id,
+        title: updated.title,
+        content: updated.content,
+        start_time: updated.start_time,
+        end_time: updated.end_time,
+        location: updated.location,
+        status: updated.status,
+      };
+
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/appointments`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) throw new Error("Cập nhật thất bại");
+
+      toast.success("Đã lưu thay đổi");
+
+      // Cập nhật lại state
+      setAppointments((prev) =>
+        prev.map((a) => (a.id === updated.id ? { ...a, ...payload } : a))
+      );
+      setFiltered((prev) =>
+        prev.map((a) => (a.id === updated.id ? { ...a, ...payload } : a))
+      );
+      setSelected(null);
+    } catch (e: any) {
+      toast.error(e.message || "Lỗi cập nhật");
+    }
+  };
+
   if (loading)
     return (
       <div className="flex justify-center items-center h-full text-muted-foreground">
@@ -132,9 +165,9 @@ export default function AppointmentList() {
     return (
       <div className="flex flex-col items-center text-muted-foreground gap-2 text-center mt-2">
         <EmptyState
-            icon={<Calendar className="w-10 h-10" />}
-            text="Không có lịch hẹn nào"
-            className="py-1"
+          icon={<Calendar className="w-10 h-10" />}
+          text="Không có lịch hẹn nào"
+          className="py-1"
         />
         <Button onClick={() => router.push("/lecturer/classes")}>Đến lớp học</Button>
       </div>
@@ -198,13 +231,14 @@ export default function AppointmentList() {
           {filtered.map((a) => (
             <Card
               key={a.id}
+              onClick={() => setSelected(a)}
               className={cn(
                 "border-l-4 transition-all",
                 a.status === "pending"
                   ? "border-l-yellow-500"
                   : a.status === "confirmed"
-                  ? "border-l-green-500"
-                  : "border-l-gray-400"
+                    ? "border-l-green-500"
+                    : "border-l-gray-400"
               )}
             >
               <CardHeader className="pb-2">
@@ -261,21 +295,29 @@ export default function AppointmentList() {
                       a.status === "pending"
                         ? "bg-yellow-100 text-yellow-800"
                         : a.status === "confirmed"
-                        ? "bg-green-100 text-green-800"
-                        : "bg-gray-100 text-gray-600"
+                          ? "bg-green-100 text-green-800"
+                          : "bg-gray-100 text-gray-600"
                     )}
                   >
                     {a.status === "pending"
                       ? "Chờ xác nhận"
                       : a.status === "confirmed"
-                      ? "Đã xác nhận"
-                      : "Hoàn tất"}
+                        ? "Đã xác nhận"
+                        : "Hoàn tất"}
                   </span>
                 </div>
               </CardContent>
             </Card>
           ))}
         </div>
+      )}
+
+      {selected && (
+        <AppointmentEditModal
+          appointment={selected}
+          onClose={() => setSelected(null)}
+          onSave={handleSave}
+        />
       )}
     </div>
   );
