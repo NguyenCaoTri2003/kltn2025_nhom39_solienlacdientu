@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/select";
 import { Loader2 } from "lucide-react";
 import { Appointment } from "@packages/core/entities/Appointment";
+import { LabelRequired } from "@/components/ui/label-requied";
 
 export function AppointmentEditModal({
     appointment,
@@ -88,7 +89,7 @@ export function AppointmentEditModal({
 
                 <div className="space-y-4 py-2">
                     <div>
-                        <Label htmlFor="title">Tiêu đề cuộc hẹn</Label>
+                        <LabelRequired required>Tiêu đề cuộc hẹn</LabelRequired>
                         <Input
                             id="title"
                             placeholder="Nhập tiêu đề..."
@@ -111,7 +112,7 @@ export function AppointmentEditModal({
                     </div>
 
                     <div>
-                        <Label htmlFor="start_time">Thời gian bắt đầu</Label>
+                        <LabelRequired required>Thời gian bắt đầu</LabelRequired>
                         <Input
                             id="start_time"
                             type="datetime-local"
@@ -131,7 +132,7 @@ export function AppointmentEditModal({
                     </div>
 
                     <div>
-                        <Label htmlFor="end_time">Thời gian kết thúc</Label>
+                        <LabelRequired required>Thời gian kết thúc</LabelRequired>
                         <Input
                             id="end_time"
                             type="datetime-local"
@@ -161,7 +162,7 @@ export function AppointmentEditModal({
                     </div>
 
                     <div>
-                        <Label htmlFor="status">Trạng thái</Label>
+                        <LabelRequired required>Trạng thái</LabelRequired>
                         <Select
                             value={form.status}
                             onValueChange={(value: any) =>

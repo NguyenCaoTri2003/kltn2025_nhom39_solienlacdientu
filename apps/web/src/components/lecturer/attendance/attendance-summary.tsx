@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Search, X } from "lucide-react";
+import { BookText, Loader2, Search, X } from "lucide-react";
 import { toast } from "sonner";
 import { useParams } from "next/navigation";
 import { Offering } from "@packages/core/entities/CourseOffering";
@@ -16,6 +16,7 @@ import AttendanceModal from "./attendance-modal";
 import { Student } from "@packages/core/entities/Student";
 import AttendanceEditModal from "./attendance-edit-modal";
 import { normalize } from "@/utils/normalize";
+import EmptyState from "@/components/empty-state";
 
 interface Attendance {
   id: number;
@@ -76,7 +77,6 @@ export default function AttendanceSummary() {
       setAttendances(attendanceData);
     } catch (err) {
       console.error("Lỗi tải dữ liệu:", err);
-      toast.error("Không thể tải dữ liệu điểm danh");
     } finally {
       setLoading(false);
     }
@@ -103,8 +103,19 @@ export default function AttendanceSummary() {
     setSelectedStudents(new Set());
   }, [activeTab]);
 
-  if (loading) return <div className="p-4">Đang tải...</div>;
-  if (!offering) return <div className="p-4">Không tìm thấy lớp học phần</div>;
+  if (loading) return (
+    <div className="flex justify-center items-center h-full text-muted-foreground">
+        <Loader2 className="w-5 h-5 animate-spin mr-2" />
+        Đang tải danh sách điểm danh...
+    </div>
+  )
+  if (!offering) return (
+    <EmptyState
+      icon={<BookText className="w-10 h-10" />}
+      text="Không có lớp học phần nào được tìm thấy."
+      className="py-1"
+    />
+  )
 
   const allStudents = offering.students.map((s: any) => ({
     id: s.students.id,

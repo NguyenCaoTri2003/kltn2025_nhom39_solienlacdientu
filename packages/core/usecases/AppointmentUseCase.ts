@@ -7,41 +7,28 @@ export class AppointmentUseCase {
     async lecturerCreateAppointments(
         lecturerId: number,
         studentIds: number[],
-        parentIds: number[], 
+        parentIds: number[],
         title: string,
         content: string,
         start_time: string,
         end_time: string,
         location?: string
     ) {
-        const { data: offeringData, error: offeringError } = await supabase
-            .from("course_offerings")
-            .select("id")
-            .eq("lecturer_id", lecturerId);
-
-        if (offeringError || !offeringData) {
-            throw new Error("Không tìm thấy lớp học phần của giảng viên này");
-        }
-
-        const offeringIds = offeringData.map((o) => o.id);
-
-        const { data: teaches } = await supabase
-            .from("enrollment")
-            .select("student_id")
-            .in("student_id", studentIds)
-            .in("offering_id", offeringIds);
-
-        if (!teaches || teaches.length === 0) {
-            throw new Error("Không dạy các học sinh này");
-        }
-
-        const { data: parents } = await supabase
+        // Lấy danh sách phụ huynh của các học sinh
+        const { data: parents, error: parentError } = await supabase
             .from("student_parent")
             .select("student_id, parent_id")
-            .in("student_id", teaches.map((t) => t.student_id));
+            .in("student_id", studentIds);
 
-        if (!parents) throw new Error("Không tìm thấy phụ huynh");
+        if (parentError) {
+            throw new Error("Lỗi khi lấy thông tin phụ huynh: " + parentError.message);
+        }
 
+        if (!parents || parents.length === 0) {
+            throw new Error("Không tìm thấy phụ huynh của các học sinh này");
+        }
+
+        // Lọc ra chỉ những phụ huynh được chọn
         const records = parents
             .filter((p) => parentIds.includes(p.parent_id))
             .map((p) => ({
@@ -55,6 +42,10 @@ export class AppointmentUseCase {
                 location: location ?? null,
                 status: "pending",
             }));
+
+        if (records.length === 0) {
+            throw new Error("Không có phụ huynh hợp lệ để tạo lịch hẹn");
+        }
 
         return this.repo.createAppointments(records);
     }
