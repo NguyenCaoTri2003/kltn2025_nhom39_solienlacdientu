@@ -82,12 +82,11 @@ const userRepo = new UserRepository();
  *    student?: { student_code, class_id, ... },
  *    parent?: { occupation },
  *    lecturer?: { lecturer_code, faculty_id, ... },
- *    student_parent?: { student_id, relationship }  // ✅ Thêm dòng này
+ *    student_parent?: { student_id, relationship } 
  *  }
  */
 export async function POST(req: NextRequest) {
   try {
-    // ✅ Kiểm tra quyền
     const authUser = authenticate(req);
     if (!authUser || authUser.role !== "admin") {
       return NextResponse.json(
@@ -96,11 +95,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // ✅ Lấy body
     const body = await req.json();
     const { user, student, parent, lecturer, student_parent } = body;
 
-    // ✅ Kiểm tra đầu vào
     if (!user || !user.full_name || !user.role) {
       return NextResponse.json(
         { error: "Thiếu thông tin user hoặc role." },
@@ -108,24 +105,20 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // ✅ Nếu là phụ huynh mà thiếu liên kết học sinh → báo lỗi
     if (user.role === "parent" && !student_parent) {
       return NextResponse.json(
         { error: "Phụ huynh phải được liên kết với ít nhất một học sinh (student_parent)." },
         { status: 400 }
       );
     }
-
-    // ✅ Gọi repository xử lý
     const newUser = await userRepo.createUserWithRole({
       user,
       student,
       parent,
       lecturer,
-      student_parent, // ✅ Truyền thêm vào
+      student_parent, 
     });
 
-    // ✅ Ghi log
     try {
       await logUserChange({
         user_id: newUser.id,

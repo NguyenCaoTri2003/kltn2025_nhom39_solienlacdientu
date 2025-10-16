@@ -3,7 +3,8 @@ import bcrypt from "bcryptjs";
 import { authenticate } from "@packages/utils/auth";
 import { UserRepository } from "@packages/data/repositories/UserRepository";
 import { logUserChange } from "@packages/core/usecases/UserAuditLogUseCase";
-import { isValidPassword } from "@packages/utils/Regex";
+import { sendEmail } from "../../../../email/mailer";
+import { renderTemplate } from "../../../../email/templates";
 
 const userRepo = new UserRepository();
 
@@ -40,6 +41,26 @@ export async function POST(req: NextRequest) {
     const newHash = await bcrypt.hash(newPassword, 10);
     await userRepo.updateUser(userId, { password_hash: newHash });
 
+ 
+    interface BasicUser { email?: string; full_name?: string; username?: string }
+    const u = user as BasicUser;
+    if (u.email) {
+      try {
+        const tpl = renderTemplate('reset_password_admin', {
+          fullName: u.full_name || u.username || 'Người dùng',
+          tempPassword: newPassword,
+        });
+        await sendEmail({
+          to: u.email,
+          subject: tpl.subject,
+            html: tpl.html,
+            text: tpl.text,
+        });
+      } catch (mailErr) {
+        console.warn('[reset-password] Failed to send email:', mailErr);
+      }
+    }
+
     try {
       await logUserChange({
         user_id: userId,
@@ -51,12 +72,13 @@ export async function POST(req: NextRequest) {
         },
       });
     } catch (logErr) {
-      console.warn("⚠️ Failed to log reset password:", logErr);
+      console.warn("Failed to log reset password:", logErr);
     }
 
     return NextResponse.json({ message: "Password reset successfully" });
-  } catch (e: any) {
-    return NextResponse.json({ error: e.message ?? "System error" }, { status: 400 });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : 'System error';
+    return NextResponse.json({ error: msg ?? "System error" }, { status: 400 });
   }
 }
 
