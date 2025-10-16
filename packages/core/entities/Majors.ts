@@ -9,5 +9,5 @@ export type Major = {
 };
 
 export type MajorWithClasses = Major & {
-    classes: Class[];  // tham chiếu sang type Class
+    classes: Class[]; 
 };

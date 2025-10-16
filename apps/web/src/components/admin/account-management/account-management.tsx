@@ -13,10 +13,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-// Removed direct shadcn Table imports; using custom DataTable wrapper
+
 import { Skeleton } from "@/components/ui/skeleton";
 import { Search } from "lucide-react";
-// Dropdowns moved into AccountRowActions component
+
 import {
   Select,
   SelectContent,
@@ -32,7 +32,7 @@ import { confirmWithToast } from "@/components/ui/confirm-with-toast";
 import { AccountRowActions } from "@/components/admin/modals_UI/AccountRowActions";
 import { AccountPagination } from "@/components/admin/modals_UI/AccountPagination";
 import { AccountStatsSummary } from "@/components/admin/modals_UI/AccountStatsSummary";
-// Allow using process.env in client without Node types
+
 declare const process: { env: Record<string, string | undefined> };
 import type { ChangeEvent, KeyboardEvent } from "react";
 
@@ -47,7 +47,7 @@ interface Account {
   status: "active" | "inactive" | "suspended";
   lastLogin: string | null;
   email: string;
-  // Optional enriched fields
+
   lecturerFacultyName?: string | null;
   studentClassCode?: string | null;
   studentSemesterName?: string | null;
@@ -79,24 +79,23 @@ type ApiPagination = {
 export function AccountManagement() {
   type RoleOption = "all" | "admin" | "lecturer" | "student" | "parent";
   type StatusOption = "all" | "active" | "inactive" | "suspended";
-  // Từ khóa người dùng nhập
+
   const [searchInput, setSearchInput] = useState("");
-  // Từ khóa đã áp dụng để gọi API
+
   const [query, setQuery] = useState("");
   const [page, setPage] = useState<number>(1);
   const [pageSize, setPageSize] = useState<number>(10);
   const [total, setTotal] = useState<number>(0);
   const [totalPages, setTotalPages] = useState<number>(1);
   const [hasSearched, setHasSearched] = useState<boolean>(false);
-  // Bộ lọc role/status
+
   const [roleFilter, setRoleFilter] = useState<RoleOption>("all");
   const [statusFilter, setStatusFilter] = useState<StatusOption>("all");
-  // New filters
+
   const [facultyFilter, setFacultyFilter] = useState<number | "all">("all");
   const [classFilter, setClassFilter] = useState<number | "all">("all");
   const [semesterFilter, setSemesterFilter] = useState<number | "all">("all");
 
-  // Options for filters
   const [faculties, setFaculties] = useState<
     Array<{ id: number; name: string }>
   >([]);
@@ -107,15 +106,11 @@ export function AccountManagement() {
     Array<{ id: number; name: string }>
   >([]);
 
-  // Load options based on role
-  // Faculties for lecturer
   if (typeof window !== "undefined") {
-    // no-op to retain client context mention
   }
   const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
 
-  // Fetch faculties when roleFilter is lecturer
-  // and not already loaded
+
   useEffect(() => {
     let ignore = false;
     async function loadFaculties() {
@@ -204,7 +199,7 @@ export function AccountManagement() {
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [rowActionId, setRowActionId] = useState<string | null>(null);
-  // Bulk selection state
+  
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [selectedStatus, setSelectedStatus] = useState<
     Account["status"] | null
@@ -213,7 +208,7 @@ export function AccountManagement() {
   const [bulkTargetStatus, setBulkTargetStatus] =
     useState<Account["status"]>("inactive");
 
-  // confirmWithToast moved to reusable ui/confirm-with-toast
+
 
   // Hàm gọi API server-side pagination
   const loadAccounts = async (
@@ -361,7 +356,7 @@ export function AccountManagement() {
     });
   };
 
-  // Call API to change status and update local state
+
   const changeUserStatus = async (
     accountId: string,
     nextStatus: Account["status"]
@@ -407,7 +402,6 @@ export function AccountManagement() {
     }
   };
 
-  //  Dùng translateStatus trong Badge (keep inline for now; could use StatusBadge component if desired)
   const getStatusBadge = (status: string) => {
     const text = translateStatus(status);
     switch (status) {
@@ -921,7 +915,7 @@ export function AccountManagement() {
                           setSelectedIds((prev) =>
                             prev.filter((id) => id !== account.id)
                           );
-                          // if no ids left, clear selectedStatus
+                
                           setTimeout(() => {
                             if (
                               selectedIds.filter((id) => id !== account.id)

@@ -48,7 +48,7 @@ export function ResetPasswordModal({
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${API_BASE}/api/auth/admin/reset-password`, {
+        const res = await fetch(`${API_BASE}/api/auth/admin/reset-password`, {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
@@ -59,8 +59,9 @@ export function ResetPasswordModal({
       if (!res.ok) throw new Error(result.error || "Lỗi không xác định");
       onSuccess?.();
       onClose();
-    } catch (e: any) {
-      setError(e.message || "Không thể đặt lại mật khẩu");
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : "Không thể đặt lại mật khẩu";
+      setError(message);
     } finally {
       setLoading(false);
     }

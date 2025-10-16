@@ -22,7 +22,6 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // Lấy query params
     const { searchParams } = new URL(req.url);
     const page = Number(searchParams.get("page") || 1);
     const limit = Number(searchParams.get("limit") || 10);
