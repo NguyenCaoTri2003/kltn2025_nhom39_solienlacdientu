@@ -171,12 +171,27 @@ export class UserRepository {
     limit: number = 10,
     search: string = "",
     roleFilter?: Role | "admin" | "lecturer" | "student" | "parent",
-    statusFilter?: "active" | "inactive" | "suspended" | string
+    statusFilter?: "active" | "inactive" | "suspended" | string,
+    facultyId?: number,
+    classId?: number,
+    semesterId?: number
   ): Promise<{
     users: (UserPublic & {
       _code?: string;
-      student?: { id: number; student_code?: string };
-      lecturer?: { id: number; lecturer_code?: string };
+      student?: {
+        id: number;
+        student_code?: string;
+        class_id?: number | null;
+        class_code?: string | null;
+        current_semester_id?: number | null;
+        current_semester_name?: string | null;
+      };
+      lecturer?: {
+        id: number;
+        lecturer_code?: string;
+        faculty_id?: number | null;
+        faculty_name?: string | null;
+      };
       parent?: { id: number };
     })[];
     total: number;
@@ -244,6 +259,71 @@ export class UserRepository {
       query = query.or(orParts.join(","));
     }
 
+    // Build ID filters for role-specific constraints (facultyId/classId/semesterId)
+    // We will precompute allowed user IDs for these filters and apply .in('id', ...)
+    let allowedIds: number[] | undefined;
+
+    // Filter lecturers by faculty
+    if (typeof facultyId === "number" && Number.isFinite(facultyId)) {
+      const { data: lecturerRows, error: lecErr } = await supabase
+        .from("lecturers")
+        .select("id")
+        .eq("faculty_id", facultyId);
+      if (lecErr) throw lecErr;
+      const ids = (lecturerRows || []).map((r: any) => Number(r.id)).filter((n) => Number.isFinite(n));
+      allowedIds = Array.from(new Set([...(allowedIds || []), ...ids]));
+    }
+
+    // Filter students by class
+    if (typeof classId === "number" && Number.isFinite(classId)) {
+      const { data: studentRows, error: stuErr } = await supabase
+        .from("students")
+        .select("id")
+        .eq("class_id", classId);
+      if (stuErr) throw stuErr;
+      const ids = (studentRows || []).map((r: any) => Number(r.id)).filter((n) => Number.isFinite(n));
+      if (allowedIds === undefined) allowedIds = ids;
+      else allowedIds = allowedIds.filter((id) => ids.includes(id)); // intersect
+    }
+
+    // Filter students by semester via enrollment -> course_offerings
+    if (typeof semesterId === "number" && Number.isFinite(semesterId)) {
+      // Get offering IDs for the semester
+      const { data: offeringRows, error: offErr } = await supabase
+        .from("course_offerings")
+        .select("id")
+        .eq("semester_id", semesterId);
+      if (offErr) throw offErr;
+      const offeringIds = (offeringRows || [])
+        .map((r: any) => Number(r.id))
+        .filter((n) => Number.isFinite(n));
+
+      let ids: number[] = [];
+      if (offeringIds.length > 0) {
+        const { data: enrollmentRows, error: enrErr } = await supabase
+          .from("enrollment")
+          .select("student_id")
+          .in("offering_id", offeringIds);
+        if (enrErr) throw enrErr;
+        ids = Array.from(
+          new Set(
+            (enrollmentRows || [])
+              .map((r: any) => Number(r.student_id))
+              .filter((n) => Number.isFinite(n))
+          )
+        );
+      }
+      if (allowedIds === undefined) allowedIds = ids;
+      else allowedIds = allowedIds.filter((id) => ids.includes(id)); // intersect
+    }
+
+    if (allowedIds && allowedIds.length > 0) {
+      query = query.in("id", allowedIds);
+    } else if (allowedIds && allowedIds.length === 0) {
+      // If filters applied but no matching IDs, return empty immediately
+      return { users: [], total: 0, totalPages: 0 };
+    }
+
     const { data: users, error, count } = await query.range(from, to);
     if (error) throw error;
 
@@ -263,31 +343,72 @@ export class UserRepository {
     const { data: students } = roleGroups.student.length
       ? await supabase
           .from("students")
-          .select("id, student_code")
+          .select("id, student_code, class_id, classes:class_id(id, class_code)")
           .in("id", roleGroups.student)
       : { data: [] };
 
     const { data: lecturers } = roleGroups.lecturer.length
       ? await supabase
           .from("lecturers")
-          .select("id, lecturer_code")
+          .select("id, lecturer_code, faculty_id, faculties:faculty_id(id, name)")
           .in("id", roleGroups.lecturer)
       : { data: [] };
 
+    // If semester filter is applied, fetch its label once for convenience
+    let semesterLabel: { id: number; name: string } | null = null;
+    if (typeof semesterId === "number" && Number.isFinite(semesterId)) {
+      const { data: semRow } = await supabase
+        .from("semesters")
+        .select("id, name")
+        .eq("id", semesterId)
+        .maybeSingle();
+      if (semRow) {
+        semesterLabel = { id: semRow.id, name: semRow.name };
+      }
+    }
+
     const mergedUsers = users.map((u) => {
       let _code: string | undefined;
-      let studentObj: { id: number; student_code?: string } | undefined;
-      let lecturerObj: { id: number; lecturer_code?: string } | undefined;
+      let studentObj:
+        | {
+            id: number;
+            student_code?: string;
+            class_id?: number | null;
+            class_code?: string | null;
+            current_semester_id?: number | null;
+            current_semester_name?: string | null;
+          }
+        | undefined;
+      let lecturerObj:
+        | {
+            id: number;
+            lecturer_code?: string;
+            faculty_id?: number | null;
+            faculty_name?: string | null;
+          }
+        | undefined;
       let parentObj: { id: number } | undefined;
 
       if (u.role === "student") {
-        const found = students?.find((s) => s.id === u.id);
+        const found = (students as any[])?.find((s) => s.id === u.id);
         _code = found?.student_code;
-        studentObj = { id: u.id, student_code: found?.student_code };
+        studentObj = {
+          id: u.id,
+          student_code: found?.student_code,
+          class_id: found?.class_id ?? null,
+          class_code: found?.classes?.class_code ?? null,
+          current_semester_id: semesterLabel ? semesterLabel.id : null,
+          current_semester_name: semesterLabel ? semesterLabel.name : null,
+        };
       } else if (u.role === "lecturer") {
-        const found = lecturers?.find((l) => l.id === u.id);
+        const found = (lecturers as any[])?.find((l) => l.id === u.id);
         _code = found?.lecturer_code;
-        lecturerObj = { id: u.id, lecturer_code: found?.lecturer_code };
+        lecturerObj = {
+          id: u.id,
+          lecturer_code: found?.lecturer_code,
+          faculty_id: found?.faculty_id ?? null,
+          faculty_name: found?.faculties?.name ?? null,
+        };
       } else if (u.role === "parent") {
         parentObj = { id: u.id };
       }

@@ -25,26 +25,31 @@ export default function LearningDataOverview() {
   const [gpaRange, setGpaRange] = useState("");
 
   // mock data
-  const grades = [
-    {
-      id: 1,
-      studentCode: "SV001",
-      fullName: "Nguyễn Văn A",
-      className: "DHKTPM18A",
-      semester: "Học kỳ 1 - 2024",
-      gpa: 3.5,
-      status: "Đạt",
-    },
-    {
-      id: 2,
-      studentCode: "SV002",
-      fullName: "Trần Thị B",
-      className: "DHKTPM18A",
-      semester: "Học kỳ 1 - 2024",
-      gpa: 1.9,
-      status: "Cảnh báo",
-    },
-  ];
+ const grades = [
+  {
+    id: 1,
+    studentCode: "SV001",
+    fullName: "Nguyễn Văn A",
+    className: "DHKTPM18A",
+    semester: "Học kỳ 1 - 2024",
+    gpa: 3.5,
+    totalCredits: 45,
+    failedCourses: 0,
+    warning: "NONE",
+  },
+  {
+    id: 2,
+    studentCode: "SV002",
+    fullName: "Trần Thị B",
+    className: "DHKTPM18A",
+    semester: "Học kỳ 1 - 2024",
+    gpa: 1.9,
+    totalCredits: 18,
+    failedCourses: 3,
+    warning: "WARNING_1",
+  },
+];
+
 
   const handleClearFilters = () => {
     setMajor("");
@@ -140,6 +145,18 @@ export default function LearningDataOverview() {
               <SelectItem value="1">Dưới 2.0</SelectItem>
             </SelectContent>
           </Select>
+          <Select value={status} onValueChange={setStatus}>
+  <SelectTrigger>
+    <SelectValue placeholder="Trạng thái cảnh báo" />
+  </SelectTrigger>
+  <SelectContent>
+    <SelectItem value="none">Bình thường</SelectItem>
+    <SelectItem value="warning_1">Cảnh báo 1</SelectItem>
+    <SelectItem value="warning_2">Cảnh báo 2</SelectItem>
+    <SelectItem value="probation">Nguy cơ thôi học</SelectItem>
+  </SelectContent>
+</Select>
+
 
           {/* Tên hoặc MSSV */}
           <div className="flex items-center gap-2">
@@ -178,7 +195,9 @@ export default function LearningDataOverview() {
     "Lớp",
     "Học kỳ",
     "GPA",
-    "Trạng thái",
+    "Tín chỉ tích lũy",
+    "Môn trượt",
+    "Trạng thái cảnh báo",
   ]}
   maxHeight="450px"
 >
@@ -190,16 +209,29 @@ export default function LearningDataOverview() {
       <td className="px-4 py-3 border-b">{g.className}</td>
       <td className="px-4 py-3 border-b">{g.semester}</td>
       <td className="px-4 py-3 border-b font-medium">{g.gpa}</td>
+      <td className="px-4 py-3 border-b">{g.totalCredits}</td>
+      <td className="px-4 py-3 border-b text-red-600">{g.failedCourses}</td>
       <td
         className={`px-4 py-3 border-b font-semibold ${
-          g.status === "Cảnh báo" ? "text-red-500" : "text-green-600"
+          g.warning === "NONE"
+            ? "text-green-600"
+            : g.warning === "WARNING_1"
+            ? "text-orange-500"
+            : "text-red-600"
         }`}
       >
-        {g.status}
+        {g.warning === "NONE"
+          ? "Bình thường"
+          : g.warning === "WARNING_1"
+          ? "Cảnh báo 1"
+          : g.warning === "WARNING_2"
+          ? "Cảnh báo 2"
+          : "Nguy cơ thôi học"}
       </td>
     </tr>
   ))}
 </DataTable>
+
       </div>
 
 

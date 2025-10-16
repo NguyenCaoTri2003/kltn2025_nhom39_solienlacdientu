@@ -3,7 +3,7 @@
 import { ReactNode } from "react";
 
 interface DataTableProps {
-  headers: string[];
+  headers: ReactNode[];
   children: ReactNode;
   maxHeight?: string;
   maxWidth?: string;
