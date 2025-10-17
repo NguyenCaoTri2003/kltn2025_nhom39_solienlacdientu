@@ -17,7 +17,7 @@ export class AuthUseCase {
 
     if (identifier.includes("@")) {
       user = await this.userRepo.findByEmailAdmin(identifier);
-    } 
+    }
     if (!user) {
       user = await this.userRepo.findByLecturerCode(identifier);
     }
@@ -33,7 +33,11 @@ export class AuthUseCase {
     return { user, token };
   }
 
-  async loginStudentOrParent(identifier: string, password: string): Promise<{ user: User; token: string }> {
+  async loginStudentOrParent(
+    identifier: string,
+    password: string,
+    role: "student" | "parent"
+  ): Promise<{ user: User; token: string }> {
     let user: User | null = null;
 
     user = await this.userRepo.findByStudentCode(identifier);
@@ -43,12 +47,20 @@ export class AuthUseCase {
 
     if (!user) throw new Error("Thông tin đăng nhập không hợp lệ");
 
+    if (user.role !== role) {
+      throw new Error("Tài khoản không phù hợp với vai trò đăng nhập");
+    }
+
     const valid = await bcrypt.compare(password, user.password_hash);
     if (!valid) throw new Error("Thông tin đăng nhập không hợp lệ");
 
-    const token = jwt.sign({ id: user.id, role: user.role }, JWT_SECRET, { expiresIn: "1d" });
-    await this.userRepo.updateUser(user.id, { last_login: new Date().toISOString() });
+    const token = jwt.sign(
+      { id: user.id, role: user.role },
+      JWT_SECRET,
+      { expiresIn: "1d" }
+    );
 
+    await this.userRepo.updateUser(user.id, { last_login: new Date().toISOString() });
     return { user, token };
   }
 }

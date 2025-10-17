@@ -11,25 +11,30 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { identifier, password, role } = body;
 
-    const { user, token } = await authUseCase.loginStudentOrParent(identifier, password);
+    if (!role || !["student", "parent"].includes(role)) {
+      return NextResponse.json(
+        { error: "Vai trò không hợp lệ" },
+        { status: 400 }
+      );
+    }
 
-    const status = String((user as any)?.status || "").toLowerCase();
-    // if (status === "inactive") {
-    //   return NextResponse.json(
-    //     { error: "Tài khoản của bạn đang bị khóa. Vui lòng liên hệ quản trị viên." },
-    //     { status: 403 }
-    //   );
-    // }
+    const { user, token } = await authUseCase.loginStudentOrParent(identifier, password, role);
+
+    const status = String(user.status || "").toLowerCase();
+    if (status === "inactive") {
+      return NextResponse.json(
+        { error: "Tài khoản của bạn đang bị khóa. Vui lòng liên hệ quản trị viên." },
+        { status: 403 }
+      );
+    }
 
     if (status === "suspended") {
       const oldStatus = user.status;
-
       const updatedUser = await userRepo.updateUserStatus(user.id, "active");
 
-      // Ghi log hành động hệ thống
       await logUserChange({
         user_id: user.id,
-        changed_by: null, 
+        changed_by: null,
         change_type: "status_change",
         changes: {
           old_status: oldStatus,
@@ -42,21 +47,22 @@ export async function POST(req: NextRequest) {
 
       user.status = updatedUser.status;
     }
-//
 
-     const res = NextResponse.json({ user, token }, { status: 200 });
-      res.cookies.set("token", token, {
-        httpOnly: true,
-        path: "/",
-        maxAge: 60 * 60 * 24, 
-        sameSite: "lax",
-      });
-      res.cookies.set("user", JSON.stringify(user), {
-        httpOnly: false, 
-        path: "/",
-        maxAge: 60 * 60 * 24,
-        sameSite: "lax",
-      });
+    const res = NextResponse.json({ user, token }, { status: 200 });
+
+    // Lưu cookie
+    res.cookies.set("token", token, {
+      httpOnly: true,
+      path: "/",
+      maxAge: 60 * 60 * 24,
+      sameSite: "lax",
+    });
+    res.cookies.set("user", JSON.stringify(user), {
+      httpOnly: false,
+      path: "/",
+      maxAge: 60 * 60 * 24,
+      sameSite: "lax",
+    });
 
     return res;
   } catch (e: any) {
