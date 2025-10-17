@@ -1,37 +1,38 @@
-import { View, Text, FlatList } from "react-native";
 import React from "react";
+import { NavigationContainer } from "@react-navigation/native";
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import { AuthProvider, useAuth } from "./src/context/AuthContext";
+import LoginScreen from "./src/screens/LoginScreen";
+import HomeScreen from "./src/screens/HomeScreen";
+import "nativewind";
 
-export default function HomeScreen() {
-  const [grades, setGrades] = React.useState<any[]>([]);
+const Stack = createNativeStackNavigator();
 
-  React.useEffect(() => {
-    fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/grades/student_123`)
-      .then((res) => res.json())
-      .then(setGrades);
-  }, []);
-
+function RootNavigator() {
+  console.log("🚀 App started");
+  const { user } = useAuth();
   return (
-    <View className="flex-1 p-6 bg-gray-100">
-      <Text className="text-2xl font-bold">Sổ liên lạc điện tử (Mobile)</Text>
-      <Text className="text-2xl font-bold">Sổ liên lạc điện tử (Mobile)</Text>
+    <Stack.Navigator>
+      {user ? (
+        <Stack.Screen name="Home" component={HomeScreen} />
+      ) : (
+        <Stack.Screen
+          name="Login"
+          component={LoginScreen}
+          options={{ headerShown: false }}
+        />
+      )}
+    </Stack.Navigator>
+  );
+}
 
-      <Text className="text-2xl font-bold">Sổ liên lạc điện tử (Mobile)</Text>
-
-      <Text className="text-2xl font-bold">Sổ liên lạc điện tử (Mobile)</Text>
-
-      <Text className="text-2xl font-bold">Sổ liên lạc điện tử (Mobile)</Text>
-
-      <Text className="text-2xl font-bold">Sổ liên lạc điện tử (Mobile)</Text>
-
-      <FlatList
-        data={grades}
-        keyExtractor={(item, index) => index.toString()}
-        renderItem={({ item }) => (
-          <View className="p-4 mt-2 rounded-lg bg-white shadow">
-            <Text>Môn {item.subject}: {item.score}</Text>
-          </View>
-        )}
-      />
-    </View>
+export default function App() {
+  return (
+    <AuthProvider>
+      
+      <NavigationContainer>
+        <RootNavigator />
+      </NavigationContainer>
+    </AuthProvider>
   );
 }
