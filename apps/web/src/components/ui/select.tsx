@@ -50,7 +50,7 @@ function SelectContent({
 }: React.ComponentProps<typeof SelectPrimitive.Content>) {
   return (
     <SelectPrimitive.Portal>
-      <SelectPrimitive.Content
+      {/* <SelectPrimitive.Content
         className={cn(
           'z-50 min-w-[8rem] overflow-hidden rounded-lg border bg-popover text-popover-foreground shadow-lg animate-in fade-in-80 zoom-in-95',
           'data-[side=bottom]:slide-in-from-top-1 data-[side=top]:slide-in-from-bottom-1',
@@ -64,7 +64,24 @@ function SelectContent({
           {children}
         </SelectPrimitive.Viewport>
         <SelectScrollDownButton />
-      </SelectPrimitive.Content>
+      </SelectPrimitive.Content> */}
+
+      <SelectPrimitive.Content
+  className={cn(
+    'z-50 w-[var(--radix-select-trigger-width)] max-h-60 overflow-y-auto rounded-lg border bg-popover text-popover-foreground shadow-lg animate-in fade-in-80 zoom-in-95',
+    'data-[side=bottom]:slide-in-from-top-1 data-[side=top]:slide-in-from-bottom-1',
+    className,
+  )}
+  position={position}
+  {...props}
+>
+  <SelectScrollUpButton />
+  <SelectPrimitive.Viewport className="p-1">
+    {children}
+  </SelectPrimitive.Viewport>
+  <SelectScrollDownButton />
+</SelectPrimitive.Content>
+
     </SelectPrimitive.Portal>
   )
 }

@@ -80,7 +80,7 @@ export async function POST(req: NextRequest) {
       user_id?: number;
       changed_by?: number | null;
       change_type?: ChangeType;
-      changes?: Record<string, any>;
+  changes?: Record<string, unknown>;
     };
 
     if (!user_id || !change_type || !changes) {

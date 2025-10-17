@@ -22,16 +22,42 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // Lấy query params
     const { searchParams } = new URL(req.url);
-      const page = Number(searchParams.get("page") || 1);
-      const limit = Number(searchParams.get("limit") || 10);
-      const search = String(searchParams.get("search") || "");
-      const role = searchParams.get("role") || undefined;
-      const status = searchParams.get("status") || undefined;
+    const page = Number(searchParams.get("page") || 1);
+    const limit = Number(searchParams.get("limit") || 10);
+    const search = String(searchParams.get("search") || "");
+    const role = searchParams.get("role") || undefined;
+    const status = searchParams.get("status") || undefined;
+    const facultyIdParam = searchParams.get("faculty_id");
+    const classIdParam = searchParams.get("class_id");
+    const semesterIdParam = searchParams.get("semester_id");
+    const facultyId = facultyIdParam ? Number(facultyIdParam) : undefined;
+    const classId = classIdParam ? Number(classIdParam) : undefined;
+    const semesterId = semesterIdParam ? Number(semesterIdParam) : undefined;
 
     // Gọi Repository
-      const result = await userRepo.getAllUsersWithPagination(page, limit, search, role as any, status as any);
+    const roleParam = (role ?? undefined) as
+      | "admin"
+      | "lecturer"
+      | "student"
+      | "parent"
+      | undefined;
+    const statusParam = (status ?? undefined) as
+      | "active"
+      | "inactive"
+      | "suspended"
+      | undefined;
+
+    const result = await userRepo.getAllUsersWithPagination(
+      page,
+      limit,
+      search,
+      roleParam,
+      statusParam,
+      facultyId,
+      classId,
+      semesterId
+    );
 
     return NextResponse.json({
       returnCode: 0,
