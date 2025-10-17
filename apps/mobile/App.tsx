@@ -3,24 +3,21 @@ import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { AuthProvider, useAuth } from "./src/context/AuthContext";
 import LoginScreen from "./src/screens/LoginScreen";
-import HomeScreen from "./src/screens/HomeScreen";
-import "nativewind";
+import AppNavigator from "./src/screens/AppNavigator"; // 👈 thay cho HomeScreen
 
 const Stack = createNativeStackNavigator();
 
 function RootNavigator() {
-  console.log("🚀 App started");
   const { user } = useAuth();
+
   return (
-    <Stack.Navigator>
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
       {user ? (
-        <Stack.Screen name="Home" component={HomeScreen} />
+        // 👇 Nếu đã đăng nhập, vào app chính (có navbar)
+        <Stack.Screen name="Main" component={AppNavigator} />
       ) : (
-        <Stack.Screen
-          name="Login"
-          component={LoginScreen}
-          options={{ headerShown: false }}
-        />
+        // 👇 Nếu chưa đăng nhập, vào màn hình Login
+        <Stack.Screen name="Login" component={LoginScreen} />
       )}
     </Stack.Navigator>
   );
@@ -29,7 +26,6 @@ function RootNavigator() {
 export default function App() {
   return (
     <AuthProvider>
-      
       <NavigationContainer>
         <RootNavigator />
       </NavigationContainer>

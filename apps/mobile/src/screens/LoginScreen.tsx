@@ -29,7 +29,7 @@ export default function LoginScreen({ navigation }: any) {
     try {
       setLoading(true);
       await login(identifier, password, role);
-      navigation.replace("Home");
+      navigation.replace("Main");
     } catch (err: any) {
       Alert.alert("Đăng nhập thất bại", err.message);
     } finally {
