@@ -313,10 +313,10 @@ export default function LecturerDashboard() {
                                 todaySchedules.map((s, i) => (
                                     <div
                                         key={i}
-                                        className="group p-4 border rounded-xl bg-background flex justify-between items-center cursor-pointer hover:shadow-md hover:border-primary/30 transition-all duration-200"
+                                        className="group p-4 border rounded-xl bg-background flex items-center justify-between cursor-pointer hover:shadow-md hover:border-primary/30 transition-all duration-200"
                                         onClick={() => router.push(`/lecturer/classes/${s.offeringId}`)}
                                     >
-                                        <div className="flex flex-col gap-1">
+                                        <div className="flex flex-col justify-center">
                                             <div className="flex flex-wrap items-center gap-2">
                                                 <span className="font-semibold text-foreground text-lg">
                                                     {s.courseName}{" "}
@@ -341,16 +341,21 @@ export default function LecturerDashboard() {
                                                     </Badge>
                                                 )}
                                             </div>
-                                            <p className="text-sm text-muted-foreground">
-                                                {s.building}-{s.classroom} • Tiết {s.start_period} →{" "}
-                                                {s.start_period + s.period_count - 1}
-                                            </p>
+
+                                            <div className="flex items-center text-sm text-muted-foreground mt-1">
+                                                <span>
+                                                    {s.building}-{s.classroom} • Tiết {s.start_period} →{" "}
+                                                    {s.start_period + s.period_count - 1}
+                                                </span>
+                                            </div>
                                         </div>
 
-                                        <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                                             <ArrowRight className="w-5 h-5 text-muted-foreground" />
                                         </div>
                                     </div>
+
+
                                 ))
                             )}
                         </CardContent>

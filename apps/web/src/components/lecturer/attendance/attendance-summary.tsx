@@ -260,7 +260,7 @@ export default function AttendanceSummary() {
   };
 
   const openAttendance = async (type: "theory" | "practice", groupId?: number) => {
-    await fetchTodayAttendance(type, groupId);
+    // await fetchTodayAttendance(type, groupId);
     setAttendanceOpen(true);
   };
 

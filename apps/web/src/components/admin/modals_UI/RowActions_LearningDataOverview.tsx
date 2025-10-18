@@ -7,8 +7,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-// import { toast } from "sonner";
-// import { confirmWithToast } from "@/components/ui/confirm-with-toast";
 import { MoreHorizontal, FileWarning, FileClock, BarChart3, Loader2 } from "lucide-react";
 
 interface Props {
@@ -18,6 +16,8 @@ interface Props {
   onCreateWarning: (id: string, name: string) => void;
   onViewDetails: (id: string) => void;
   onViewWarningHistory: (id: string) => void;
+  proposedLabel?: string;
+  proposedLevel?: number;
 }
 
 export function RowActionsLearningDataOverview({
@@ -27,6 +27,8 @@ export function RowActionsLearningDataOverview({
   onCreateWarning,
   onViewDetails,
   onViewWarningHistory,
+  proposedLabel,
+  proposedLevel,
 }: Props) {
   return (
     <DropdownMenu>
@@ -42,7 +44,9 @@ export function RowActionsLearningDataOverview({
           onClick={() => onCreateWarning(studentId, studentName)}
         >
           <FileWarning className="w-4 h-4 mr-2 text-red-500" />
-          Tạo cảnh cáo
+          {proposedLevel && proposedLevel > 0
+            ? `Tạo cảnh cáo (Đề xuất: ${proposedLabel || `Cảnh cáo ${proposedLevel}`})`
+            : "Tạo cảnh cáo"}
         </DropdownMenuItem>
 
         <DropdownMenuItem
