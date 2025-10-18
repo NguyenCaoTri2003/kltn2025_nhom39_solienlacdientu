@@ -30,7 +30,6 @@ interface AddUserModalProps {
   onSuccess?: () => void;
 }
 
-// Allow using process.env in client without Node types
 declare const process: { env: Record<string, string | undefined> };
 export function AddUserModal({ open, onClose, onSuccess }: AddUserModalProps) {
   const [mode, setMode] = useState<"single" | "import">("single"); // Thêm đơn / Import file
@@ -38,6 +37,7 @@ export function AddUserModal({ open, onClose, onSuccess }: AddUserModalProps) {
   const [loading, setLoading] = useState(false);
   const [singleData, setSingleData] = useState<SingleFormData | null>(null);
   const [file, setFile] = useState<File | null>(null);
+  const [disableConfirm, setDisableConfirm] = useState(false);
   const [summary, setSummary] = useState<{
     total: number;
     success: number;
@@ -77,8 +77,16 @@ export function AddUserModal({ open, onClose, onSuccess }: AddUserModalProps) {
             sum && sum.failed > 0 ? `, lỗi: ${sum.failed}` : ""
           }`
         );
+
+        if (sum && sum.failed > 0) {
+          setDisableConfirm(true);
+        } else {
+
+          onSuccess?.();
+          onClose();
+        }
       } else {
-        // Thêm đơn - gọi API tạo user đơn lẻ
+
         if (!singleData || !singleData.user?.full_name) {
           toast.error("Vui lòng nhập đầy đủ thông tin tối thiểu (Họ và tên)");
           return;
@@ -115,7 +123,6 @@ export function AddUserModal({ open, onClose, onSuccess }: AddUserModalProps) {
     }
   };
 
-  // Download template tương ứng với role
   const handleDownloadTemplate = () => {
     const roleToFile: Record<typeof role, string | null> = {
       student: "Student_Account_Import_Template.xlsx",
@@ -198,6 +205,8 @@ export function AddUserModal({ open, onClose, onSuccess }: AddUserModalProps) {
                   const f = e.target.files?.[0] ?? null;
                   setFile(f);
                   setSummary(null);
+
+                  setDisableConfirm(false);
                 }}
               />
 
@@ -242,7 +251,7 @@ export function AddUserModal({ open, onClose, onSuccess }: AddUserModalProps) {
           </Button>
           <Button
             onClick={handleSubmit}
-            disabled={loading}
+            disabled={loading || (mode === "import" && disableConfirm)}
             className="bg-primary text-primary-foreground hover:bg-primary/90"
           >
             {loading ? (
