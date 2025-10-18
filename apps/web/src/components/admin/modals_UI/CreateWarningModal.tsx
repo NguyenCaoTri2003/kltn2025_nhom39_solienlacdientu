@@ -63,9 +63,31 @@ export function CreateWarningModal({
         },
       });
       const json = await res.json();
-      if (json?.returnCode !== 0 || !Array.isArray(json.data) || json.data.length === 0) return null;
-      const semName: string | null | undefined = json.data[0]?.semester;
-      if (!semName) return null;
+      if (json?.returnCode === 0 && Array.isArray(json.data) && json.data.length > 0) {
+        const semIdFromRow = json.data[0]?.semester_id;
+        if (typeof semIdFromRow === "number" && semIdFromRow > 0) return Number(semIdFromRow);
+        const semName: string | null | undefined = json.data[0]?.semester;
+        if (semName) {
+          const semRes = await fetch(`${API_BASE}/api/semesters`, {
+            method: "GET",
+            headers: {
+              ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            },
+          });
+          const semJson = await semRes.json();
+          if (semJson?.returnCode === 0 && Array.isArray(semJson.data)) {
+            const list = semJson.data as Array<{ id: number; name: string }>;
+            const found = list.find((s) => s.name === semName);
+            if (found) return Number(found.id);
+            const latest = list.reduce<{ id: number } | null>((acc, cur) => {
+              if (!acc) return { id: Number(cur.id) };
+              return Number(cur.id) > Number(acc.id) ? { id: Number(cur.id) } : acc;
+            }, null);
+            return latest ? Number(latest.id) : null;
+          }
+        }
+      }
+      // Fallback when overview fails or returns empty: choose latest semester overall
       const semRes = await fetch(`${API_BASE}/api/semesters`, {
         method: "GET",
         headers: {
@@ -74,8 +96,13 @@ export function CreateWarningModal({
       });
       const semJson = await semRes.json();
       if (semJson?.returnCode !== 0 || !Array.isArray(semJson.data)) return null;
-      const found = (semJson.data as Array<{ id: number; name: string }>).find((s) => s.name === semName);
-      return found ? Number(found.id) : null;
+      const list = semJson.data as Array<{ id: number; name: string }>;
+      // Fallback: use latest semester overall (max id)
+      const latest = list.reduce<{ id: number } | null>((acc, cur) => {
+        if (!acc) return { id: Number(cur.id) };
+        return Number(cur.id) > Number(acc.id) ? { id: Number(cur.id) } : acc;
+      }, null);
+      return latest ? Number(latest.id) : null;
     } catch {
       return null;
     }
