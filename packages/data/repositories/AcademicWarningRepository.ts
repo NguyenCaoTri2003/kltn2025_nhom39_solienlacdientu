@@ -131,4 +131,35 @@ export class AcademicWarningRepository {
       grades: gradeList,
     };
   }
+
+  async getWarningsForStudent(studentId: number, semesterId?: number) {
+    let query = supabase
+      .from("academic_warnings")
+      .select("id, student_id, semester_id, level, reason, warned_at")
+      .eq("student_id", studentId)
+      .order("warned_at", { ascending: false });
+
+    if (typeof semesterId === "number") {
+      query = query.eq("semester_id", semesterId);
+    }
+
+    const { data, error } = await query;
+    if (error) throw error;
+
+    const warnings = (data ?? []).map((w: any) => ({
+      id: w.id as number,
+      student_id: w.student_id as number,
+      semester_id: w.semester_id as number,
+      level: w.level as string,
+      reason: w.reason as string,
+      warned_at: w.warned_at as string,
+    }));
+
+    return {
+      student_id: studentId,
+      semester_id: semesterId ?? null,
+      total_warning: warnings.length,
+      warnings,
+    } as const;
+  }
 }

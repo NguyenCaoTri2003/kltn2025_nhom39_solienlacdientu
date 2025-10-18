@@ -14,19 +14,39 @@ export async function GET() {
       );
     }
 
-    return NextResponse.json({ returnCode: 0, message: "OK", data: semesters });
+    const res = NextResponse.json({ returnCode: 0, message: "OK", data: semesters });
+    res.headers.set("Access-Control-Allow-Origin", "*");
+    res.headers.set("Access-Control-Allow-Methods", "GET,OPTIONS");
+    res.headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
+    return res;
   } catch (err: unknown) {
     if (err instanceof Error) {
-      return NextResponse.json(
+      const res = NextResponse.json(
         { returnCode: 1, message: err.message, data: null },
         { status: 500 }
       );
+      res.headers.set("Access-Control-Allow-Origin", "*");
+      res.headers.set("Access-Control-Allow-Methods", "GET,OPTIONS");
+      res.headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
+      return res;
     }
-    return NextResponse.json(
+    const res = NextResponse.json(
       { returnCode: 1, message: "Unknown error", data: null },
       { status: 500 }
     );
+    res.headers.set("Access-Control-Allow-Origin", "*");
+    res.headers.set("Access-Control-Allow-Methods", "GET,OPTIONS");
+    res.headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
+    return res;
   }
+}
+
+export async function OPTIONS() {
+  const res = NextResponse.json({}, { status: 200 });
+  res.headers.set("Access-Control-Allow-Origin", "*");
+  res.headers.set("Access-Control-Allow-Methods", "GET,OPTIONS");
+  res.headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  return res;
 }
 
 

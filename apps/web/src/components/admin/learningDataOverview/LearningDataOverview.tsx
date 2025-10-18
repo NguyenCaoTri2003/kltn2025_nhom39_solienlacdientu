@@ -8,188 +8,235 @@ import { Search, X, SlidersHorizontal } from "lucide-react";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { DataTable } from "@/components/ui/data-table";
 import { RowActionsLearningDataOverview } from "@/components/admin/modals_UI/RowActions_LearningDataOverview";
-import Pagination from "@/components/pagination";
+import { AccountPagination } from "@/components/admin/modals_UI/AccountPagination";
+import { WarningHistoryModal } from "@/components/admin/modals_UI/WarningHistoryModal";
+import { CreateWarningModal } from "@/components/admin/modals_UI/CreateWarningModal";
 
-type EvalRow = {
-  studentId: number;
-  studentCode: string;
-  fullName: string;
-  className: string | null;
-  facultyName: string | null;
-  semesterId: number;
-  semesterName?: string | null;
-  gpa4: number | null;
-  failedSubjects: number;
-  warningsCount: number;
-  lastWarningAt: string | null;
-  academicStatus: string;
-  attendanceRate: number | null;
-  status: string;
+type OverviewItem = {
+  student_id: number | string;
+  student_code: string;
+  full_name: string;
+  class: string;
+  faculty: string;
+  semester: string | null;
+  semester_id?: number | null;
+  gpa: number | null;
+  failed_subjects: number;
+  total_warning: number;
+  academic_status: string;
+  attendance_rate: number | null;
+  latest_warning: string | null;
+  proposed_warning_level?: number;
+  proposed_action?: string;
 };
 
+type Meta = { total: number; totalPages: number; page: number; pageSize: number };
+
 export default function LearningDataOverview() {
-  // Filters
+  const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
+  const getToken = () => {
+    try {
+      if (typeof document !== "undefined") {
+        const cookieToken = document.cookie
+          .split("; ")
+          .find((row) => row.startsWith("token="))
+          ?.split("=")[1];
+        const lsToken = typeof localStorage !== "undefined" ? localStorage.getItem("token") : null;
+        return cookieToken || lsToken || null;
+      }
+    } catch {}
+    return null;
+  };
+
   const [searchText, setSearchText] = useState("");
   const [faculty, setFaculty] = useState<string>("");
   const [classroom, setClassroom] = useState<string>("");
-  const [semester, setSemester] = useState<string>("");
+  const [academicYear, setAcademicYear] = useState<string>("");
+  const [semester, setSemester] = useState<string>(""); 
   const [academicStatus, setAcademicStatus] = useState<string>("");
-  const [accountStatus, setAccountStatus] = useState<string>("");
   const [gpaRange, setGpaRange] = useState<string>("");
   const [warningFilter, setWarningFilter] = useState<string>("");
+  const [scope, setScope] = useState<"semester" | "all">("semester");
+  const [gpaMinInput, setGpaMinInput] = useState<string>("");
+  const [gpaMaxInput, setGpaMaxInput] = useState<string>("");
+  const [failedMaxInput, setFailedMaxInput] = useState<string>("");
+  const [attendanceMinInput, setAttendanceMinInput] = useState<string>("");
 
-  // Options
-  const [faculties, setFaculties] = useState<Array<{ id: number; name: string }>>([]);
-  const [classes, setClasses] = useState<Array<{ id: number; name: string }>>([]);
-  const [semesters, setSemesters] = useState<Array<{ id: number; name: string }>>([]);
-
-  // Data
-  const [rows, setRows] = useState<EvalRow[]>([]);
-  const [page, setPage] = useState<number>(1);
-  const [size, setSize] = useState<number>(20);
-  const [total, setTotal] = useState<number>(0);
-  const [loading, setLoading] = useState<boolean>(false);
+  const [rows, setRows] = useState<OverviewItem[]>([]);
+  const [meta, setMeta] = useState<Meta>({ total: 0, totalPages: 1, page: 1, pageSize: 20 });
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
 
-  const API_BASE = process.env.NEXT_PUBLIC_API_URL || "";
+  const [warningOpen, setWarningOpen] = useState(false);
+  const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
 
-  // Load options
+  const [openModal, setOpenModal] = useState(false);
+  const [selectedForCreate, setSelectedForCreate] = useState<string | null>(null);
+  const [selectedSemesterIdForCreate, setSelectedSemesterIdForCreate] = useState<number | null>(null);
+
+  const [semestersData, setSemestersData] = useState<Array<{ id: number; name: string; academic_year: string | null }>>([]);
+  const [facultiesData, setFacultiesData] = useState<Array<{ id: number; name: string }>>([]);
+  const [classesData, setClassesData] = useState<Array<{ id: number; class_code: string }>>([]);
+  const academicYears = useMemo(() => {
+    const years = Array.from(new Set(semestersData.map((s) => s.academic_year || ""))).filter(Boolean) as string[];
+    return years.sort();
+  }, [semestersData]);
+  const semestersByYear = useMemo(() => {
+    const map = new Map<string, Array<{ id: number; name: string }>>();
+    semestersData.forEach((s) => {
+      const y = (s.academic_year || "").toString();
+      if (!y) return;
+      const arr = map.get(y) ?? [];
+      arr.push({ id: s.id, name: s.name });
+      map.set(y, arr);
+    });
+    return map;
+  }, [semestersData]);
+
+
+ 
   useEffect(() => {
-    let ignore = false;
-    async function loadOptions() {
+    let alive = true;
+    const loadSemesters = async () => {
       try {
-        const [facRes, classRes, semRes] = await Promise.all([
-          fetch(`${API_BASE}/api/faculties`, { credentials: "include" }),
-          fetch(`${API_BASE}/api/classes`, { credentials: "include" }),
-          fetch(`${API_BASE}/api/semesters`, { credentials: "include" }),
-        ]);
-        const [facJson, classJson, semJson] = await Promise.all([
-          facRes.json().catch(() => ({})),
-          classRes.json().catch(() => ({})),
-          semRes.json().catch(() => ({})),
-        ]);
-        if (!ignore) {
-          type ListResponse<T> = { data?: T[] };
-          // Faculties
-          if (facRes.ok) {
-            const { data = [] } = facJson as ListResponse<{ id: number; name: string }>;
-            if (Array.isArray(data)) setFaculties(data.map((f) => ({ id: f.id, name: f.name })));
-          }
-          // Classes
-          if (classRes.ok) {
-            const { data = [] } = classJson as ListResponse<{ id: number; class_code?: string; name?: string }>;
-            if (Array.isArray(data)) setClasses(
-              data
-                .map((c) => ({ id: c.id, name: c.class_code ?? c.name ?? "" }))
-                .filter((c): c is { id: number; name: string } => Boolean(c.name))
-            );
-          }
-          // Semesters
-          if (semRes.ok) {
-            const { data = [] } = semJson as ListResponse<{ id: number; name: string }>;
-            if (Array.isArray(data)) setSemesters(data.map((s) => ({ id: s.id, name: s.name })));
-          }
+        const token = getToken();
+        const res = await fetch(`${API_BASE}/api/semesters`, {
+          method: "GET",
+          headers: {
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+        });
+        const json = await res.json();
+        if (!alive) return;
+        if (json?.returnCode === 0 && Array.isArray(json.data)) {
+          setSemestersData(json.data);
         }
       } catch {
-        // ignore
+
       }
-    }
-    loadOptions();
-    return () => { ignore = true; };
+    };
+    const loadFaculties = async () => {
+      try {
+        const token = getToken();
+        const res = await fetch(`${API_BASE}/api/faculties`, {
+          method: "GET",
+          headers: {
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+        });
+        const json = await res.json();
+        if (!alive) return;
+        if (json?.returnCode === 0 && Array.isArray(json.data)) {
+          type F = { id: number; name: string };
+          const items: F[] = json.data.map((f: unknown) => {
+            const obj = f as { id?: number; name?: string };
+            return { id: Number(obj.id), name: String(obj.name || "") };
+          });
+          setFacultiesData(items);
+        }
+      } catch {
+
+      }
+    };
+    const loadClasses = async () => {
+      try {
+        const token = getToken();
+        const res = await fetch(`${API_BASE}/api/classes`, {
+          method: "GET",
+          headers: {
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+        });
+        const json = await res.json();
+        if (!alive) return;
+        if (json?.returnCode === 0 && Array.isArray(json.data)) {
+          type C = { id: number; class_code: string };
+          const items: C[] = json.data.map((c: unknown) => {
+            const obj = c as { id?: number; class_code?: string };
+            return { id: Number(obj.id), class_code: String(obj.class_code || "") };
+          });
+          setClassesData(items);
+        }
+      } catch {
+     
+      }
+    };
+    loadSemesters();
+    loadFaculties();
+    loadClasses();
+    return () => { alive = false; };
   }, [API_BASE]);
 
-  const mapGpaRange = useMemo(() => {
-    switch (gpaRange) {
-      case "4":
-        return { gpaMin: 4.0, gpaMax: 4.0 };
-      case "3":
-        return { gpaMin: 3.0, gpaMax: 3.9 };
-      case "2":
-        return { gpaMin: 2.0, gpaMax: 2.9 };
-      case "1":
-        return { gpaMin: 0, gpaMax: 1.99 };
-      default:
-        return {} as { gpaMin?: number; gpaMax?: number };
-    }
-  }, [gpaRange]);
 
-  const warningCountFromFilter = useMemo(() => {
-    switch (warningFilter) {
-      case "none":
-        return 0;
-      case "warning_1":
-        return 1;
-      case "warning_2":
-        return 2;
-      case "probation":
-        return 3;
-      default:
-        return undefined;
-    }
-  }, [warningFilter]);
+  const buildOverviewUrl = (overrides?: { p?: number; ps?: number; search?: string; semId?: string }) => {
+    const params = new URLSearchParams();
+    const currentPage = overrides?.p ?? page;
+    const currentPageSize = overrides?.ps ?? pageSize;
+    const currentSearch = overrides?.search ?? searchText.trim();
+    const semId = overrides?.semId ?? semester;
+    if (scope === "semester" && semId) params.set("semesterId", semId);
+    if (currentSearch) params.set("search", currentSearch);
+    params.set("page", String(currentPage));
+    params.set("pageSize", String(currentPageSize));
+    return `${API_BASE}/api/students/overview?${params.toString()}`;
+  };
 
-  async function fetchEvaluation(nextPage = 1, nextSize = size) {
+  const fetchOverview = async (overrides?: { p?: number; ps?: number; search?: string; semId?: string }) => {
+    setLoading(true);
+    setError(null);
     try {
-      setLoading(true);
-      setError(null);
-      // must have semesterId
-      if (!semester) {
-  setRows([]);
-  setTotal(0);
-  setPage(1);
-        return;
-      }
-      const params = new URLSearchParams();
-      params.set("semesterId", semester);
-      if (searchText) {
-        params.set("fullName", searchText);
-        params.set("studentCode", searchText);
-      }
-  const norm = (v: string) => (v && v !== "all" ? v : "");
-  if (norm(faculty)) params.set("facultyName", norm(faculty));
-  if (norm(classroom)) params.set("className", norm(classroom));
-  if (norm(academicStatus)) params.set("academicStatus", norm(academicStatus));
-  if (norm(accountStatus)) params.set("status", norm(accountStatus));
-      if (mapGpaRange.gpaMin != null) params.set("gpaMin", String(mapGpaRange.gpaMin));
-      if (mapGpaRange.gpaMax != null) params.set("gpaMax", String(mapGpaRange.gpaMax));
-      if (warningCountFromFilter != null) params.set("warningsCount", String(warningCountFromFilter));
-      params.set("page", String(nextPage));
-      params.set("size", String(nextSize));
-      params.set("sort", "gpa4,asc");
-
-      const res = await fetch(`${API_BASE}/api/academic-warnings/evaluation?${params.toString()}`, { credentials: "include" });
-      const json = await res.json().catch(() => ({}));
-      if (res.ok && json?.returnCode === 0) {
-        setRows(json.data?.items ?? []);
-        setPage(json.data?.page ?? nextPage);
-        setTotal(json.data?.total ?? 0);
-        setSize(nextSize);
-      } else {
-        setError(json?.message || "Không thể tải dữ liệu");
-        setRows([]);
-        setTotal(0);
-      }
-    } catch {
-      setError("Lỗi kết nối máy chủ");
+      const url = buildOverviewUrl(overrides);
+      const token = getToken();
+      const res = await fetch(url, {
+        method: "GET",
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
+      const json = await res.json();
+      if (json?.returnCode !== 0) throw new Error(json?.message || "Fetch failed");
+      setRows(Array.isArray(json.data) ? json.data : []);
+      const m = json.meta || { total: 0, totalPages: 1, page: overrides?.p ?? page, pageSize: overrides?.ps ?? pageSize };
+      setMeta({ total: m.total || 0, totalPages: m.totalPages || 1, page: m.page || (overrides?.p ?? page), pageSize: m.pageSize || (overrides?.ps ?? pageSize) });
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Lỗi tải dữ liệu";
+      setError(msg);
       setRows([]);
-      setTotal(0);
+      const ps = overrides?.ps ?? pageSize;
+      setMeta({ total: 0, totalPages: 1, page: 1, pageSize: ps });
     } finally {
       setLoading(false);
     }
-  }
+  };
+
+  const openWarningHistory = (studentId: string) => {
+    setSelectedStudentId(studentId);
+    setWarningOpen(true);
+  };
+
+
+  useEffect(() => {
+    setSemester("");
+  }, [academicYear]);
 
   const handleClearFilters = () => {
     setFaculty("");
     setClassroom("");
+    setAcademicYear("");
     setSemester("");
     setAcademicStatus("");
-    setAccountStatus("");
     setGpaRange("");
     setWarningFilter("");
+    setScope("semester");
+    setGpaMinInput("");
+    setGpaMaxInput("");
+    setFailedMaxInput("");
+    setAttendanceMinInput("");
     setSearchText("");
-    setRows([]);
-    setTotal(0);
     setPage(1);
+    setPageSize(20);
   };
 
   return (
@@ -208,6 +255,16 @@ export default function LearningDataOverview() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+          {/* Phạm vi */}
+          <Select value={scope} onValueChange={(v) => setScope(v as "semester" | "all")}>
+            <SelectTrigger>
+              <SelectValue placeholder="Phạm vi" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="semester">Theo học kỳ</SelectItem>
+              <SelectItem value="all">Tổng tất cả kỳ</SelectItem>
+            </SelectContent>
+          </Select>
           {/* Khoa */}
           <Select value={faculty} onValueChange={setFaculty}>
             <SelectTrigger>
@@ -215,7 +272,7 @@ export default function LearningDataOverview() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Tất cả khoa</SelectItem>
-              {faculties.map((f) => (
+              {facultiesData.map((f) => (
                 <SelectItem key={f.id} value={f.name}>
                   {f.name}
                 </SelectItem>
@@ -230,30 +287,39 @@ export default function LearningDataOverview() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Tất cả lớp</SelectItem>
-              {classes.map((c) => (
-                <SelectItem key={c.id} value={c.name}>
-                  {c.name}
+              {classesData.map((c) => (
+                <SelectItem key={c.id} value={c.class_code}>
+                  {c.class_code}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
 
-          {/* Học kỳ */}
-          <Select value={semester} onValueChange={setSemester}>
+          {/* Học kỳ: chọn academic_year trước, sau đó mới chọn học kỳ (name/id) */}
+          <Select value={academicYear} onValueChange={setAcademicYear} disabled={scope === "all"}>
+            <SelectTrigger>
+              <SelectValue placeholder="Chọn năm học" />
+            </SelectTrigger>
+            <SelectContent>
+              {academicYears.map((y) => (
+                <SelectItem key={y} value={y}>{y}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={semester} onValueChange={setSemester} disabled={scope === "all" || !academicYear}>
             <SelectTrigger>
               <SelectValue placeholder="Chọn học kỳ" />
             </SelectTrigger>
             <SelectContent>
-              {semesters.map((s) => (
-                <SelectItem key={s.id} value={String(s.id)}>
-                  {s.name}
-                </SelectItem>
+              {(semestersByYear.get(academicYear) || []).map((s) => (
+                <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
               ))}
             </SelectContent>
           </Select>
 
           {/* Trạng thái học tập */}
-          <Select value={academicStatus} onValueChange={setAcademicStatus}>
+          {/* <Select value={academicStatus} onValueChange={setAcademicStatus}>
             <SelectTrigger>
               <SelectValue placeholder="Trạng thái học tập" />
             </SelectTrigger>
@@ -263,10 +329,10 @@ export default function LearningDataOverview() {
               <SelectItem value="warning">Cảnh báo</SelectItem>
               <SelectItem value="failed">Trượt</SelectItem>
             </SelectContent>
-          </Select>
+          </Select> */}
 
           {/* Trạng thái tài khoản */}
-          <Select value={accountStatus} onValueChange={setAccountStatus}>
+          {/* <Select value={accountStatus} onValueChange={setAccountStatus}>
             <SelectTrigger>
               <SelectValue placeholder="Trạng thái tài khoản" />
             </SelectTrigger>
@@ -276,7 +342,7 @@ export default function LearningDataOverview() {
               <SelectItem value="inactive">Bị khóa</SelectItem>
               <SelectItem value="suspended">Chờ kích hoạt</SelectItem>
             </SelectContent>
-          </Select>
+          </Select> */}
 
           {/* Khoảng GPA */}
           <Select value={gpaRange} onValueChange={setGpaRange}>
@@ -292,8 +358,20 @@ export default function LearningDataOverview() {
             </SelectContent>
           </Select>
 
+          {/* GPA (từ - đến) */}
+          {/* <div className="flex items-center gap-2">
+            <Input type="number" step="0.1" min="0" max="4" placeholder="GPA từ" value={gpaMinInput} onChange={(e) => setGpaMinInput(e.target.value)} />
+            <Input type="number" step="0.1" min="0" max="4" placeholder="đến" value={gpaMaxInput} onChange={(e) => setGpaMaxInput(e.target.value)} />
+          </div> */}
+
+          {/* Môn trượt tối đa */}
+          {/* <Input type="number" min="0" placeholder="Môn trượt tối đa" value={failedMaxInput} onChange={(e) => setFailedMaxInput(e.target.value)} /> */}
+
+          {/* Chuyên cần tối thiểu (%) */}
+          {/* <Input type="number" min="0" max="100" placeholder="Chuyên cần tối thiểu (%)" value={attendanceMinInput} onChange={(e) => setAttendanceMinInput(e.target.value)} /> */}
+
           {/* Trạng thái cảnh cáo (suy diễn warningsCount) */}
-          <Select value={warningFilter} onValueChange={setWarningFilter}>
+          {/* <Select value={warningFilter} onValueChange={setWarningFilter}>
             <SelectTrigger>
               <SelectValue placeholder="Trạng thái cảnh cáo" />
             </SelectTrigger>
@@ -304,7 +382,7 @@ export default function LearningDataOverview() {
               <SelectItem value="warning_2">Cảnh báo 2</SelectItem>
               <SelectItem value="probation">Nguy cơ thôi học</SelectItem>
             </SelectContent>
-          </Select>
+          </Select> */}
 
           {/* Tên hoặc MSSV */}
           <div className="flex items-center gap-2">
@@ -318,18 +396,15 @@ export default function LearningDataOverview() {
         </div>
 
         <div className="flex justify-end">
-          <Button className="w-full sm:w-auto" onClick={() => fetchEvaluation(1, size)} disabled={loading}>
+          <Button className="w-full sm:w-auto" onClick={() => { setPage(1); fetchOverview({ p: 1 }); }} disabled={loading}>
             <Search className="h-4 w-4 mr-2" />
-            {loading ? "Đang tải..." : "Tìm kiếm"}
+            {loading ? "Đang tìm..." : "Tìm kiếm"}
           </Button>
         </div>
       </div>
 
       {/* Table */}
       <div className="overflow-x-auto border rounded-xl shadow-sm bg-white">
-        {error && (
-          <div className="p-3 text-sm text-red-600">{error}</div>
-        )}
         <DataTable
           headers={[
             "#",
@@ -344,66 +419,128 @@ export default function LearningDataOverview() {
             "Trạng thái học tập",
             "Chuyên cần (%)",
             "Cảnh cáo gần nhất",
+            "Đề xuất xử lí",
             "Thao tác",
           ]}
           maxHeight="450px"
         >
-          {rows.map((r, i) => (
-            <tr key={`${r.studentId}-${i}`} className="hover:bg-gray-50">
-              <td className="px-4 py-3 border-b">{(page - 1) * size + i + 1}</td>
-              <td className="px-4 py-3 border-b">{r.studentCode}</td>
-              <td className="px-4 py-3 border-b">{r.fullName}</td>
-              <td className="px-4 py-3 border-b">{r.className ?? "-"}</td>
-              <td className="px-4 py-3 border-b">{r.facultyName ?? "-"}</td>
-              <td className="px-4 py-3 border-b">{r.semesterName ?? r.semesterId ?? "-"}</td>
-              <td className="px-4 py-3 border-b font-medium">{r.gpa4 ?? "-"}</td>
-              <td className="px-4 py-3 border-b text-red-600">{r.failedSubjects}</td>
-              <td className="px-4 py-3 border-b">{r.warningsCount}</td>
-              <td className="px-4 py-3 border-b">{r.academicStatus}</td>
-              <td className="px-4 py-3 border-b">{r.attendanceRate != null ? `${r.attendanceRate}%` : "-"}</td>
-              <td className="px-4 py-3 border-b">
-                <span suppressHydrationWarning>
-                  {r.lastWarningAt ? new Date(r.lastWarningAt).toLocaleString("vi-VN") : "-"}
-                </span>
-              </td>
-              <td className="px-4 py-3 border-b">
-                <RowActionsLearningDataOverview
-                  studentId={String(r.studentId)}
-                  studentName={r.fullName}
-                  isBusy={false}
-                  onCreateWarning={(id: string, name: string) => {
-                    // TODO: wire to POST /api/academic-warnings
-                    console.log("create warning", id, name);
-                  }}
-                  onViewDetails={(id: string) => {
-                    // TODO: open details modal or navigate
-                    console.log("view details", id);
-                  }}
-                  onViewWarningHistory={(id: string) => {
-                    // TODO: open history modal
-                    console.log("view history", id);
-                  }}
-                />
+          {error && (
+            <tr>
+              <td className="px-4 py-6 text-red-600" colSpan={14}>{error}</td>
+            </tr>
+          )}
+          {!error && rows.length === 0 && !loading && (
+            <tr>
+              <td className="px-4 py-6 text-gray-500" colSpan={14}>
+                <p>Không có dữ liệu phù hợp. Hãy thay đổi điều kiện và thử lại.</p>
               </td>
             </tr>
-          ))}
+          )}
+          {!error && rows.length > 0 && (
+            <>
+              {rows
+                .filter((r) => {
+                  if (faculty && faculty !== "all" && r.faculty !== faculty) return false;
+                  if (classroom && classroom !== "all" && r.class !== classroom) return false;
+                  if (academicStatus && academicStatus !== "all" && r.academic_status !== academicStatus) return false;
+                  if (gpaRange && gpaRange !== "all") {
+                    const g = r.gpa ?? 0;
+                    if (gpaRange === "4" && g !== 4.0) return false;
+                    if (gpaRange === "3" && !(g >= 3.0 && g < 4.0)) return false;
+                    if (gpaRange === "2" && !(g >= 2.0 && g < 3.0)) return false;
+                    if (gpaRange === "1" && !(g < 2.0)) return false;
+                  }
+                  const gpaMin = gpaMinInput ? parseFloat(gpaMinInput) : undefined;
+                  const gpaMax = gpaMaxInput ? parseFloat(gpaMaxInput) : undefined;
+                  if (gpaMin != null && (r.gpa ?? 0) < gpaMin) return false;
+                  if (gpaMax != null && (r.gpa ?? 0) > gpaMax) return false;
+                  const failedMax = failedMaxInput ? parseInt(failedMaxInput) : undefined;
+                  if (failedMax != null && r.failed_subjects > failedMax) return false;
+                  const attendMin = attendanceMinInput ? parseFloat(attendanceMinInput) : undefined;
+                  if (attendMin != null && (r.attendance_rate ?? 0) < attendMin) return false;
+                  if (warningFilter && warningFilter !== "all") {
+                    if (warningFilter === "none" && r.total_warning > 0) return false;
+                    if (warningFilter === "warning_1" && r.total_warning < 1) return false;
+                    if (warningFilter === "warning_2" && r.total_warning < 2) return false;
+                    if (warningFilter === "probation" && r.total_warning < 3) return false;
+                  }
+                  return true;
+                })
+                .map((r, idx) => (
+                  <tr key={`${r.student_id}-${idx}`} className="hover:bg-gray-50">
+                    <td className="px-4 py-3 border-b">{(meta.page - 1) * meta.pageSize + idx + 1}</td>
+                    <td className="px-4 py-3 border-b">{r.student_code}</td>
+                    <td className="px-4 py-3 border-b">{r.full_name}</td>
+                    <td className="px-4 py-3 border-b">{r.class}</td>
+                    <td className="px-4 py-3 border-b">{r.faculty}</td>
+                    <td className="px-4 py-3 border-b">{r.semester ?? "-"}</td>
+                    <td className="px-4 py-3 border-b font-medium">{r.gpa ?? "-"}</td>
+                    <td className="px-4 py-3 border-b text-red-600">{r.failed_subjects}</td>
+                    <td className="px-4 py-3 border-b">{r.total_warning}</td>
+                    <td className="px-4 py-3 border-b">{r.academic_status}</td>
+                    <td className="px-4 py-3 border-b">{r.attendance_rate != null ? `${r.attendance_rate}%` : "-"}</td>
+                    <td className="px-4 py-3 border-b">{r.latest_warning ? new Date(r.latest_warning).toLocaleString() : "-"}</td>
+                    <td className="px-4 py-3 border-b">{r.proposed_action || "-"}</td>
+                    <td className="px-4 py-3 border-b">
+                      <RowActionsLearningDataOverview
+                        studentId={String(r.student_id)}
+                        studentName={r.full_name}
+                        isBusy={false}
+                        proposedLabel={r.proposed_action}
+                        proposedLevel={r.proposed_warning_level}
+                        onCreateWarning={(id) => {
+                          setSelectedForCreate(id);
+                          setSelectedSemesterIdForCreate(r.semester_id != null ? Number(r.semester_id) : null);
+                          setOpenModal(true);
+                        }}
+                        onViewDetails={() => {}}
+                        onViewWarningHistory={(id) => openWarningHistory(id)}
+                      />
+                    </td>
+                  </tr>
+                ))}
+            </>
+          )}
         </DataTable>
       </div>
 
-      {total > 0 && (
-        <div className="flex justify-end">
-          <Pagination
-            totalItems={total}
-            pageSize={size}
-            currentPage={page}
-            onChange={(p: number) => {
-              setPage(p);
-              fetchEvaluation(p, size);
-            }}
-            item="sinh viên"
-          />
-        </div>
-      )}
+      {/* Pagination Controls (reused component) */}
+      <AccountPagination
+        currentPage={meta.page}
+        totalPages={meta.totalPages}
+        total={meta.total}
+        pageSize={meta.pageSize}
+        disabled={loading}
+        onChangePageSize={async (newSize) => {
+          setPageSize(newSize);
+          setPage(1);
+          await fetchOverview({ p: 1, ps: newSize });
+        }}
+        onChangePage={async (newPage) => {
+          setPage(newPage);
+          await fetchOverview({ p: newPage });
+        }}
+      />
+
+      {/* Warning History Modal */}
+      <WarningHistoryModal
+        open={warningOpen}
+        onClose={() => setWarningOpen(false)}
+        studentId={selectedStudentId || undefined}
+        semesterId={scope === "semester" && semester ? semester : undefined}
+        apiBase={API_BASE}
+      />
+      {/* Create Warning Modal */}
+      <CreateWarningModal
+        open={openModal}
+        onClose={() => setOpenModal(false)}
+        studentId={selectedForCreate ? Number(selectedForCreate) : null}
+        semesterId={selectedSemesterIdForCreate}
+        apiBase={API_BASE}
+        defaultLevel={(rows.find(r => String(r.student_id) === String(selectedForCreate))?.proposed_warning_level ?? 1) === 3 ? "major"
+          : (rows.find(r => String(r.student_id) === String(selectedForCreate))?.proposed_warning_level ?? 1) === 2 ? "moderate" : "minor"}
+      />
+
     </div>
   );
 }
