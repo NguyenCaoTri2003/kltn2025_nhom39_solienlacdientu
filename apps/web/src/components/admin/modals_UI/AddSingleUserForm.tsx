@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import {
@@ -11,20 +12,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-// Shared validators
-import {
-  isValidFullName,
-  isValidEmail,
-  isValidPhone,
-  isValidCitizenId,
-  isValidAddress,
-  isValidEthnic,
-  isValidStudentCode,
-  isValidLecturerCode,
-  isValidOccupation,
-  isValidAcademicYear,
-  isValidPlaceOrContactAddress,
-} from "@packages/utils/Regex";
 type RoleType = "student" | "lecturer" | "parent" | "admin";
 
 export type SingleFormData = {
@@ -59,12 +46,24 @@ export type SingleFormData = {
     student_id?: number;
     relationship?: string; // father|mother|guardian
   };
+  // For role "student": collect up to two parent candidates to be created separately after student creation
+  parent_candidates?: Array<{
+    user: {
+      full_name: string;
+      email?: string;
+      phone?: string;
+      address?: string;
+      citizen_id_card?: string;
+      ethnic?: string;
+    };
+    parent: { occupation?: string };
+    relationship?: string; // father|mother|guardian
+  }>;
 };
 
 interface AddSingleUserFormProps {
   role: RoleType;
   onChange?: (data: SingleFormData) => void;
-  onValidityChange?: (isValid: boolean) => void;
 }
 
 type ClassItem = { id: number; class_code: string };
@@ -72,7 +71,7 @@ type FacultyItem = { id: number; name: string };
 
 declare const process: { env: Record<string, string | undefined> };
 
-export function AddSingleUserForm({ role, onChange, onValidityChange }: AddSingleUserFormProps) {
+export function AddSingleUserForm({ role, onChange }: AddSingleUserFormProps) {
   const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
   const [classes, setClasses] = useState<ClassItem[]>([]);
   const [faculties, setFaculties] = useState<FacultyItem[]>([]);
@@ -105,7 +104,40 @@ export function AddSingleUserForm({ role, onChange, onValidityChange }: AddSingl
   const [childStudentId, setChildStudentId] = useState(""); 
   const [relationship, setRelationship] = useState("");
 
-  // validators are imported at the module level
+  // Parent subforms for student role (max 2)
+  type ParentForm = {
+    full_name: string;
+    email: string;
+    phone: string;
+    citizen_id_card: string;
+    address: string;
+    ethnic: string;
+    occupation: string;
+    relationship: string; // father|mother|guardian
+  };
+  const [parentForms, setParentForms] = useState<ParentForm[]>([]);
+  const addParentForm = () => {
+    if (parentForms.length >= 2) return;
+    setParentForms((prev) => [
+      ...prev,
+      {
+        full_name: "",
+        email: "",
+        phone: "",
+        citizen_id_card: "",
+        address: "",
+        ethnic: "",
+        occupation: "",
+        relationship: "",
+      },
+    ]);
+  };
+  const removeParentForm = (idx: number) => {
+    setParentForms((prev) => prev.filter((_, i) => i !== idx));
+  };
+  const updateParentForm = (idx: number, patch: Partial<ParentForm>) => {
+    setParentForms((prev) => prev.map((f, i) => (i === idx ? { ...f, ...patch } : f)));
+  };
 
   useEffect(() => {
     let ignore = false;
@@ -179,66 +211,21 @@ export function AddSingleUserForm({ role, onChange, onValidityChange }: AddSingl
         relationship: relationship || undefined,
       };
     }
-    onChange?.(payload);
-
-    // Compute validity using Regex utils
-    const trimmed = (v: string) => v.trim();
-    const errors: Record<string, string> = {};
-
-    // Common required
-    if (!trimmed(fullName) || !isValidFullName(trimmed(fullName))) {
-      errors.fullName = "Họ và tên không hợp lệ";
-    }
-
-    // Optional commons (validate only if provided)
-    if (trimmed(email) && !isValidEmail(trimmed(email))) {
-      errors.email = "Email không hợp lệ";
-    }
-    if (trimmed(phone) && !isValidPhone(trimmed(phone))) {
-      errors.phone = "Số điện thoại không hợp lệ";
-    }
-    if (trimmed(citizenId) && !isValidCitizenId(trimmed(citizenId))) {
-      errors.citizenId = "CCCD/CMND không hợp lệ";
-    }
-    if (trimmed(address) && !isValidAddress(trimmed(address))) {
-      errors.address = "Địa chỉ không hợp lệ";
-    }
-    if (trimmed(ethnic) && !isValidEthnic(trimmed(ethnic))) {
-      errors.ethnic = "Dân tộc không hợp lệ";
-    }
-
     if (role === "student") {
-      if (trimmed(studentCode) && !isValidStudentCode(trimmed(studentCode))) {
-        errors.studentCode = "Mã sinh viên không hợp lệ";
-      }
-      if (trimmed(placeOfBirth) && !isValidPlaceOrContactAddress(trimmed(placeOfBirth))) {
-        errors.placeOfBirth = "Nơi sinh không hợp lệ";
-      }
-      if (trimmed(contactAddress) && !isValidPlaceOrContactAddress(trimmed(contactAddress))) {
-        errors.contactAddress = "Địa chỉ liên lạc không hợp lệ";
-      }
-      if (trimmed(academicYear) && !isValidAcademicYear(trimmed(academicYear))) {
-        errors.academicYear = "Niên khoá không hợp lệ";
-      }
-    } else if (role === "lecturer") {
-      if (trimmed(lecturerCode) && !isValidLecturerCode(trimmed(lecturerCode))) {
-        errors.lecturerCode = "Mã giảng viên không hợp lệ";
-      }
-    } else if (role === "parent") {
-      if (trimmed(occupation) && !isValidOccupation(trimmed(occupation))) {
-        errors.occupation = "Nghề nghiệp không hợp lệ";
-      }
-      // Parent requires linking to a student and relationship
-      if (!trimmed(childStudentId) || !/^\d+$/.test(trimmed(childStudentId))) {
-        errors.childStudentId = "Vui lòng nhập ID sinh viên hợp lệ";
-      }
-      if (!trimmed(relationship)) {
-        errors.relationship = "Vui lòng chọn mối quan hệ";
-      }
+      payload.parent_candidates = parentForms.map((f) => ({
+        user: {
+          full_name: f.full_name,
+          email: f.email || undefined,
+          phone: f.phone || undefined,
+          address: f.address || undefined,
+          citizen_id_card: f.citizen_id_card || undefined,
+          ethnic: f.ethnic || undefined,
+        },
+        parent: { occupation: f.occupation || undefined },
+        relationship: f.relationship || undefined,
+      }));
     }
-
-    const isValid = Object.keys(errors).length === 0;
-    onValidityChange?.(isValid);
+    onChange?.(payload);
   }, [
     role,
     fullName,
@@ -261,8 +248,8 @@ export function AddSingleUserForm({ role, onChange, onValidityChange }: AddSingl
     occupation,
     childStudentId,
     relationship,
+    parentForms,
     onChange,
-    onValidityChange,
   ]);
 
 
@@ -272,14 +259,8 @@ export function AddSingleUserForm({ role, onChange, onValidityChange }: AddSingl
         <div className="space-y-2">
           <Label>Họ và tên</Label>
           <Input placeholder="Nhập họ và tên..." value={fullName} onChange={(e) => setFullName(e.target.value)} />
-          {!(fullName.trim() && isValidFullName(fullName.trim())) && (
-            <p className="text-destructive text-xs">Họ và tên không hợp lệ</p>
-          )}
           <Label>Mã sinh viên</Label>
           <Input placeholder="Nhập mã sinh viên..." value={studentCode} onChange={(e) => setStudentCode(e.target.value)} />
-          {studentCode.trim() && !isValidStudentCode(studentCode.trim()) ? (
-            <p className="text-destructive text-xs">Mã sinh viên không hợp lệ</p>
-          ) : null}
           <Label>Lớp</Label>
           <Select
             value={selectedClassId ? String(selectedClassId) : ""}
@@ -300,39 +281,18 @@ export function AddSingleUserForm({ role, onChange, onValidityChange }: AddSingl
           <Input type="date" placeholder="Nhập ngày sinh..." value={dateOfBirth} onChange={(e) => setDateOfBirth(e.target.value)} />
           <Label>Nơi sinh</Label>
           <Input placeholder="Nhập nơi sinh..." value={placeOfBirth} onChange={(e) => setPlaceOfBirth(e.target.value)} />
-          {placeOfBirth.trim() && !isValidPlaceOrContactAddress(placeOfBirth.trim()) ? (
-            <p className="text-destructive text-xs">Nơi sinh không hợp lệ</p>
-          ) : null}
           <Label>Địa chỉ liên lạc</Label>
           <Input placeholder="Nhập địa chỉ liên lạc..." value={contactAddress} onChange={(e) => setContactAddress(e.target.value)} />
-          {contactAddress.trim() && !isValidPlaceOrContactAddress(contactAddress.trim()) ? (
-            <p className="text-destructive text-xs">Địa chỉ liên lạc không hợp lệ</p>
-          ) : null}
           <Label>Email</Label>
           <Input placeholder="Nhập email..." value={email} onChange={(e) => setEmail(e.target.value)} />
-          {email.trim() && !isValidEmail(email.trim()) ? (
-            <p className="text-destructive text-xs">Email không hợp lệ</p>
-          ) : null}
           <Label>Số điện thoại</Label>
           <Input placeholder="Nhập số điện thoại..." value={phone} onChange={(e) => setPhone(e.target.value)} />
-          {phone.trim() && !isValidPhone(phone.trim()) ? (
-            <p className="text-destructive text-xs">Số điện thoại không hợp lệ</p>
-          ) : null}
           <Label>CCCD</Label>
           <Input placeholder="Nhập CCCD..." value={citizenId} onChange={(e) => setCitizenId(e.target.value)} />
-          {citizenId.trim() && !isValidCitizenId(citizenId.trim()) ? (
-            <p className="text-destructive text-xs">CCCD/CMND không hợp lệ</p>
-          ) : null}
           <Label>Địa chỉ</Label>
           <Input placeholder="Nhập địa chỉ..." value={address} onChange={(e) => setAddress(e.target.value)} />
-          {address.trim() && !isValidAddress(address.trim()) ? (
-            <p className="text-destructive text-xs">Địa chỉ không hợp lệ</p>
-          ) : null}
           <Label>Dân tộc</Label>
           <Input placeholder="Nhập dân tộc..." value={ethnic} onChange={(e) => setEthnic(e.target.value)} />
-          {ethnic.trim() && !isValidEthnic(ethnic.trim()) ? (
-            <p className="text-destructive text-xs">Dân tộc không hợp lệ</p>
-          ) : null}
           <Label>Hình thức đào tạo</Label>
           <Select value={typeOfTraining} onValueChange={(v: string) => setTypeOfTraining(v)}>
             <SelectTrigger>
@@ -345,6 +305,50 @@ export function AddSingleUserForm({ role, onChange, onValidityChange }: AddSingl
           </Select>
           <Label>Niên khoá</Label>
           <Input placeholder="Nhập niên khoá..." value={academicYear} onChange={(e) => setAcademicYear(e.target.value)} />
+          <div className="space-y-3 mt-4 p-2 border border-gray-200 rounded">
+            <div className="flex items-center justify-between">
+              <p className="font-semibold">Thông tin phụ huynh (tối đa 2)</p>
+            </div>
+            {parentForms.map((pf, idx) => (
+              <div key={idx} className="space-y-2 p-2 border rounded">
+                <div className="flex items-center justify-between">
+                  <p className="font-medium">Phụ huynh #{idx + 1}</p>
+                  <Button type="button" variant="ghost" size="sm" onClick={() => removeParentForm(idx)}>Xóa</Button>
+                </div>
+                <Label>Họ và tên</Label>
+                <Input placeholder="Nhập họ và tên..." value={pf.full_name} onChange={(e) => updateParentForm(idx, { full_name: e.target.value })} />
+                <Label>Nghề nghiệp</Label>
+                <Input placeholder="Nhập nghề nghiệp..." value={pf.occupation} onChange={(e) => updateParentForm(idx, { occupation: e.target.value })} />
+                <Label>Mối quan hệ</Label>
+                <Select value={pf.relationship} onValueChange={(v: string) => updateParentForm(idx, { relationship: v })}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Chọn mối quan hệ" />
+                  </SelectTrigger>
+                  <SelectContent className="w-[var(--radix-select-trigger-width)]">
+                    <SelectItem value="father">Cha</SelectItem>
+                    <SelectItem value="mother">Mẹ</SelectItem>
+                    <SelectItem value="guardian">Người giám hộ</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Label>Email</Label>
+                <Input placeholder="Nhập email..." value={pf.email} onChange={(e) => updateParentForm(idx, { email: e.target.value })} />
+                <Label>Số điện thoại</Label>
+                <Input placeholder="Nhập số điện thoại..." value={pf.phone} onChange={(e) => updateParentForm(idx, { phone: e.target.value })} />
+                <Label>CCCD</Label>
+                <Input placeholder="Nhập CCCD..." value={pf.citizen_id_card} onChange={(e) => updateParentForm(idx, { citizen_id_card: e.target.value })} />
+                <Label>Địa chỉ</Label>
+                <Input placeholder="Nhập địa chỉ..." value={pf.address} onChange={(e) => updateParentForm(idx, { address: e.target.value })} />
+                <Label>Dân tộc</Label>
+                <Input placeholder="Nhập dân tộc..." value={pf.ethnic} onChange={(e) => updateParentForm(idx, { ethnic: e.target.value })} />
+              </div>
+            ))}
+            <div className="flex justify-end">
+              <Button type="button" size="sm" onClick={addParentForm} disabled={parentForms.length >= 2}>+ Thêm phụ huynh</Button>
+            </div>
+          </div>
+          
+
+
         </div>
       );
 
@@ -353,14 +357,8 @@ export function AddSingleUserForm({ role, onChange, onValidityChange }: AddSingl
         <div className="space-y-2">
           <Label>Họ và tên</Label>
           <Input placeholder="Nhập họ và tên..." value={fullName} onChange={(e) => setFullName(e.target.value)} />
-          {!(fullName.trim() && isValidFullName(fullName.trim())) && (
-            <p className="text-destructive text-xs">Họ và tên không hợp lệ</p>
-          )}
           <Label>Mã giảng viên</Label>
           <Input placeholder="Nhập mã giảng viên..." value={lecturerCode} onChange={(e) => setLecturerCode(e.target.value)} />
-          {lecturerCode.trim() && !isValidLecturerCode(lecturerCode.trim()) ? (
-            <p className="text-destructive text-xs">Mã giảng viên không hợp lệ</p>
-          ) : null}
           <Label>Khoa</Label>
           <Select
             value={selectedFacultyId ? String(selectedFacultyId) : ""}
@@ -391,29 +389,14 @@ export function AddSingleUserForm({ role, onChange, onValidityChange }: AddSingl
           </Select>
           <Label>Email</Label>
           <Input placeholder="Nhập email..." value={email} onChange={(e) => setEmail(e.target.value)} />
-          {email.trim() && !isValidEmail(email.trim()) ? (
-            <p className="text-destructive text-xs">Email không hợp lệ</p>
-          ) : null}
           <Label>Số điện thoại</Label>
           <Input placeholder="Nhập số điện thoại..." value={phone} onChange={(e) => setPhone(e.target.value)} />
-          {phone.trim() && !isValidPhone(phone.trim()) ? (
-            <p className="text-destructive text-xs">Số điện thoại không hợp lệ</p>
-          ) : null}
           <Label>CCCD</Label>
           <Input placeholder="Nhập CCCD..." value={citizenId} onChange={(e) => setCitizenId(e.target.value)} />
-          {citizenId.trim() && !isValidCitizenId(citizenId.trim()) ? (
-            <p className="text-destructive text-xs">CCCD/CMND không hợp lệ</p>
-          ) : null}
           <Label>Địa chỉ</Label>
           <Input placeholder="Nhập địa chỉ..." value={address} onChange={(e) => setAddress(e.target.value)} />
-          {address.trim() && !isValidAddress(address.trim()) ? (
-            <p className="text-destructive text-xs">Địa chỉ không hợp lệ</p>
-          ) : null}
           <Label>Dân tộc</Label>
           <Input placeholder="Nhập dân tộc..." value={ethnic} onChange={(e) => setEthnic(e.target.value)} />
-          {ethnic.trim() && !isValidEthnic(ethnic.trim()) ? (
-            <p className="text-destructive text-xs">Dân tộc không hợp lệ</p>
-          ) : null}
         </div>
       );
 
@@ -422,19 +405,10 @@ export function AddSingleUserForm({ role, onChange, onValidityChange }: AddSingl
         <div className="space-y-2">
           <Label>Họ và tên</Label>
           <Input placeholder="Nhập họ và tên..." value={fullName} onChange={(e) => setFullName(e.target.value)} />
-          {!(fullName.trim() && isValidFullName(fullName.trim())) && (
-            <p className="text-destructive text-xs">Họ và tên không hợp lệ</p>
-          )}
           <Label>Nghề nghiệp</Label>
           <Input placeholder="Nhập nghề nghiệp..." value={occupation} onChange={(e) => setOccupation(e.target.value)} />
-          {occupation.trim() && !isValidOccupation(occupation.trim()) ? (
-            <p className="text-destructive text-xs">Nghề nghiệp không hợp lệ</p>
-          ) : null}
           <Label>ID sinh viên con</Label>
           <Input placeholder="Nhập ID sinh viên con..." value={childStudentId} onChange={(e) => setChildStudentId(e.target.value)} />
-          {/^\d+$/.test(childStudentId.trim()) ? null : (
-            <p className="text-destructive text-xs">Vui lòng nhập số ID hợp lệ</p>
-          )}
           <Label>Mối quan hệ</Label>
           <Select value={relationship} onValueChange={(v: string) => setRelationship(v)}>
             <SelectTrigger>
@@ -446,34 +420,16 @@ export function AddSingleUserForm({ role, onChange, onValidityChange }: AddSingl
               <SelectItem value="guardian">Người giám hộ</SelectItem>
             </SelectContent>
           </Select>
-          {!(relationship.trim().length > 0) && (
-            <p className="text-destructive text-xs">Vui lòng chọn mối quan hệ</p>
-          )}
           <Label>Email</Label>
           <Input placeholder="Nhập email..." value={email} onChange={(e) => setEmail(e.target.value)} />
-          {email.trim() && !isValidEmail(email.trim()) ? (
-            <p className="text-destructive text-xs">Email không hợp lệ</p>
-          ) : null}
           <Label>Số điện thoại</Label>
           <Input placeholder="Nhập số điện thoại..." value={phone} onChange={(e) => setPhone(e.target.value)} />
-          {phone.trim() && !isValidPhone(phone.trim()) ? (
-            <p className="text-destructive text-xs">Số điện thoại không hợp lệ</p>
-          ) : null}
           <Label>CCCD</Label>
           <Input placeholder="Nhập CCCD..." value={citizenId} onChange={(e) => setCitizenId(e.target.value)} />
-          {citizenId.trim() && !isValidCitizenId(citizenId.trim()) ? (
-            <p className="text-destructive text-xs">CCCD/CMND không hợp lệ</p>
-          ) : null}
           <Label>Địa chỉ</Label>
           <Input placeholder="Nhập địa chỉ..." value={address} onChange={(e) => setAddress(e.target.value)} />
-          {address.trim() && !isValidAddress(address.trim()) ? (
-            <p className="text-destructive text-xs">Địa chỉ không hợp lệ</p>
-          ) : null}
           <Label>Dân tộc</Label>
           <Input placeholder="Nhập dân tộc..." value={ethnic} onChange={(e) => setEthnic(e.target.value)} />
-          {ethnic.trim() && !isValidEthnic(ethnic.trim()) ? (
-            <p className="text-destructive text-xs">Dân tộc không hợp lệ</p>
-          ) : null}
         </div>
       );
 
@@ -482,34 +438,16 @@ export function AddSingleUserForm({ role, onChange, onValidityChange }: AddSingl
         <div className="space-y-2">
           <Label>Họ và tên</Label>
           <Input placeholder="Nhập họ và tên..." value={fullName} onChange={(e) => setFullName(e.target.value)} />
-          {!(fullName.trim() && isValidFullName(fullName.trim())) && (
-            <p className="text-destructive text-xs">Họ và tên không hợp lệ</p>
-          )}
           <Label>Email</Label>
           <Input placeholder="Nhập email..." value={email} onChange={(e) => setEmail(e.target.value)} />
-          {email.trim() && !isValidEmail(email.trim()) ? (
-            <p className="text-destructive text-xs">Email không hợp lệ</p>
-          ) : null}
           <Label>Số điện thoại</Label>
           <Input placeholder="Nhập số điện thoại..." value={phone} onChange={(e) => setPhone(e.target.value)} />
-          {phone.trim() && !isValidPhone(phone.trim()) ? (
-            <p className="text-destructive text-xs">Số điện thoại không hợp lệ</p>
-          ) : null}
           <Label>CCCD</Label>
           <Input placeholder="Nhập CCCD..." value={citizenId} onChange={(e) => setCitizenId(e.target.value)} />
-          {citizenId.trim() && !isValidCitizenId(citizenId.trim()) ? (
-            <p className="text-destructive text-xs">CCCD/CMND không hợp lệ</p>
-          ) : null}
           <Label>Địa chỉ</Label>
           <Input placeholder="Nhập địa chỉ..." value={address} onChange={(e) => setAddress(e.target.value)} />
-          {address.trim() && !isValidAddress(address.trim()) ? (
-            <p className="text-destructive text-xs">Địa chỉ không hợp lệ</p>
-          ) : null}
           <Label>Dân tộc</Label>
           <Input placeholder="Nhập dân tộc..." value={ethnic} onChange={(e) => setEthnic(e.target.value)} />
-          {ethnic.trim() && !isValidEthnic(ethnic.trim()) ? (
-            <p className="text-destructive text-xs">Dân tộc không hợp lệ</p>
-          ) : null}
         </div>
       );
   }

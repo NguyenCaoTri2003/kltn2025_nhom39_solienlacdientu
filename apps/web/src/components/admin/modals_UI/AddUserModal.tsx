@@ -86,7 +86,6 @@ export function AddUserModal({ open, onClose, onSuccess }: AddUserModalProps) {
           onClose();
         }
       } else {
-
         if (!singleData || !singleData.user?.full_name) {
           toast.error("Vui lòng nhập đầy đủ thông tin tối thiểu (Họ và tên)");
           return;
@@ -100,20 +99,79 @@ export function AddUserModal({ open, onClose, onSuccess }: AddUserModalProps) {
           toast.error("Phụ huynh cần liên kết với một sinh viên (student_parent)");
           return;
         }
-        const res = await fetch(`${API_BASE}/api/users/admin/create`, {
-          method: "POST",
-          credentials: "include",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok) {
-          toast.error(data?.error || "Tạo tài khoản thất bại");
-          return;
+        // If creating a student and there are parent candidates, create student first then parents
+  if (role === "student") {
+          // Create student first
+          const studentRes = await fetch(`${API_BASE}/api/users/admin/create`, {
+            method: "POST",
+            credentials: "include",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              user: { ...payload.user, role: "student" },
+              student: payload.student,
+            }),
+          });
+          type StudentCreateResponse = { user?: { id?: number } } & { error?: string };
+          const studentJson = (await studentRes.json().catch(() => ({}))) as StudentCreateResponse;
+          if (!studentRes.ok) {
+            toast.error(studentJson?.error || "Tạo sinh viên thất bại");
+            return;
+          }
+          type ParentCandidate = NonNullable<SingleFormData["parent_candidates"]>[number];
+          const newStudentId = typeof studentJson?.user?.id === "number" ? studentJson.user.id : undefined;
+          const parentCandidates = (singleData?.parent_candidates ?? []) as ParentCandidate[];
+          const validParents = Array.isArray(parentCandidates)
+            ? parentCandidates.filter((p) => p?.user?.full_name && p?.relationship)
+            : [];
+          if (newStudentId && validParents.length > 0) {
+            let pSuccess = 0;
+            const errors: string[] = [];
+            for (const pc of validParents) {
+              const pRes = await fetch(`${API_BASE}/api/users/admin/create`, {
+                method: "POST",
+                credentials: "include",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  user: { ...pc.user, role: "parent" },
+                  parent: pc.parent,
+                  student_parent: { student_id: newStudentId, relationship: pc.relationship },
+                }),
+              });
+              const pJson = await pRes.json().catch(() => ({}));
+              if (pRes.ok) pSuccess += 1;
+              else errors.push(pJson?.error || "Tạo phụ huynh thất bại");
+            }
+            if (errors.length === 0) {
+              toast.success(`Đã thêm sinh viên và ${pSuccess} phụ huynh thành công`);
+              onSuccess?.();
+              onClose();
+            } else {
+              toast.error(`Đã thêm sinh viên thành công, nhưng phụ huynh lỗi: ${errors[0]}`);
+              // Giữ modal mở để người dùng chỉnh sửa
+              return;
+            }
+          } else {
+            toast.success("Đã thêm sinh viên thành công");
+            onSuccess?.();
+            onClose();
+          }
+        } else {
+          // Create a single non-student user
+          const res = await fetch(`${API_BASE}/api/users/admin/create`, {
+            method: "POST",
+            credentials: "include",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok) {
+            toast.error(data?.error || "Tạo tài khoản thất bại");
+            return;
+          }
+          toast.success("Đã thêm người dùng thành công");
+          onSuccess?.();
+          onClose();
         }
-        toast.success("Đã thêm người dùng thành công");
-        onSuccess?.();
-        onClose();
       }
     } catch (err) {
       console.error(err);

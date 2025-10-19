@@ -25,6 +25,7 @@ export class UserRepository {
     }
   };
 
+  // Hàm báo lỗi trùng do db trả về và chuyển thành lỗi dễ hiểu hơn
   private throwFriendlyForUnique(err: any): never {
     const msg = String(err?.message || err?.details || "");
     const code = String(err?.code || ""); // Postgres unique_violation is 23505
@@ -71,6 +72,8 @@ export class UserRepository {
     }
     throw err instanceof Error ? err : new Error(msg || "Lỗi không xác định");
   }
+
+
   async findById(id: number): Promise<User & { student?: any }> {
     const { data: user, error: userError } = await supabase
       .from("users")
@@ -493,15 +496,438 @@ export class UserRepository {
   }
 
 
-  async createUserWithRole(data: {
+//   async createUserWithRole(data: {
+//   user: Partial<User>;
+//   student?: Partial<Student>;
+//   parent?: Partial<Parent>;
+//   lecturer?: Partial<Lecturers>;
+//   student_parent?: { student_id: number; relationship: "father" | "mother" | "guardian" };
+// }): Promise<User> {
+//   const { user, student, parent, lecturer, student_parent } = data;
+
+//   const passwordHash = await bcrypt.hash("11111111", 10);
+
+//   const { data: userInserted, error: userError } = await supabase
+//     .from("users")
+//     .insert({
+//       full_name: user.full_name,
+//       password_hash: passwordHash,
+//       role: user.role,
+//       phone: user.phone,
+//       email: user.email,
+//       status: "suspended",
+//       citizen_id_card: user.citizen_id_card ?? null,
+//       address: user.address ?? null,
+//       ethnic: user.ethnic ?? null,
+//     })
+//     .select("id, role")
+//     .single();
+
+//   if (userError) {
+//     console.error("❌ Lỗi khi tạo user:", userError);
+//     this.throwFriendlyForUnique(userError);
+//   }
+
+//   const newUserId = userInserted.id;
+
+//   try {
+//     switch (userInserted.role) {
+
+//       case "student":
+//         if (!student) throw new Error("Thiếu dữ liệu sinh viên");
+//         {
+//           const { error } = await supabase.from("students").insert({
+//             id: newUserId,
+//             student_code: student.student_code,
+//             class_id: student.class_id ?? null,
+//             academic_status: "studing",
+//             date_of_birth: student.date_of_birth ?? null,
+//             place_of_birth: student.place_of_birth ?? null,
+//             contact_address: student.contact_address ?? null,
+//             type_of_tranning: (student as any).type_of_training ?? "regular",
+//             training_level: student.training_level ?? "bachelor",
+//             academic_year: student.academic_year ?? "2025",
+//           });
+//           if (error) this.throwFriendlyForUnique(error);
+//         }
+//         break;
+
+//       case "parent":
+//         if (!parent) throw new Error("Thiếu dữ liệu phụ huynh");
+//         if (!student_parent)
+//           throw new Error("Phải cung cấp student_parent (student_id và relationship) khi tạo phụ huynh");
+//         {
+//           const { error: parentError } = await supabase.from("parents").insert({
+//             id: newUserId,
+//             occupation: parent.occupation ?? null,
+//           });
+//           if (parentError) throw parentError;
+
+//           const { error: spError } = await supabase.from("student_parent").insert({
+//             student_id: student_parent.student_id,
+//             parent_id: newUserId,
+//             relationship: student_parent.relationship,
+//           });
+//           if (spError) throw spError;
+//         }
+//         break;
+
+//       case "lecturer":
+//         if (!lecturer) throw new Error("Thiếu dữ liệu giảng viên");
+//         {
+//           const { error } = await supabase.from("lecturers").insert({
+//             id: newUserId,
+//             lecturer_code: lecturer.lecturer_code,
+//             academic_rank: lecturer.academic_rank ?? "none",
+//             faculty_id: lecturer.faculty_id ?? null,
+//           });
+//           if (error) this.throwFriendlyForUnique(error);
+//         }
+//         break;
+
+//       case "admin": {
+//         console.log("Tạo tài khoản admin.");
+//         break;
+//       }
+
+//       default:
+//         console.warn(`⚠ Role '${userInserted.role}' chưa được xử lý.`);
+//         break;
+//     }
+
+//     return { id: newUserId, ...userInserted } as User;
+//   } catch (err: any) {
+//     console.error("❌ Lỗi khi thêm bảng con, rollback user:", err.message);
+//     await supabase.from("users").delete().eq("id", newUserId);
+//     throw new Error(err.message);
+//   }
+// }
+
+
+// async createUserWithRole(data: {
+//   user: Partial<User>;
+//   student?: Partial<Student>;
+//   parents?: {
+//     user: Partial<User>;
+//     parent: Partial<Parent>;
+//     relationship: "father" | "mother" | "guardian";
+//   }[];
+//   parent?: Partial<Parent>; // dùng khi tạo parent riêng
+//   student_parent?: { student_id: number; relationship: "father" | "mother" | "guardian" };
+//   lecturer?: Partial<Lecturers>;
+// }): Promise<User> {
+//   const { user, student, parents, parent, student_parent, lecturer } = data;
+
+//   const passwordHash = await bcrypt.hash("11111111", 10);
+
+//   // 1️⃣ Tạo user chính
+//   const { data: userInserted, error: userError } = await supabase
+//     .from("users")
+//     .insert({
+//       full_name: user.full_name,
+//       password_hash: passwordHash,
+//       role: user.role,
+//       phone: user.phone,
+//       email: user.email,
+//       status: "suspended",
+//       citizen_id_card: user.citizen_id_card ?? null,
+//       address: user.address ?? null,
+//       ethnic: user.ethnic ?? null,
+//     })
+//     .select("id, role")
+//     .single();
+
+//   if (userError) {
+//     console.error("❌ Lỗi khi tạo user:", userError);
+//     this.throwFriendlyForUnique(userError);
+//   }
+
+//   const newUserId = userInserted.id;
+
+//   try {
+//     switch (userInserted.role) {
+//       // 🧩 CASE 1: Student (có thể có phụ huynh đi kèm)
+//       case "student": {
+//         if (!student) throw new Error("Thiếu dữ liệu sinh viên");
+
+//         const { error: stuError } = await supabase.from("students").insert({
+//           id: newUserId,
+//           student_code: student.student_code,
+//           class_id: student.class_id ?? null,
+//           academic_status: "studing",
+//           date_of_birth: student.date_of_birth ?? null,
+//           place_of_birth: student.place_of_birth ?? null,
+//           contact_address: student.contact_address ?? null,
+//           type_of_tranning: (student as any).type_of_training ?? "regular",
+//           training_level: student.training_level ?? "bachelor",
+//           academic_year: student.academic_year ?? "2025",
+//         });
+//         if (stuError) this.throwFriendlyForUnique(stuError);
+
+//         // 🧩 Nếu có phụ huynh đi kèm
+//         if (parents && parents.length > 0) {
+//           for (const p of parents) {
+//             const passwordParent = await bcrypt.hash("11111111", 10);
+
+//             // Tạo user cho parent
+//             const { data: parentUser, error: parentUserError } = await supabase
+//               .from("users")
+//               .insert({
+//                 full_name: p.user.full_name,
+//                 password_hash: passwordParent,
+//                 role: "parent",
+//                 phone: p.user.phone,
+//                 email: p.user.email,
+//                 status: "suspended",
+//                 citizen_id_card: p.user.citizen_id_card ?? null,
+//                 address: p.user.address ?? null,
+//                 ethnic: p.user.ethnic ?? null,
+//               })
+//               .select("id")
+//               .single();
+
+//             if (parentUserError) throw parentUserError;
+//             const parentUserId = parentUser.id;
+
+//             // Bảng parents
+//             const { error: parentError } = await supabase.from("parents").insert({
+//               id: parentUserId,
+//               occupation: p.parent.occupation ?? null,
+//             });
+//             if (parentError) throw parentError;
+
+//             // Liên kết student-parent
+//             const { error: spError } = await supabase.from("student_parent").insert({
+//               student_id: newUserId,
+//               parent_id: parentUserId,
+//               relationship: p.relationship,
+//             });
+//             if (spError) throw spError;
+//           }
+//         }
+//         break;
+//       }
+
+//       // 👨‍👩‍👧 CASE 2: Parent riêng (tạo độc lập)
+//       case "parent": {
+//         if (!parent) throw new Error("Thiếu dữ liệu phụ huynh");
+
+//         const { error: parentError } = await supabase.from("parents").insert({
+//           id: newUserId,
+//           occupation: parent.occupation ?? null,
+//         });
+//         if (parentError) throw parentError;
+
+//         // Nếu có student_parent thì gán luôn
+//         if (student_parent) {
+//           const { error: spError } = await supabase.from("student_parent").insert({
+//             student_id: student_parent.student_id,
+//             parent_id: newUserId,
+//             relationship: student_parent.relationship,
+//           });
+//           if (spError) throw spError;
+//         }
+
+//         break;
+//       }
+
+//       // 🧑‍🏫 CASE 3: Lecturer
+//       case "lecturer": {
+//         if (!lecturer) throw new Error("Thiếu dữ liệu giảng viên");
+//         const { error: lecError } = await supabase.from("lecturers").insert({
+//           id: newUserId,
+//           lecturer_code: lecturer.lecturer_code,
+//           academic_rank: lecturer.academic_rank ?? "none",
+//           faculty_id: lecturer.faculty_id ?? null,
+//         });
+//         if (lecError) this.throwFriendlyForUnique(lecError);
+//         break;
+//       }
+
+//       // ⚙ CASE 4: Admin
+//       case "admin":
+//         console.log("Tạo tài khoản admin.");
+//         break;
+
+//       default:
+//         console.warn(`⚠ Role '${userInserted.role}' chưa được xử lý.`);
+//         break;
+//     }
+
+//     return { id: newUserId, ...userInserted } as User;
+//   } catch (err: any) {
+//     console.error("❌ Lỗi khi thêm bảng con, rollback user:", err.message);
+//     await supabase.from("users").delete().eq("id", newUserId);
+//     throw new Error(err.message);
+//   }
+// }
+
+// async createUserWithRole(data: {
+//   user: Partial<User>;
+//   student?: Partial<Student>;
+//   parents?: {
+//     user: Partial<User>;
+//     parent: Partial<Parent>;
+//     relationship: "father" | "mother" | "guardian";
+//   }[];
+//   parent?: Partial<Parent>;
+//   student_parent?: { student_id: number; relationship: "father" | "mother" | "guardian" };
+//   lecturer?: Partial<Lecturers>;
+// }): Promise<{ id: number; role: string }[]> { // 👈 sửa kiểu trả về thành mảng
+//   const { user, student, parents, parent, student_parent, lecturer } = data;
+//   const passwordHash = await bcrypt.hash("11111111", 10);
+
+//   const { data: userInserted, error: userError } = await supabase
+//     .from("users")
+//     .insert({
+//       full_name: user.full_name,
+//       password_hash: passwordHash,
+//       role: user.role,
+//       phone: user.phone,
+//       email: user.email,
+//       status: "suspended",
+//       citizen_id_card: user.citizen_id_card ?? null,
+//       address: user.address ?? null,
+//       ethnic: user.ethnic ?? null,
+//     })
+//     .select("id, role")
+//     .single();
+
+//   if (userError) {
+//     console.error("❌ Lỗi khi tạo user:", userError);
+//     this.throwFriendlyForUnique(userError);
+//   }
+
+//   const newUserId = userInserted.id;
+//   const createdUsers = [{ id: newUserId, role: userInserted.role }]; // 👈 gom tất cả user tạo ở đây
+
+//   try {
+//     switch (userInserted.role) {
+//       // 🧩 CASE 1: Student (có thể có phụ huynh đi kèm)
+//       case "student": {
+//         if (!student) throw new Error("Thiếu dữ liệu sinh viên");
+
+//         const { error: stuError } = await supabase.from("students").insert({
+//           id: newUserId,
+//           student_code: student.student_code,
+//           class_id: student.class_id ?? null,
+//           academic_status: "studing",
+//           date_of_birth: student.date_of_birth ?? null,
+//           place_of_birth: student.place_of_birth ?? null,
+//           contact_address: student.contact_address ?? null,
+//           type_of_tranning: (student as any).type_of_training ?? "regular",
+//           training_level: student.training_level ?? "bachelor",
+//           academic_year: student.academic_year ?? "2025",
+//         });
+//         if (stuError) this.throwFriendlyForUnique(stuError);
+
+//         // 🧩 Nếu có phụ huynh đi kèm
+//         if (parents && parents.length > 0) {
+//           for (const p of parents) {
+//             const passwordParent = await bcrypt.hash("11111111", 10);
+
+//             const { data: parentUser, error: parentUserError } = await supabase
+//               .from("users")
+//               .insert({
+//                 full_name: p.user.full_name,
+//                 password_hash: passwordParent,
+//                 role: "parent",
+//                 phone: p.user.phone,
+//                 email: p.user.email,
+//                 status: "suspended",
+//                 citizen_id_card: p.user.citizen_id_card ?? null,
+//                 address: p.user.address ?? null,
+//                 ethnic: p.user.ethnic ?? null,
+//               })
+//               .select("id, role")
+//               .single();
+
+//             if (parentUserError) throw parentUserError;
+
+//             const parentUserId = parentUser.id;
+//             createdUsers.push({ id: parentUserId, role: "parent" }); // 👈 thêm vào danh sách trả về
+
+//             const { error: parentError } = await supabase.from("parents").insert({
+//               id: parentUserId,
+//               occupation: p.parent.occupation ?? null,
+//             });
+//             if (parentError) throw parentError;
+
+//             const { error: spError } = await supabase.from("student_parent").insert({
+//               student_id: newUserId,
+//               parent_id: parentUserId,
+//               relationship: p.relationship,
+//             });
+//             if (spError) throw spError;
+//           }
+//         }
+//         break;
+//       }
+
+//       // 👨‍👩‍👧 CASE 2: Parent riêng
+//       case "parent": {
+//         if (!parent) throw new Error("Thiếu dữ liệu phụ huynh");
+
+//         const { error: parentError } = await supabase.from("parents").insert({
+//           id: newUserId,
+//           occupation: parent.occupation ?? null,
+//         });
+//         if (parentError) throw parentError;
+
+//         if (student_parent) {
+//           const { error: spError } = await supabase.from("student_parent").insert({
+//             student_id: student_parent.student_id,
+//             parent_id: newUserId,
+//             relationship: student_parent.relationship,
+//           });
+//           if (spError) throw spError;
+//         }
+//         break;
+//       }
+
+//       // 🧑‍🏫 CASE 3: Lecturer
+//       case "lecturer": {
+//         if (!lecturer) throw new Error("Thiếu dữ liệu giảng viên");
+//         const { error: lecError } = await supabase.from("lecturers").insert({
+//           id: newUserId,
+//           lecturer_code: lecturer.lecturer_code,
+//           academic_rank: lecturer.academic_rank ?? "none",
+//           faculty_id: lecturer.faculty_id ?? null,
+//         });
+//         if (lecError) this.throwFriendlyForUnique(lecError);
+//         break;
+//       }
+
+//       case "admin":
+//         console.log("Tạo tài khoản admin.");
+//         break;
+
+//       default:
+//         console.warn(`⚠ Role '${userInserted.role}' chưa được xử lý.`);
+//         break;
+//     }
+
+//     return createdUsers; // 👈 trả về tất cả user được tạo (student + parent)
+//   } catch (err: any) {
+//     console.error("❌ Lỗi khi thêm bảng con, rollback user:", err.message);
+//     await supabase.from("users").delete().eq("id", newUserId);
+//     throw new Error(err.message);
+//   }
+// }
+
+async createUserWithRole(data: {
   user: Partial<User>;
   student?: Partial<Student>;
+  parents?: {
+    user: Partial<User>;
+    parent: Partial<Parent>;
+    relationship: "father" | "mother" | "guardian";
+  }[];
   parent?: Partial<Parent>;
-  lecturer?: Partial<Lecturers>;
   student_parent?: { student_id: number; relationship: "father" | "mother" | "guardian" };
-}): Promise<User> {
-  const { user, student, parent, lecturer, student_parent } = data;
-
+  lecturer?: Partial<Lecturers>;
+}): Promise<{ id: number; role: string }[]> { // 👈 sửa kiểu trả về thành mảng
+  const { user, student, parents, parent, student_parent, lecturer } = data;
   const passwordHash = await bcrypt.hash("11111111", 10);
 
   const { data: userInserted, error: userError } = await supabase
@@ -526,40 +952,82 @@ export class UserRepository {
   }
 
   const newUserId = userInserted.id;
+  const createdUsers = [{ id: newUserId, role: userInserted.role }]; // 👈 gom tất cả user tạo ở đây
 
   try {
     switch (userInserted.role) {
-
-      case "student":
+      // 🧩 CASE 1: Student (có thể có phụ huynh đi kèm)
+      case "student": {
         if (!student) throw new Error("Thiếu dữ liệu sinh viên");
-        {
-          const { error } = await supabase.from("students").insert({
-            id: newUserId,
-            student_code: student.student_code,
-            class_id: student.class_id ?? null,
-            academic_status: "studing",
-            date_of_birth: student.date_of_birth ?? null,
-            place_of_birth: student.place_of_birth ?? null,
-            contact_address: student.contact_address ?? null,
-            type_of_tranning: (student as any).type_of_training ?? "regular",
-            training_level: student.training_level ?? "bachelor",
-            academic_year: student.academic_year ?? "2025",
-          });
-          if (error) this.throwFriendlyForUnique(error);
+
+        const { error: stuError } = await supabase.from("students").insert({
+          id: newUserId,
+          student_code: student.student_code,
+          class_id: student.class_id ?? null,
+          academic_status: "studing",
+          date_of_birth: student.date_of_birth ?? null,
+          place_of_birth: student.place_of_birth ?? null,
+          contact_address: student.contact_address ?? null,
+          type_of_tranning: (student as any).type_of_training ?? "regular",
+          training_level: student.training_level ?? "bachelor",
+          academic_year: student.academic_year ?? "2025",
+        });
+        if (stuError) this.throwFriendlyForUnique(stuError);
+
+        // 🧩 Nếu có phụ huynh đi kèm
+        if (parents && parents.length > 0) {
+          for (const p of parents) {
+            const passwordParent = await bcrypt.hash("11111111", 10);
+
+            const { data: parentUser, error: parentUserError } = await supabase
+              .from("users")
+              .insert({
+                full_name: p.user.full_name,
+                password_hash: passwordParent,
+                role: "parent",
+                phone: p.user.phone,
+                email: p.user.email,
+                status: "suspended",
+                citizen_id_card: p.user.citizen_id_card ?? null,
+                address: p.user.address ?? null,
+                ethnic: p.user.ethnic ?? null,
+              })
+              .select("id, role")
+              .single();
+
+            if (parentUserError) throw parentUserError;
+
+            const parentUserId = parentUser.id;
+            createdUsers.push({ id: parentUserId, role: "parent" }); // 👈 thêm vào danh sách trả về
+
+            const { error: parentError } = await supabase.from("parents").insert({
+              id: parentUserId,
+              occupation: p.parent.occupation ?? null,
+            });
+            if (parentError) throw parentError;
+
+            const { error: spError } = await supabase.from("student_parent").insert({
+              student_id: newUserId,
+              parent_id: parentUserId,
+              relationship: p.relationship,
+            });
+            if (spError) throw spError;
+          }
         }
         break;
+      }
 
-      case "parent":
+      // 👨‍👩‍👧 CASE 2: Parent riêng
+      case "parent": {
         if (!parent) throw new Error("Thiếu dữ liệu phụ huynh");
-        if (!student_parent)
-          throw new Error("Phải cung cấp student_parent (student_id và relationship) khi tạo phụ huynh");
-        {
-          const { error: parentError } = await supabase.from("parents").insert({
-            id: newUserId,
-            occupation: parent.occupation ?? null,
-          });
-          if (parentError) throw parentError;
 
+        const { error: parentError } = await supabase.from("parents").insert({
+          id: newUserId,
+          occupation: parent.occupation ?? null,
+        });
+        if (parentError) throw parentError;
+
+        if (student_parent) {
           const { error: spError } = await supabase.from("student_parent").insert({
             student_id: student_parent.student_id,
             parent_id: newUserId,
@@ -568,37 +1036,38 @@ export class UserRepository {
           if (spError) throw spError;
         }
         break;
+      }
 
-      case "lecturer":
+      // 🧑‍🏫 CASE 3: Lecturer
+      case "lecturer": {
         if (!lecturer) throw new Error("Thiếu dữ liệu giảng viên");
-        {
-          const { error } = await supabase.from("lecturers").insert({
-            id: newUserId,
-            lecturer_code: lecturer.lecturer_code,
-            academic_rank: lecturer.academic_rank ?? "none",
-            faculty_id: lecturer.faculty_id ?? null,
-          });
-          if (error) this.throwFriendlyForUnique(error);
-        }
-        break;
-
-      case "admin": {
-        console.log("Tạo tài khoản admin.");
+        const { error: lecError } = await supabase.from("lecturers").insert({
+          id: newUserId,
+          lecturer_code: lecturer.lecturer_code,
+          academic_rank: lecturer.academic_rank ?? "none",
+          faculty_id: lecturer.faculty_id ?? null,
+        });
+        if (lecError) this.throwFriendlyForUnique(lecError);
         break;
       }
+
+      case "admin":
+        console.log("Tạo tài khoản admin.");
+        break;
 
       default:
         console.warn(`⚠ Role '${userInserted.role}' chưa được xử lý.`);
         break;
     }
 
-    return { id: newUserId, ...userInserted } as User;
+    return createdUsers; // 👈 trả về tất cả user được tạo (student + parent)
   } catch (err: any) {
     console.error("❌ Lỗi khi thêm bảng con, rollback user:", err.message);
     await supabase.from("users").delete().eq("id", newUserId);
     throw new Error(err.message);
   }
 }
+
 
 
   async createManyUsersFromExcel(rows: any[]): Promise<{ success: number; failed: number }> {
