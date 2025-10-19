@@ -18,12 +18,14 @@ export class AcademicWarningRepository {
     if (warnErr) throw warnErr;
 
     const content = `Bạn nhận được cảnh cáo học vụ: ${input.reason}`;
-    const { error: notiErr } = await supabase
+    // Fire-and-forget notification to avoid blocking response time
+    void (supabase
       .from("notifications")
-      .insert({ user_id: input.studentId, content, type: "academic_warning" });
-    if (notiErr) {
-      console.error("Failed to create notification:", notiErr.message);
-    }
+      .insert({ user_id: input.studentId, content, type: "academic_warning" })
+      .then(({ error }) => {
+        if (error) console.error("Failed to create notification:", error.message);
+      }, (e) => console.error("Notification error:", e))
+    );
 
     return warning;
   }

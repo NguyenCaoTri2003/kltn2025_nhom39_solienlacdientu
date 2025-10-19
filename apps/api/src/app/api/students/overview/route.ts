@@ -3,6 +3,7 @@ import { authenticate } from "@packages/utils/auth";
 import { getStudentsOverview } from "@packages/core/usecases/StudentsOverviewUseCase";
 
 export async function GET(req: NextRequest) {
+	const start = Date.now();
 	try {
 		const headerToken = req.headers.get("authorization");
 		const cookieToken = req.cookies.get("token")?.value;
@@ -34,8 +35,8 @@ export async function GET(req: NextRequest) {
 
 
 			const { items, total, totalPages, page: pg, pageSize: ps } = await getStudentsOverview({ semesterId, studentIds, page, pageSize, search, gpaMin, gpaMax });
-
-			const res = NextResponse.json({ returnCode: 0, message: "OK", data: items, meta: { total, totalPages, page: pg, pageSize: ps } }, { status: 200 });
+				const duration = Date.now() - start;
+				const res = NextResponse.json({ returnCode: 0, message: "OK", data: items, meta: { total, totalPages, page: pg, pageSize: ps, executionTime: `${duration}ms` } }, { status: 200 });
 			res.headers.set("Access-Control-Allow-Origin", "*");
 			res.headers.set("Access-Control-Allow-Methods", "GET,OPTIONS");
 			res.headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization");

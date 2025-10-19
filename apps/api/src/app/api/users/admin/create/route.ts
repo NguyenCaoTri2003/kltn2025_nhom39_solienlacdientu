@@ -72,11 +72,18 @@ export async function POST(req: NextRequest) {
       },
       { status: 201 }
     );
-  } catch (e: any) {
+  } catch (e: unknown) {
     console.error("Lỗi hệ thống:", e);
+    const err = e as { status?: number; message?: string; code?: string; field?: string };
+    const status = typeof err?.status === "number" ? err.status : 500;
+    // Provide a structured, user-friendly error with optional field & code
     return NextResponse.json(
-      { error: e.message ?? "Lỗi hệ thống." },
-      { status: 500 }
+      {
+        error: err?.message ?? "Lỗi hệ thống.",
+        code: err?.code || (status === 409 ? "DUPLICATE" : "UNKNOWN"),
+        field: err?.field,
+      },
+      { status }
     );
   }
 }
