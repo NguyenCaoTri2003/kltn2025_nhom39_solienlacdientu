@@ -12,6 +12,65 @@ type RoleSpecificData = {
 };
 
 export class UserRepository {
+  private FriendlyError = class FriendlyError extends Error {
+    status: number;
+    code: string;
+    field?: string;
+    constructor(code: string, message: string, status = 400, field?: string) {
+      super(message);
+      this.name = "FriendlyError";
+      this.status = status;
+      this.code = code;
+      this.field = field;
+    }
+  };
+
+  private throwFriendlyForUnique(err: any): never {
+    const msg = String(err?.message || err?.details || "");
+    const code = String(err?.code || ""); // Postgres unique_violation is 23505
+    const isUnique = code === "23505" || /duplicate key value/.test(msg);
+    if (isUnique) {
+      if (/users_email_key/.test(msg)) {
+        throw new this.FriendlyError(
+          "EMAIL_EXISTS",
+          "Email đã tồn tại. Vui lòng sử dụng email khác.",
+          409,
+          "email"
+        );
+      }
+      if (/users_phone_key/.test(msg)) {
+        throw new this.FriendlyError(
+          "PHONE_EXISTS",
+          "Số điện thoại đã tồn tại. Vui lòng dùng số khác.",
+          409,
+          "phone"
+        );
+      }
+      if (/students_student_code_key/.test(msg)) {
+        throw new this.FriendlyError(
+          "STUDENT_CODE_EXISTS",
+          "Mã sinh viên đã tồn tại. Vui lòng kiểm tra lại.",
+          409,
+          "student_code"
+        );
+      }
+      if (/lecturers_lecturer_code_key/.test(msg)) {
+        throw new this.FriendlyError(
+          "LECTURER_CODE_EXISTS",
+          "Mã giảng viên đã tồn tại. Vui lòng kiểm tra lại.",
+          409,
+          "lecturer_code"
+        );
+      }
+
+      throw new this.FriendlyError(
+        "DUPLICATE",
+        "Dữ liệu đã tồn tại. Vui lòng kiểm tra lại các trường trùng lặp.",
+        409
+      );
+    }
+    throw err instanceof Error ? err : new Error(msg || "Lỗi không xác định");
+  }
   async findById(id: number): Promise<User & { student?: any }> {
     const { data: user, error: userError } = await supabase
       .from("users")
@@ -259,11 +318,9 @@ export class UserRepository {
       query = query.or(orParts.join(","));
     }
 
-    // Build ID filters for role-specific constraints (facultyId/classId/semesterId)
-    // We will precompute allowed user IDs for these filters and apply .in('id', ...)
+
     let allowedIds: number[] | undefined;
 
-    // Filter lecturers by faculty
     if (typeof facultyId === "number" && Number.isFinite(facultyId)) {
       const { data: lecturerRows, error: lecErr } = await supabase
         .from("lecturers")
@@ -274,7 +331,6 @@ export class UserRepository {
       allowedIds = Array.from(new Set([...(allowedIds || []), ...ids]));
     }
 
-    // Filter students by class
     if (typeof classId === "number" && Number.isFinite(classId)) {
       const { data: studentRows, error: stuErr } = await supabase
         .from("students")
@@ -286,9 +342,7 @@ export class UserRepository {
       else allowedIds = allowedIds.filter((id) => ids.includes(id)); // intersect
     }
 
-    // Filter students by semester via enrollment -> course_offerings
     if (typeof semesterId === "number" && Number.isFinite(semesterId)) {
-      // Get offering IDs for the semester
       const { data: offeringRows, error: offErr } = await supabase
         .from("course_offerings")
         .select("id")
@@ -320,7 +374,6 @@ export class UserRepository {
     if (allowedIds && allowedIds.length > 0) {
       query = query.in("id", allowedIds);
     } else if (allowedIds && allowedIds.length === 0) {
-      // If filters applied but no matching IDs, return empty immediately
       return { users: [], total: 0, totalPages: 0 };
     }
 
@@ -354,7 +407,6 @@ export class UserRepository {
           .in("id", roleGroups.lecturer)
       : { data: [] };
 
-    // If semester filter is applied, fetch its label once for convenience
     let semesterLabel: { id: number; name: string } | null = null;
     if (typeof semesterId === "number" && Number.isFinite(semesterId)) {
       const { data: semRow } = await supabase
@@ -470,7 +522,7 @@ export class UserRepository {
 
   if (userError) {
     console.error("❌ Lỗi khi tạo user:", userError);
-    throw new Error("Lỗi khi tạo user: " + userError.message);
+    this.throwFriendlyForUnique(userError);
   }
 
   const newUserId = userInserted.id;
@@ -493,8 +545,7 @@ export class UserRepository {
             training_level: student.training_level ?? "bachelor",
             academic_year: student.academic_year ?? "2025",
           });
-          if (error)
-            throw new Error("Lỗi khi tạo sinh viên: " + error.message);
+          if (error) this.throwFriendlyForUnique(error);
         }
         break;
 
@@ -507,16 +558,14 @@ export class UserRepository {
             id: newUserId,
             occupation: parent.occupation ?? null,
           });
-          if (parentError)
-            throw new Error("Lỗi khi tạo phụ huynh: " + parentError.message);
+          if (parentError) throw parentError;
 
           const { error: spError } = await supabase.from("student_parent").insert({
             student_id: student_parent.student_id,
             parent_id: newUserId,
             relationship: student_parent.relationship,
           });
-          if (spError)
-            throw new Error("Lỗi khi thêm vào student_parent: " + spError.message);
+          if (spError) throw spError;
         }
         break;
 
@@ -529,8 +578,7 @@ export class UserRepository {
             academic_rank: lecturer.academic_rank ?? "none",
             faculty_id: lecturer.faculty_id ?? null,
           });
-          if (error)
-            throw new Error("Lỗi khi tạo giảng viên: " + error.message);
+          if (error) this.throwFriendlyForUnique(error);
         }
         break;
 
