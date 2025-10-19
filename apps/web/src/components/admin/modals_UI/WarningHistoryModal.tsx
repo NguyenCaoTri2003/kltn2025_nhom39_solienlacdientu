@@ -8,6 +8,7 @@ import { Separator } from "@/components/ui/separator";
 import { CalendarDays, AlertTriangle } from "lucide-react";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
+import { translateWarningLevel } from "@packages/utils/translations";
 
 interface WarningHistoryModalProps {
   open: boolean;
@@ -138,7 +139,7 @@ export function WarningHistoryModal({ open, onClose, studentId, semesterId, apiB
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-lg bg-card border-border text-card-foreground">
+      <DialogContent className="max-w-2xl bg-card border-border text-card-foreground">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-lg font-semibold">
             <AlertTriangle className="w-5 h-5 text-yellow-500" />
@@ -183,9 +184,9 @@ export function WarningHistoryModal({ open, onClose, studentId, semesterId, apiB
                       <TableRow key={w.id}>
                         <TableCell>{i + 1}</TableCell>
                         <TableCell>
-                          <Badge className={getLevelColor(w.level)}>{w.level}</Badge>
+                          <Badge className={getLevelColor(w.level)}>{translateWarningLevel(w.level)}</Badge>
                         </TableCell>
-                        <TableCell className="max-w-[240px] truncate" title={w.reason}>{w.reason}</TableCell>
+                        <TableCell className="max-w-[240px] whitespace-normal break-words">{w.reason}</TableCell>
                         <TableCell>
                           <div className="flex items-center gap-1 text-sm text-muted-foreground">
                             <CalendarDays className="w-4 h-4" />

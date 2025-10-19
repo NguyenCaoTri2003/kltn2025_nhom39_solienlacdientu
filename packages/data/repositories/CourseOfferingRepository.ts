@@ -118,6 +118,13 @@ export class CourseOfferingRepository {
         practice_group_id
       ),
       courses (*),
+      semesters:semester_id (
+          id,
+          name,
+          academic_year,
+          start_date,
+          end_date
+        ),
       practice_groups (
         id,
         lecturer_id,

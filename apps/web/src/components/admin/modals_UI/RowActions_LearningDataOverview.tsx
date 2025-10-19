@@ -7,14 +7,14 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, FileWarning, FileClock, BarChart3, Loader2 } from "lucide-react";
+import { MoreHorizontal, FileWarning, FileClock, Loader2 } from "lucide-react";
 
 interface Props {
   studentId: string;
   studentName: string;
   isBusy?: boolean;
   onCreateWarning: (id: string, name: string) => void;
-  onViewDetails: (id: string) => void;
+  onViewDetails?: (id: string) => void;
   onViewWarningHistory: (id: string) => void;
   proposedLabel?: string;
   proposedLevel?: number;
@@ -25,7 +25,7 @@ export function RowActionsLearningDataOverview({
   studentName,
   isBusy,
   onCreateWarning,
-  onViewDetails,
+  // onViewDetails,
   onViewWarningHistory,
   proposedLabel,
   proposedLevel,
@@ -49,13 +49,13 @@ export function RowActionsLearningDataOverview({
             : "Tạo cảnh cáo"}
         </DropdownMenuItem>
 
-        <DropdownMenuItem
+        {/* <DropdownMenuItem
           className="text-popover-foreground hover:bg-accent"
           onClick={() => onViewDetails(studentId)}
         >
           <BarChart3 className="w-4 h-4 mr-2 text-blue-500" />
           Xem chi tiết kết quả học tập
-        </DropdownMenuItem>
+        </DropdownMenuItem> */}
 
         <DropdownMenuItem
           className="text-popover-foreground hover:bg-accent"

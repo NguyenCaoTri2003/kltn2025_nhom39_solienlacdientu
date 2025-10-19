@@ -19,7 +19,6 @@ export default function WeeklyScheduleList({
   semester,
   practiceGroupNumber,
 }: WeeklyScheduleListProps) {
-
   let filtered = filterType
     ? schedules.filter((s) => s.type === filterType)
     : schedules;
@@ -36,19 +35,24 @@ export default function WeeklyScheduleList({
   const todayIndex = today.getDay();
   const tomorrowIndex = (todayIndex + 1) % 7;
 
-  const startDate = semester?.start_date ? new Date(semester.start_date) : null;
-  const endDate = semester?.end_date ? new Date(semester.end_date) : null;
+  const normalizeDate = (date: Date) =>
+    new Date(date.getFullYear(), date.getMonth(), date.getDate());
+
+  const startDate = semester?.start_date
+    ? normalizeDate(new Date(semester.start_date))
+    : null;
+  const endDate = semester?.end_date
+    ? normalizeDate(new Date(semester.end_date))
+    : null;
+  const todayDate = normalizeDate(today);
 
   const isInSemester =
-    startDate && endDate ? today >= startDate && today <= endDate : true;
+    startDate && endDate
+      ? todayDate >= startDate && todayDate <= endDate
+      : false;
 
-  const hasTodayClass =
-    isInSemester && filtered.some((s) => s.day_of_week === todayIndex);
-
-  const hasTomorrowClass =
-    isInSemester &&
-    !hasTodayClass &&
-    filtered.some((s) => s.day_of_week === tomorrowIndex);
+  const hasTodayClass = filtered.some((s) => s.day_of_week === todayIndex);
+  const hasTomorrowClass = filtered.some((s) => s.day_of_week === tomorrowIndex);
 
   const days = [
     "Chủ nhật",
@@ -74,8 +78,6 @@ export default function WeeklyScheduleList({
       return `${day} ${time} • ${location}`;
     })
     .join("; ");
-
-  const firstType = filtered[0]?.type || "theory";
 
   return (
     <div className="flex flex-col gap-1 mb-2 text-sm text-muted-foreground">
