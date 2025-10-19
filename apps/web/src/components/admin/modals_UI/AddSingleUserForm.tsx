@@ -307,7 +307,7 @@ export function AddSingleUserForm({ role, onChange }: AddSingleUserFormProps) {
           <Input placeholder="Nhập niên khoá..." value={academicYear} onChange={(e) => setAcademicYear(e.target.value)} />
           <div className="space-y-3 mt-4 p-2 border border-gray-200 rounded">
             <div className="flex items-center justify-between">
-              <p className="font-semibold">Thông tin phụ huynh (tối đa 2)</p>
+              <p className="font-semibold">Thông tin phụ huynh</p>
             </div>
             {parentForms.map((pf, idx) => (
               <div key={idx} className="space-y-2 p-2 border rounded">
@@ -343,7 +343,8 @@ export function AddSingleUserForm({ role, onChange }: AddSingleUserFormProps) {
               </div>
             ))}
             <div className="flex justify-end">
-              <Button type="button" size="sm" onClick={addParentForm} disabled={parentForms.length >= 2}>+ Thêm phụ huynh</Button>
+              {/* btn thêm from phụ huynh (thêm tối da 2 form) */}
+              <Button type="button" size="sm" onClick={addParentForm} disabled={parentForms.length >= 2}>+</Button>
             </div>
           </div>
           
