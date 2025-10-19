@@ -42,3 +42,32 @@ export function translateStatus(status?: string): string {
       return status || ""
   }
 }
+export function translateWarningLevel(level?: string): string {
+  switch (level) {
+    case "minor":
+      return "Cảnh cáo nhẹ"
+    case "moderate":
+      return "Cảnh cáo trung bình"
+    case "major":
+      return "Cảnh cáo nặng"
+    case "severe":
+      return "Cảnh cáo nặng"
+    default:
+      return level || ""
+  }
+}
+
+export function translateAcademicStatus(status?: string): string {
+  switch (status) {
+    case "studing":
+      return "Đang học"
+    case "graduated":
+      return "Đã tốt nghiệp"
+    case "warned":
+      return "Bị cảnh cáo"
+    case "suspended":
+      return "Bị đình chỉ"
+    default:
+      return status || ""
+  }
+}
