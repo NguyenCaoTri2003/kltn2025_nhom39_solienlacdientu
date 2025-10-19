@@ -11,6 +11,7 @@ import { RowActionsLearningDataOverview } from "@/components/admin/modals_UI/Row
 import { AccountPagination } from "@/components/admin/modals_UI/AccountPagination";
 import { WarningHistoryModal } from "@/components/admin/modals_UI/WarningHistoryModal";
 import { CreateWarningModal } from "@/components/admin/modals_UI/CreateWarningModal";
+import { translateAcademicStatus } from "@packages/utils/translations";
 
 type OverviewItem = {
   student_id: number | string;
@@ -432,7 +433,7 @@ export default function LearningDataOverview() {
           {!error && rows.length === 0 && !loading && (
             <tr>
               <td className="px-4 py-6 text-gray-500" colSpan={13}>
-                <p>Không có dữ liệu phù hợp. Hãy thay đổi điều kiện và thử lại.</p>
+                <p>Vui lòng nhấn tìm kiếm để xem kết quả.</p>
               </td>
             </tr>
           )}
@@ -477,7 +478,7 @@ export default function LearningDataOverview() {
                     <td className="px-4 py-3 border-b font-medium">{r.gpa ?? "-"}</td>
                     <td className="px-4 py-3 border-b text-red-600">{r.failed_subjects}</td>
                     <td className="px-4 py-3 border-b">{r.total_warning}</td>
-                    <td className="px-4 py-3 border-b">{r.academic_status}</td>
+                    <td className="px-4 py-3 border-b">{translateAcademicStatus(r.academic_status)}</td>
                     {/* <td className="px-4 py-3 border-b">{r.attendance_rate != null ? `${r.attendance_rate}%` : "-"}</td> */}
                     <td className="px-4 py-3 border-b">{r.latest_warning ? new Date(r.latest_warning).toLocaleString() : "-"}</td>
                     <td className="px-4 py-3 border-b">{r.proposed_action || "-"}</td>
