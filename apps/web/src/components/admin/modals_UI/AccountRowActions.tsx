@@ -41,12 +41,12 @@ export function AccountRowActions({
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="bg-popover border-border min-w-48">
-        <DropdownMenuItem className="text-popover-foreground hover:bg-accent">
+        {/* <DropdownMenuItem className="text-popover-foreground hover:bg-accent">
           <Eye className="w-4 h-4 mr-2" /> Xem chi tiết
-        </DropdownMenuItem>
-        <DropdownMenuItem className="text-popover-foreground hover:bg-accent">
+        </DropdownMenuItem> */}
+        {/* <DropdownMenuItem className="text-popover-foreground hover:bg-accent">
           <Pencil className="w-4 h-4 mr-2" /> Chỉnh sửa
-        </DropdownMenuItem>
+        </DropdownMenuItem> */}
         {accountStatus === "active" ? (
           <DropdownMenuItem
             className="text-red-400 hover:bg-accent"
@@ -80,11 +80,11 @@ export function AccountRowActions({
           className="text-popover-foreground hover:bg-accent"
           onClick={() => onOpenResetPassword(accountId, accountName)}
         >
-          <FileClock className="w-4 h-4 mr-2" /> Đặt lại mật khẩu
+          <FileClock className="w-4 h-4 mr-2 text-yellow-400" /> Đặt lại mật khẩu
         </DropdownMenuItem>
-        <DropdownMenuItem className="text-popover-foreground hover:bg-accent">
+        {/* <DropdownMenuItem className="text-popover-foreground hover:bg-accent">
           <FileClock className="w-4 h-4 mr-2" /> Lịch sử đăng nhập
-        </DropdownMenuItem>
+        </DropdownMenuItem> */}
       </DropdownMenuContent>
     </DropdownMenu>
   );

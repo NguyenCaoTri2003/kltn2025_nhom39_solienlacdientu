@@ -125,13 +125,30 @@ export class StudentsOverviewRepository {
       const warnings = warningsMap.get(sid) ?? { total: 0, latestDate: null };
       const attendance = attendanceMap.get(sid) ?? null;
       const semesterName = semId ? semesterNames.get(semId) ?? null : null;
-
-      const proposal = this.buildProposal({
-        gpa: grades.gpa4,
-        failed: grades.failedCount,
-        attendance,
-        totalWarning: warnings.total,
-      });
+      // Proposal calculation based on GPA only (ignore attendance and failed subjects)
+      const gpa = grades.gpa4;
+      let proposedLevel = 0;
+      let proposedReason = "";
+      if (typeof gpa === "number") {
+        if (gpa < 1.0) {
+          proposedLevel = 3;
+          proposedReason = "GPA < 1.0";
+        } else if (gpa < 2.0) {
+          proposedLevel = 2;
+          proposedReason = "GPA < 2.0";
+        } else if (gpa < 2.5) {
+          proposedLevel = 1;
+          proposedReason = "GPA < 2.5";
+        }
+      }
+      const proposedLabel =
+        proposedLevel === 0
+          ? ""
+          : proposedLevel === 3
+          ? `Đề xuất Cảnh cáo 3: ${proposedReason}`
+          : proposedLevel === 2
+          ? `Đề xuất Cảnh cáo 2: ${proposedReason}`
+          : `Đề xuất Cảnh cáo 1: ${proposedReason}`;
 
       return {
         student_id: sid,
@@ -147,8 +164,8 @@ export class StudentsOverviewRepository {
         academic_status: student.academic_status,
         attendance_rate: attendance,
         latest_warning: warnings.latestDate,
-        proposed_warning_level: proposal.level,
-        proposed_action: proposal.action,
+        proposed_warning_level: proposedLevel,
+        proposed_action: proposedLabel,
       };
     });
 
