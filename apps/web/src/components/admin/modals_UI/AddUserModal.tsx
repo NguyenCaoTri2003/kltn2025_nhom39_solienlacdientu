@@ -81,31 +81,36 @@ export function AddUserModal({ open, onClose, onSuccess }: AddUserModalProps) {
         if (sum && sum.failed > 0) {
           setDisableConfirm(true);
         } else {
-
           onSuccess?.();
           onClose();
         }
       } else {
-
         if (!singleData || !singleData.user?.full_name) {
           toast.error("Vui lòng nhập đầy đủ thông tin tối thiểu (Họ và tên)");
           return;
         }
-        const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
+        const API_BASE =
+          process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
         const payload: SingleFormData = {
           ...singleData,
           user: { ...singleData.user, role },
         };
         if (role === "parent" && !payload.student_parent) {
-          toast.error("Phụ huynh cần liên kết với một sinh viên (student_parent)");
+          toast.error(
+            "Phụ huynh cần liên kết với một sinh viên (student_parent)"
+          );
           return;
         }
-        // For student: send single API call with optional parents array per API contract
+
         if (role === "student") {
           const parents = Array.isArray(singleData.parent_candidates)
             ? singleData.parent_candidates
                 .filter((p) => p?.user?.full_name && p?.relationship)
-                .map((p) => ({ user: p.user, parent: p.parent, relationship: p.relationship }))
+                .map((p) => ({
+                  user: p.user,
+                  parent: p.parent,
+                  relationship: p.relationship,
+                }))
             : [];
           const body = {
             user: { ...payload.user, role: "student" },
@@ -131,7 +136,6 @@ export function AddUserModal({ open, onClose, onSuccess }: AddUserModalProps) {
           onSuccess?.();
           onClose();
         } else {
-          // Other roles: single call as before
           const res = await fetch(`${API_BASE}/api/users/admin/create`, {
             method: "POST",
             credentials: "include",
@@ -242,17 +246,12 @@ export function AddUserModal({ open, onClose, onSuccess }: AddUserModalProps) {
                   setDisableConfirm(false);
                 }}
               />
-
-              <p className="text-sm text-muted-foreground">
-                Bạn có thể tải mẫu file phù hợp với loại tài khoản đã chọn.
-              </p>
-              <Button
-                variant="secondary"
-                className="w-full text-blue-800"
+              <p
                 onClick={handleDownloadTemplate}
+                className="text-sm text-blue-600 hover:underline cursor-pointer"
               >
-                Tải mẫu {role}
-              </Button>
+                Tải mẫu
+              </p>
 
               {summary && (
                 <div className="mt-2 rounded-md border border-border p-3 text-sm">

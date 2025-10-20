@@ -31,7 +31,7 @@ export type SingleFormData = {
     place_of_birth?: string;
     contact_address?: string;
     type_of_training?: string; // regular | advanced 
-    training_level?: string;
+    training_level?: string; // bachelor | master | phd
     academic_year?: string;
   };
   lecturer?: {
@@ -46,7 +46,7 @@ export type SingleFormData = {
     student_id?: number;
     relationship?: string; // father|mother|guardian
   };
-  // For role "student": collect up to two parent candidates to be created separately after student creation
+
   parent_candidates?: Array<{
     user: {
       full_name: string;
@@ -92,7 +92,7 @@ export function AddSingleUserForm({ role, onChange }: AddSingleUserFormProps) {
   const [placeOfBirth, setPlaceOfBirth] = useState("");
   const [contactAddress, setContactAddress] = useState("");
   const [typeOfTraining, setTypeOfTraining] = useState("regular");
-  const [trainingLevel] = useState("");
+  const [trainingLevel, setTrainingLevel] = useState("bachelor");
   const [academicYear, setAcademicYear] = useState("");
 
   // Lecturer 
@@ -104,7 +104,7 @@ export function AddSingleUserForm({ role, onChange }: AddSingleUserFormProps) {
   const [childStudentId, setChildStudentId] = useState(""); 
   const [relationship, setRelationship] = useState("");
 
-  // Parent subforms for student role (max 2)
+  // parent subforms cho student (max 2)
   type ParentForm = {
     full_name: string;
     email: string;
@@ -303,6 +303,18 @@ export function AddSingleUserForm({ role, onChange }: AddSingleUserFormProps) {
               <SelectItem value="advanced">Chất lượng cao</SelectItem>
             </SelectContent>
           </Select>
+          <Label>Trình độ đào tạo</Label>
+          <Select value={trainingLevel} onValueChange={(v: string) => setTrainingLevel(v)}>
+            <SelectTrigger>
+              <SelectValue placeholder="Chọn trình độ đào tạo" />
+            </SelectTrigger>
+            <SelectContent className="w-[var(--radix-select-trigger-width)]">
+              <SelectItem value="bachelor">Cử nhân</SelectItem>
+              <SelectItem value="master">Thạc sĩ</SelectItem>
+              <SelectItem value="phd">Tiến sĩ</SelectItem>
+            </SelectContent>
+          </Select>
+          
           <Label>Niên khoá</Label>
           <Input placeholder="Nhập niên khoá..." value={academicYear} onChange={(e) => setAcademicYear(e.target.value)} />
           <div className="space-y-3 mt-4 p-2 border border-gray-200 rounded">
