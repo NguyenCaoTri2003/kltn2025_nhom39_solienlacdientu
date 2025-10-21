@@ -29,8 +29,8 @@ export default function StudentHomeScreen() {
     hours < 12
       ? "Chào buổi sáng ☀️"
       : hours < 18
-      ? "Chào buổi chiều 🌤️"
-      : "Chào buổi tối 🌙";
+        ? "Chào buổi chiều 🌤️"
+        : "Chào buổi tối 🌙";
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -73,7 +73,13 @@ export default function StudentHomeScreen() {
 
         <View style={styles.featureGrid}>
           <FeatureButton icon={<Calendar color="#2563EB" size={28} />} label="Lịch học" />
-          <FeatureButton icon={<BarChart color="#2563EB" size={28} />} label="Kết quả học tập" />
+          <FeatureButton
+            icon={<BarChart color="#2563EB" size={28} />}
+            label="Kết quả học tập"
+            onPress={() =>
+              navigation.navigate("Grades", { studentId: user!.id }) as never
+            }
+          />
           <FeatureButton
             icon={<Users color="#2563EB" size={28} />}
             label="Lớp học phần"

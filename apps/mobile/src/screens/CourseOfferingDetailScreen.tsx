@@ -144,14 +144,16 @@ export default function CourseOfferingDetailScreen() {
                                 {data.lecturer.email}
                             </Text>
 
-                            <TouchableOpacity style={styles.button}>
-                                <Ionicons
-                                    name="chatbubble-ellipses-outline"
-                                    size={16}
-                                    color="#fff"
-                                />
-                                <Text style={styles.buttonText}> Nhắn tin</Text>
-                            </TouchableOpacity>
+                            {new Date(data.semester.end_date) >= new Date() && (
+                                <TouchableOpacity style={styles.button}>
+                                    <Ionicons
+                                        name="chatbubble-ellipses-outline"
+                                        size={16}
+                                        color="#fff"
+                                    />
+                                    <Text style={styles.buttonText}> Nhắn tin</Text>
+                                </TouchableOpacity>
+                            )}
 
                             <Text style={styles.sectionSubtitle}>Lịch học lý thuyết</Text>
                             {data.schedule.length > 0 ? (
@@ -226,19 +228,21 @@ export default function CourseOfferingDetailScreen() {
                                     </Text>
                                 </View>
 
-                                <TouchableOpacity
-                                    style={[
-                                        styles.button,
-                                        { backgroundColor: "#10B981" },
-                                    ]}
-                                >
-                                    <Ionicons
-                                        name="chatbubble-ellipses-outline"
-                                        size={16}
-                                        color="#fff"
-                                    />
-                                    <Text style={styles.buttonText}> Nhắn tin</Text>
-                                </TouchableOpacity>
+                                {new Date(data.semester.end_date) >= new Date() && (
+                                    <TouchableOpacity
+                                        style={[
+                                            styles.button,
+                                            { backgroundColor: "#10B981" },
+                                        ]}
+                                    >
+                                        <Ionicons
+                                            name="chatbubble-ellipses-outline"
+                                            size={16}
+                                            color="#fff"
+                                        />
+                                        <Text style={styles.buttonText}> Nhắn tin</Text>
+                                    </TouchableOpacity>
+                                )}
 
                                 <Text style={styles.sectionSubtitle}>
                                     Lịch học thực hành

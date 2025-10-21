@@ -13,6 +13,7 @@ import CourseOfferingScreen from "./CourseOfferingScreen";
 import { useAuth } from "../context/AuthContext";
 import CourseOfferingDetailScreen from "./CourseOfferingDetailScreen";
 import { RootStackParamList } from "../types/navigation";
+import GradesScreen from "./GradesScreen";
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -26,6 +27,11 @@ function StudentStack() {
         name="CourseOfferingDetail"
         component={CourseOfferingDetailScreen}
         options={{ title: "Chi tiết học phần" }}
+      />
+      <Stack.Screen
+        name="Grades"
+        component={GradesScreen}
+        options={{ title: "Kết quả học tập" }}
       />
     </Stack.Navigator>
   );
