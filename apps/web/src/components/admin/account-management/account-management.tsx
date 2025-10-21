@@ -833,7 +833,6 @@ export function AccountManagement() {
                   Tất cả
                 </Button>
               </div>,
-              "STT",
               "Mã số",
               "Họ tên",
               "Vai trò",
@@ -847,7 +846,7 @@ export function AccountManagement() {
               "Đăng nhập cuối",
               "Thao tác",
             ]}
-            maxHeight="65vh"
+            maxHeight="auto"
             maxWidth="100%"
           >
             {loading &&
@@ -855,9 +854,6 @@ export function AccountManagement() {
                 <tr key={`sk-${idx}`} className="border-b last:border-b-0">
                   <td className="px-4 py-2 text-center">
                     <Skeleton className="h-4 w-4 mx-auto" />
-                  </td>
-                  <td className="px-4 py-2 text-center">
-                    <Skeleton className="h-4 w-8 mx-auto" />
                   </td>
                   <td className="px-4 py-2">
                     <Skeleton className="h-4 w-[500px]" />
@@ -888,7 +884,7 @@ export function AccountManagement() {
               ))}
 
             {!loading &&
-              accounts.map((account, idx) => (
+              accounts.map((account) => (
                 <tr
                   key={account.id}
                   className="hover:bg-accent/40 transition-colors border-b last:border-b-0"
@@ -928,9 +924,6 @@ export function AccountManagement() {
                       }}
                       disabled={bulkLoading}
                     />
-                  </td>
-                  <td className="px-4 py-2 text-center text-card-foreground">
-                    {(page - 1) * pageSize + idx + 1}
                   </td>
                   <td className="px-4 py-2 font-medium text-card-foreground whitespace-nowrap">
                     {account.code || account.id}
@@ -989,7 +982,7 @@ export function AccountManagement() {
             {!loading && total === 0 && (
               <tr>
                 <td
-                  colSpan={10}
+                  colSpan={9}
                   className="px-4 py-8 text-center text-muted-foreground"
                 >
                   {hasSearched

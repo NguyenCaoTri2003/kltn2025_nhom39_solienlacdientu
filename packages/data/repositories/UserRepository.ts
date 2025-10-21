@@ -290,7 +290,8 @@ export class UserRepository {
         "id, full_name, email, phone, role, status, created_at, last_login",
         { count: "exact" }
       )
-      .order("id", { ascending: true });
+      // Newest first
+      .order("created_at", { ascending: false });
 
     // Lọc theo role/status nếu có
     if (
