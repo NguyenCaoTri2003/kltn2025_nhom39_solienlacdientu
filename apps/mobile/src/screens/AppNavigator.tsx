@@ -11,15 +11,22 @@ import MessagesScreen from "./MessagesScreen";
 import AppointmentsScreen from "./AppointmentsScreen";
 import CourseOfferingScreen from "./CourseOfferingScreen";
 import { useAuth } from "../context/AuthContext";
+import CourseOfferingDetailScreen from "./CourseOfferingDetailScreen";
+import { RootStackParamList } from "../types/navigation";
 
 const Tab = createBottomTabNavigator();
-const Stack = createNativeStackNavigator();
+const Stack = createNativeStackNavigator<RootStackParamList>();
 
 function StudentStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="StudentHome" component={StudentHomeScreen} />
       <Stack.Screen name="CourseOffering" component={CourseOfferingScreen} />
+      <Stack.Screen
+        name="CourseOfferingDetail"
+        component={CourseOfferingDetailScreen}
+        options={{ title: "Chi tiết học phần" }}
+      />
     </Stack.Navigator>
   );
 }

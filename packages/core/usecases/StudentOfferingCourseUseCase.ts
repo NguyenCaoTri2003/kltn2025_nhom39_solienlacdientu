@@ -198,6 +198,14 @@ export type CourseOfferingDetail = {
   lecturer: LecturerInfo | null;
   schedule: WeeklySchedule[];
   practice_group: PracticeGroup | null;
+  course: {
+    id: number;
+    course_code: string;
+    name: string;
+    credit: number;
+    tuition_fee: number;
+    has_practice: boolean;
+  } | null;
 };
 
 const toLecturer = (data: any): LecturerInfo | null =>
@@ -233,6 +241,7 @@ type RawSemester = {
 };
 
 type RawCourseOffering = {
+  courses: any;
   id: number;
   name: string;
   class_code: string;
@@ -312,6 +321,15 @@ export class StudentOfferingUseCase {
       description: offering.description,
       semester: offering.semesters,
       lecturer: toLecturer(offering.lecturers),
+
+      course: offering.courses ? {
+        id: offering.courses.id,
+        course_code: offering.courses.course_code,
+        name: offering.courses.name,
+        credit: offering.courses.credit,
+        tuition_fee: offering.courses.tuition_fee,
+        has_practice: offering.courses.has_practice,
+      } : null,
 
       schedule: (offering.weekly_schedules ?? []).filter(
         (s) => s.type === "theory"

@@ -178,6 +178,14 @@ export class StudentCourseRepository {
               email
             )
           ),
+           courses:course_id (        
+            id,
+            course_code,
+            name,
+            credit,
+            tuition_fee,
+            has_practice
+          ),
           semesters:semester_id (
             id,
             name,
