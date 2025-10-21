@@ -11,6 +11,7 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const student_id = Number(searchParams.get("student_id"));
     const offering_id = Number(searchParams.get("offering_id"));
+    const semester_id = Number(searchParams.get("semester_id")); // mới
 
     if (!student_id) {
       return NextResponse.json({ error: "Missing student_id" }, { status: 400 });
@@ -22,7 +23,7 @@ export async function GET(req: NextRequest) {
       const grades = await usecase.getGradesByOffering(student_id, offering_id, user);
       return NextResponse.json(grades);
     } else {
-      const grades = await usecase.getStudentGrades(student_id, user);
+      const grades = await usecase.getStudentGrades(student_id, user, semester_id);
       return NextResponse.json(grades);
     }
   } catch (e: any) {
@@ -32,3 +33,4 @@ export async function GET(req: NextRequest) {
     );
   }
 }
+

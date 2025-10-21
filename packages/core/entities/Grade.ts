@@ -21,4 +21,7 @@ export interface GradeGroup {
   lecturer_id: number | null;
   theoryScores: Grade[];
   practiceScores: Grade[];
+  summary: {
+
+  }
 }

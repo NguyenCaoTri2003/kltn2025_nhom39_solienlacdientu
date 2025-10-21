@@ -81,39 +81,76 @@ export function AddUserModal({ open, onClose, onSuccess }: AddUserModalProps) {
         if (sum && sum.failed > 0) {
           setDisableConfirm(true);
         } else {
-
           onSuccess?.();
           onClose();
         }
       } else {
-
         if (!singleData || !singleData.user?.full_name) {
           toast.error("Vui lòng nhập đầy đủ thông tin tối thiểu (Họ và tên)");
           return;
         }
-        const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
+        const API_BASE =
+          process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
         const payload: SingleFormData = {
           ...singleData,
           user: { ...singleData.user, role },
         };
         if (role === "parent" && !payload.student_parent) {
-          toast.error("Phụ huynh cần liên kết với một sinh viên (student_parent)");
+          toast.error(
+            "Phụ huynh cần liên kết với một sinh viên (student_parent)"
+          );
           return;
         }
-        const res = await fetch(`${API_BASE}/api/users/admin/create`, {
-          method: "POST",
-          credentials: "include",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok) {
-          toast.error(data?.error || "Tạo tài khoản thất bại");
-          return;
+
+        if (role === "student") {
+          const parents = Array.isArray(singleData.parent_candidates)
+            ? singleData.parent_candidates
+                .filter((p) => p?.user?.full_name && p?.relationship)
+                .map((p) => ({
+                  user: p.user,
+                  parent: p.parent,
+                  relationship: p.relationship,
+                }))
+            : [];
+          const body = {
+            user: { ...payload.user, role: "student" },
+            student: payload.student,
+            ...(parents.length > 0 ? { parents } : {}),
+          };
+          const res = await fetch(`${API_BASE}/api/users/admin/create`, {
+            method: "POST",
+            credentials: "include",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body),
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok) {
+            toast.error(data?.error || "Tạo tài khoản thất bại");
+            return;
+          }
+          toast.success(
+            parents.length > 0
+              ? "Đã thêm sinh viên và phụ huynh thành công"
+              : "Đã thêm sinh viên thành công"
+          );
+          onSuccess?.();
+          onClose();
+        } else {
+          const res = await fetch(`${API_BASE}/api/users/admin/create`, {
+            method: "POST",
+            credentials: "include",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok) {
+            toast.error(data?.error || "Tạo tài khoản thất bại");
+            return;
+          }
+          toast.success("Đã thêm người dùng thành công");
+          onSuccess?.();
+          onClose();
         }
-        toast.success("Đã thêm người dùng thành công");
-        onSuccess?.();
-        onClose();
       }
     } catch (err) {
       console.error(err);
@@ -209,17 +246,12 @@ export function AddUserModal({ open, onClose, onSuccess }: AddUserModalProps) {
                   setDisableConfirm(false);
                 }}
               />
-
-              <p className="text-sm text-muted-foreground">
-                Bạn có thể tải mẫu file phù hợp với loại tài khoản đã chọn.
-              </p>
-              <Button
-                variant="secondary"
-                className="w-full text-blue-800"
+              <p
                 onClick={handleDownloadTemplate}
+                className="text-sm text-blue-600 hover:underline cursor-pointer"
               >
-                Tải mẫu {role}
-              </Button>
+                Tải mẫu
+              </p>
 
               {summary && (
                 <div className="mt-2 rounded-md border border-border p-3 text-sm">
