@@ -34,64 +34,6 @@ export class CourseOfferingRepository {
     return data ?? [];
   }
 
-  // async getOfferingsByLecturer(lecturerId: number, semesterId?: number) {
-  //   let query = supabase
-  //     .from("course_offerings")
-  //     .select(`
-  //       id,
-  //       course_id,
-  //       lecturer_id,
-  //       name,
-  //       class_code,
-  //       capacity,
-  //       registered,
-  //       status,
-  //       schedule,
-  //       description,
-  //       semester_id,
-  //       weekly_schedules (
-  //         id,
-  //         day_of_week,
-  //         start_period,
-  //         period_count,
-  //         classroom,
-  //         building,
-  //         type
-  //       ),
-  //       courses (*),
-  //       practice_groups (id, lecturer_id)
-  //     `)
-  //     .eq("lecturer_id", lecturerId)
-  //     .order("day_of_week", { foreignTable: "weekly_schedules" });
-
-  //   if (semesterId) {
-  //     query = query.eq("semester_id", semesterId);
-  //   }
-
-  //   const { data, error } = await query;
-  //   if (error) throw error;
-
-  //   return data.map(offering => {
-  //     const practiceGroups = offering.practice_groups ?? [];
-
-  //     const teachesTheory = offering.lecturer_id === lecturerId; // ✅
-  //     const teachesPractice = practiceGroups.some(pg => pg.lecturer_id === lecturerId);
-
-  //     let practiceGroupNumber: number | null = null;
-  //     if (teachesPractice && !teachesTheory) {
-  //       practiceGroupNumber =
-  //         practiceGroups.findIndex(pg => pg.lecturer_id === lecturerId) + 1;
-  //     }
-
-  //     return {
-  //       ...offering,
-  //       practice_group_count: practiceGroups.length,
-  //       is_practice_lecturer: teachesPractice && !teachesTheory, 
-  //       practice_group_number: practiceGroupNumber,
-  //     };
-  //   });
-  // }
-
   async getOfferingsByLecturer(lecturerId: number, semesterId?: number) {
     let query = supabase
       .from("course_offerings")

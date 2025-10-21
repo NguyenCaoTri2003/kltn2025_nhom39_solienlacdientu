@@ -1,5 +1,6 @@
 import React from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { Ionicons } from "@expo/vector-icons";
 import StudentHomeScreen from "./student/StudentHomeScreen";
 import ParentHomeScreen from "./parent/ParentHomeScreen";
@@ -8,9 +9,20 @@ import AttendanceScreen from "./AttendanceScreen";
 import ScheduleScreen from "./ScheduleScreen";
 import MessagesScreen from "./MessagesScreen";
 import AppointmentsScreen from "./AppointmentsScreen";
+import CourseOfferingScreen from "./CourseOfferingScreen";
 import { useAuth } from "../context/AuthContext";
 
 const Tab = createBottomTabNavigator();
+const Stack = createNativeStackNavigator();
+
+function StudentStack() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="StudentHome" component={StudentHomeScreen} />
+      <Stack.Screen name="CourseOffering" component={CourseOfferingScreen} />
+    </Stack.Navigator>
+  );
+}
 
 export default function AppNavigator() {
   const { user } = useAuth();
@@ -51,7 +63,7 @@ export default function AppNavigator() {
     >
       <Tab.Screen
         name="Home"
-        component={isStudent ? StudentHomeScreen : ParentHomeScreen}
+        component={isStudent ? StudentStack : ParentHomeScreen}
         options={{ title: "Trang chủ" }}
       />
       <Tab.Screen name="Schedule" component={ScheduleScreen} options={{ title: "Lịch học" }} />
