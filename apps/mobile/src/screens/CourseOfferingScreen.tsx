@@ -15,6 +15,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useCourseOfferings } from "../hooks/useCourseOfferings";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../types/navigation";
+import LoadingScreen from "../components/LoadingScreen";
+import HeaderBar from "../components/HeaderBar";
 
 const DAY_NAMES = [
     "Chủ nhật",
@@ -54,13 +56,7 @@ export default function CourseOfferingScreen() {
     return (
         <SafeAreaView style={styles.safeArea}>
             {/* Header */}
-            <View style={styles.header}>
-                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                    <Ionicons name="arrow-back" size={24} color="#1E3A8A" />
-                </TouchableOpacity>
-                <Text style={styles.title}>Lớp học phần</Text>
-                <View style={{ width: 24 }} />
-            </View>
+            <HeaderBar title="Danh sách lớp học phần" />
 
             {/* Nội dung */}
             <View style={styles.container}>
@@ -121,7 +117,7 @@ export default function CourseOfferingScreen() {
 
                 {/* Nội dung lớp học phần */}
                 {loading ? (
-                    <ActivityIndicator size="large" color="#1E3A8A" style={{ marginTop: 40 }} />
+                    <LoadingScreen text="Đang tải chi tiết lớp học phần..." />
                 ) : error ? (
                     <Text style={styles.error}>{error}</Text>
                 ) : offerings.length === 0 ? (
@@ -188,7 +184,7 @@ const styles = StyleSheet.create({
         alignItems: "center",
         padding: 16,
         borderBottomWidth: 1,
-        borderBottomColor: "#E5E7EB",
+        backgroundColor: "#1E3A8A"
     },
     backButton: { padding: 4 },
     title: {
@@ -196,12 +192,11 @@ const styles = StyleSheet.create({
         textAlign: "center",
         fontSize: 18,
         fontWeight: "700",
-        color: "#1E3A8A",
+        color: "#fff",
     },
     container: { flex: 1, padding: 16 },
     label: { fontSize: 15, fontWeight: "600", color: "#1E3A8A", marginBottom: 6 },
 
-    // Ô chọn học kỳ
     selectBox: {
         flexDirection: "row",
         justifyContent: "space-between",
@@ -216,7 +211,6 @@ const styles = StyleSheet.create({
     },
     selectText: { fontSize: 16, color: "#111827" },
 
-    // Modal
     modalOverlay: {
         flex: 1,
         backgroundColor: "rgba(0,0,0,0.4)",
