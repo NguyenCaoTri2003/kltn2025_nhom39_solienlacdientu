@@ -1,17 +1,41 @@
+// const { getDefaultConfig } = require("expo/metro-config");
+// const path = require("path");
+
+// const projectRoot = __dirname;
+// const workspaceRoot = path.resolve(projectRoot, "../..");
+
+// const config = getDefaultConfig(projectRoot);
+
+// // ✅ Theo khuyến nghị chính thức từ Expo Monorepo docs
+// config.watchFolders = [workspaceRoot];
+
+// // ✅ Giữ nguyên resolver extension, chỉ thêm nếu tồn tại
+// if (config.resolver?.sourceExts && !config.resolver.sourceExts.includes("cjs")) {
+//   config.resolver.sourceExts.push("cjs");
+// }
+
+// module.exports = config;
+
 const { getDefaultConfig } = require("expo/metro-config");
 const path = require("path");
 
 const projectRoot = __dirname;
-const workspaceRoot = path.resolve(projectRoot, "../..");
+const workspaceRoot = path.resolve(projectRoot, "../.."); // gốc monorepo
 
 const config = getDefaultConfig(projectRoot);
 
-// ✅ Theo khuyến nghị chính thức từ Expo Monorepo docs
+// 👀 Theo khuyến nghị của Expo Monorepo
 config.watchFolders = [workspaceRoot];
 
-// ✅ Giữ nguyên resolver extension, chỉ thêm nếu tồn tại
+// ✅ Giữ nguyên resolver extension, thêm nếu thiếu
 if (config.resolver?.sourceExts && !config.resolver.sourceExts.includes("cjs")) {
   config.resolver.sourceExts.push("cjs");
 }
+
+// ✅ Thêm alias cho @packages
+config.resolver.extraNodeModules = {
+  ...config.resolver.extraNodeModules,
+  "@packages": path.resolve(workspaceRoot, "packages"), // alias tới thư mục packages ở root
+};
 
 module.exports = config;

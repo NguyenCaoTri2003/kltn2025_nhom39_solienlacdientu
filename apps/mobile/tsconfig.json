@@ -5,6 +5,9 @@
     "strict": true,
     "moduleResolution": "bundler",
     "allowSyntheticDefaultImports": true,
-    "esModuleInterop": true
+    "esModuleInterop": true,
+    "paths": {
+      "@packages/*": ["../../packages/*"]
+    }
   },
 }

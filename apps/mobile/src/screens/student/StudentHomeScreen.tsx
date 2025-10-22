@@ -18,17 +18,21 @@ import {
   DollarSign,
   ClipboardList,
 } from "lucide-react-native";
+import { useNavigation } from "@react-navigation/native";
+import { useUser } from "../../context/UserContext";
 
 export default function StudentHomeScreen() {
   const { user } = useAuth();
+  const navigation = useNavigation();
+  const {userData} = useUser();
 
   const hours = new Date().getHours();
   const greeting =
     hours < 12
       ? "Chào buổi sáng ☀️"
       : hours < 18
-      ? "Chào buổi chiều 🌤️"
-      : "Chào buổi tối 🌙";
+        ? "Chào buổi chiều 🌤️"
+        : "Chào buổi tối 🌙";
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -53,7 +57,7 @@ export default function StudentHomeScreen() {
           <Image
             source={{
               uri:
-                user?.avatar ||
+                user?.avatar_url ||
                 "https://cdn-icons-png.flaticon.com/512/3135/3135715.png",
             }}
             style={styles.avatar}
@@ -61,7 +65,7 @@ export default function StudentHomeScreen() {
           <View>
             <Text style={styles.profileName}>{user?.full_name || "User"}</Text>
             <Text style={styles.profileCode}>
-              Mã SV: {user?.student_code || "20210001"}
+              Mã SV: {userData?.student?.student_code || "Chưa có mã sinh viên"}
             </Text>
           </View>
         </View>
@@ -70,9 +74,24 @@ export default function StudentHomeScreen() {
         <Text style={styles.sectionTitle}>Tính năng nổi bật</Text>
 
         <View style={styles.featureGrid}>
-          <FeatureButton icon={<Calendar color="#2563EB" size={28} />} label="Lịch học" />
-          <FeatureButton icon={<BarChart color="#2563EB" size={28} />} label="Kết quả học tập" />
-          <FeatureButton icon={<Users color="#2563EB" size={28} />} label="Lớp học phần" />
+          <FeatureButton 
+            icon={<Calendar color="#2563EB" 
+            size={28} />} 
+            label="Lịch học" 
+            onPress={() => navigation.navigate("Schedule" as never)}
+          />
+          <FeatureButton
+            icon={<BarChart color="#2563EB" size={28} />}
+            label="Kết quả học tập"
+            onPress={() =>
+              navigation.navigate("Grades", { studentId: user!.id }) as never
+            }
+          />
+          <FeatureButton
+            icon={<Users color="#2563EB" size={28} />}
+            label="Lớp học phần"
+            onPress={() => navigation.navigate("CourseOffering" as never)}
+          />
           <FeatureButton icon={<DollarSign color="#2563EB" size={28} />} label="Học phí" />
           <FeatureButton icon={<ClipboardList color="#2563EB" size={28} />} label="Điểm danh" />
           <FeatureButton icon={<BookOpen color="#2563EB" size={28} />} label="Khảo sát" />
@@ -82,9 +101,17 @@ export default function StudentHomeScreen() {
   );
 }
 
-function FeatureButton({ icon, label }: { icon: React.ReactNode; label: string }) {
+function FeatureButton({
+  icon,
+  label,
+  onPress,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  onPress?: () => void;
+}) {
   return (
-    <TouchableOpacity style={styles.featureButton}>
+    <TouchableOpacity style={styles.featureButton} onPress={onPress}>
       <View style={styles.iconWrapper}>{icon}</View>
       <Text style={styles.featureLabel}>{label}</Text>
     </TouchableOpacity>

@@ -105,9 +105,38 @@ export class UserRepository {
         .select("*")
         .eq("id", id)
         .single();
-      if (!parentError && parent) {
+
+      if (parentError || !parent) return { ...user };
+
+      const { data: children, error: childrenError } = await supabase
+        .from("student_parent")
+        .select(`
+        relationship,
+        students (
+          id,
+          student_code,
+          academic_year,
+          classes:class_id(
+            class_code
+          ),
+          users (
+            full_name
+          )
+        )
+      `)
+        .eq("parent_id", id);
+
+      if (childrenError) {
+        console.error("Error fetching children:", childrenError);
         return { ...user, parent };
       }
+
+      const childList = children.map((item: any) => ({
+        ...item.students,
+        relationship: item.relationship,
+      }));
+
+      return { ...user, parent, children: childList };
     }
 
     return user;
@@ -399,20 +428,20 @@ export class UserRepository {
 
     const { data: students } = roleGroups.student.length
       ? await supabase
-          .from("students")
-          .select(
-            "id, student_code, class_id, classes:class_id(id, class_code)"
-          )
-          .in("id", roleGroups.student)
+        .from("students")
+        .select(
+          "id, student_code, class_id, classes:class_id(id, class_code)"
+        )
+        .in("id", roleGroups.student)
       : { data: [] };
 
     const { data: lecturers } = roleGroups.lecturer.length
       ? await supabase
-          .from("lecturers")
-          .select(
-            "id, lecturer_code, faculty_id, faculties:faculty_id(id, name)"
-          )
-          .in("id", roleGroups.lecturer)
+        .from("lecturers")
+        .select(
+          "id, lecturer_code, faculty_id, faculties:faculty_id(id, name)"
+        )
+        .in("id", roleGroups.lecturer)
       : { data: [] };
 
     let semesterLabel: { id: number; name: string } | null = null;
@@ -431,21 +460,21 @@ export class UserRepository {
       let _code: string | undefined;
       let studentObj:
         | {
-            id: number;
-            student_code?: string;
-            class_id?: number | null;
-            class_code?: string | null;
-            current_semester_id?: number | null;
-            current_semester_name?: string | null;
-          }
+          id: number;
+          student_code?: string;
+          class_id?: number | null;
+          class_code?: string | null;
+          current_semester_id?: number | null;
+          current_semester_name?: string | null;
+        }
         | undefined;
       let lecturerObj:
         | {
-            id: number;
-            lecturer_code?: string;
-            faculty_id?: number | null;
-            faculty_name?: string | null;
-          }
+          id: number;
+          lecturer_code?: string;
+          faculty_id?: number | null;
+          faculty_name?: string | null;
+        }
         | undefined;
       let parentObj: { id: number } | undefined;
 
@@ -776,7 +805,6 @@ export class UserRepository {
 
                 parentUserId = parentUser.id;
                 createdUsers.push({ id: parentUserId, role: "parent" });
-
                 const { error: parentError } = await supabase
                   .from("parents")
                   .insert({
@@ -817,6 +845,7 @@ export class UserRepository {
                 console.log(
                   `Liên kết đã tồn tại: student ${newUserId} ↔ parent ${parentUserId}`
                 );
+
               }
             }
           }
@@ -899,39 +928,39 @@ export class UserRepository {
           student:
             row.role === "student"
               ? {
-                  student_code: row.student_code,
-                  class_id: row.class_id,
-                  date_of_birth: row.date_of_birth,
-                  place_of_birth: row.place_of_birth,
-                  contact_address: row.contact_address,
-                  type_of_training: row.type_of_training || "regular",
-                  training_level: row.training_level,
-                  academic_year: row.academic_year,
-                }
+                student_code: row.student_code,
+                class_id: row.class_id,
+                date_of_birth: row.date_of_birth,
+                place_of_birth: row.place_of_birth,
+                contact_address: row.contact_address,
+                type_of_training: row.type_of_training || "regular",
+                training_level: row.training_level,
+                academic_year: row.academic_year,
+              }
               : undefined,
 
           lecturer:
             row.role === "lecturer"
               ? {
-                  lecturer_code: row.lecturer_code,
-                  academic_rank: row.academic_rank,
-                  faculty_id: row.faculty_id,
-                }
+                lecturer_code: row.lecturer_code,
+                academic_rank: row.academic_rank,
+                faculty_id: row.faculty_id,
+              }
               : undefined,
 
           parent:
             row.role === "parent"
               ? {
-                  occupation: row.occupation,
-                }
+                occupation: row.occupation,
+              }
               : undefined,
 
           student_parent:
             row.role === "parent"
               ? {
-                  student_id: row.student_id,
-                  relationship: row.relationship || "guardian",
-                }
+                student_id: row.student_id,
+                relationship: row.relationship || "guardian",
+              }
               : undefined,
         });
 

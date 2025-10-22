@@ -1,5 +1,43 @@
 import { supabase } from "../supabaseClient";
 
+type LecturerUser = {
+  full_name: string | null;
+  email: string | null;
+};
+
+type Lecturer = {
+  id: number;
+  lecturer_code: string;
+  users: LecturerUser | null;
+};
+
+type PracticeGroup = {
+  id: number;
+  group_number: number;
+  lecturers?: Lecturer | Lecturer[] | null;
+};
+
+type CourseOffering = {
+  id: number;
+  name: string;
+  class_code: string;
+  lecturers?: Lecturer | Lecturer[] | null;
+};
+
+type ActualSchedule = {
+  id: number;
+  schedule_date: string;
+  start_period: number;
+  period_count: number;
+  classroom: string | null;
+  building: string | null;
+  type: "theory" | "practice";
+  status: string;
+  note: string | null;
+  course_offering: CourseOffering | null;
+  practice_group: PracticeGroup | null;
+};
+
 export class ScheduleRepository {
 
   async getStudentSchedulesByDate(
@@ -14,29 +52,67 @@ export class ScheduleRepository {
 
     if (!enrollments || enrollments.length === 0) return [];
 
-    const offeringIds = enrollments.map(e => e.offering_id);
+    const offeringIds = enrollments.map((e) => e.offering_id);
 
     const { data: practiceEnrollments } = await supabase
       .from("practice_enrollment")
       .select("group_id")
-      .in("enrollment_id", enrollments.map(e => e.id));
+      .in(
+        "enrollment_id",
+        enrollments.map((e) => e.id)
+      );
 
-    const registeredGroupIds = practiceEnrollments?.map(pe => pe.group_id) ?? [];
+    const registeredGroupIds =
+      practiceEnrollments?.map((pe) => pe.group_id) ?? [];
 
     let query = supabase
       .from("actual_schedules")
-      .select(`
-      *,
+      .select(
+        `
+      id,
+      offering_id,
+      practice_group_id,
+      schedule_date,
+      start_period,
+      period_count,
+      classroom,
+      building,
+      type,
+      status,
+      note,
       course_offering:offering_id (
         id,
         name,
-        class_code
+        class_code,
+        lecturers:lecturer_id (
+          id,
+          lecturer_code,
+          users:users!lecturers_id_fkey (
+            full_name,
+            email
+          )
+        )
+      ),
+      practice_group:practice_group_id (
+        id,
+        group_number,
+        lecturers:lecturer_id (
+          id,
+          lecturer_code,
+          users:users!lecturers_id_fkey (
+            full_name,
+            email
+          )
+        )
       )
-    `)
+    `
+      )
       .in("offering_id", offeringIds);
 
     if (registeredGroupIds.length > 0) {
-      query = query.or(`practice_group_id.is.null,practice_group_id.in.(${registeredGroupIds.join(",")})`);
+      query = query.or(
+        `practice_group_id.is.null,practice_group_id.in.(${registeredGroupIds.join(",")})`
+      );
     } else {
       query = query.is("practice_group_id", null);
     }
@@ -44,10 +120,58 @@ export class ScheduleRepository {
     if (startDate) query = query.gte("schedule_date", startDate);
     if (endDate) query = query.lte("schedule_date", endDate);
 
-    const { data: schedules, error } = await query;
+    const { data: schedules, error } = await query.returns<ActualSchedule[]>();
     if (error) throw error;
 
-    return schedules;
+    return (
+      schedules?.map((s) => {
+        const courseLecturer =
+          Array.isArray(s.course_offering?.lecturers)
+            ? s.course_offering?.lecturers[0]
+            : s.course_offering?.lecturers;
+
+        const practiceLecturer =
+          Array.isArray(s.practice_group?.lecturers)
+            ? s.practice_group?.lecturers[0]
+            : s.practice_group?.lecturers;
+
+        return {
+          id: s.id,
+          schedule_date: s.schedule_date,
+          start_period: s.start_period,
+          period_count: s.period_count,
+          classroom: s.classroom,
+          building: s.building,
+          type: s.type,
+          status: s.status,
+          note: s.note,
+          course_offering: {
+            id: s.course_offering?.id,
+            name: s.course_offering?.name,
+            class_code: s.course_offering?.class_code,
+          },
+          lecturer:
+            s.type === "theory"
+              ? {
+                full_name: courseLecturer?.users?.full_name ?? null,
+                email: courseLecturer?.users?.email ?? null,
+              }
+              : s.practice_group
+                ? {
+                  full_name: practiceLecturer?.users?.full_name ?? null,
+                  email: practiceLecturer?.users?.email ?? null,
+                }
+                : null,
+          practice_group:
+            s.type === "practice" && s.practice_group
+              ? {
+                id: s.practice_group.id,
+                group_number: s.practice_group.group_number,
+              }
+              : null,
+        };
+      }) ?? []
+    );
   }
 
   async getStudentSchedulesOfferingByDate(

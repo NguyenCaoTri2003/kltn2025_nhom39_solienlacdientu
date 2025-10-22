@@ -1,52 +1,38 @@
 import { NextResponse } from "next/server";
-import { getSemesters } from "@packages/core/usecases/getSemesters";
+import { getSemesters } from "@packages/core/usecases/SemestersUseCase";
 
-// http://localhost:3000/api/semesters
-
-export async function GET() {
+export async function GET(req: Request) {
   try {
-    const semesters = await getSemesters();
+    const { searchParams } = new URL(req.url);
+    const fromYear = searchParams.get("fromYear")
+      ? Number(searchParams.get("fromYear"))
+      : undefined;
 
-    if (!semesters || (Array.isArray(semesters) && semesters.length === 0)) {
-      return NextResponse.json(
+    const semesters = await getSemesters(fromYear);
+
+    if (!semesters || semesters.length === 0) {
+      return createResponse(
         { returnCode: 1, message: "Semesters not found", data: null },
-        { status: 404 }
+        404
       );
     }
 
-    const res = NextResponse.json({ returnCode: 0, message: "OK", data: semesters });
-    res.headers.set("Access-Control-Allow-Origin", "*");
-    res.headers.set("Access-Control-Allow-Methods", "GET,OPTIONS");
-    res.headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
-    return res;
+    return createResponse({ returnCode: 0, message: "OK", data: semesters });
   } catch (err: unknown) {
-    if (err instanceof Error) {
-      const res = NextResponse.json(
-        { returnCode: 1, message: err.message, data: null },
-        { status: 500 }
-      );
-      res.headers.set("Access-Control-Allow-Origin", "*");
-      res.headers.set("Access-Control-Allow-Methods", "GET,OPTIONS");
-      res.headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
-      return res;
-    }
-    const res = NextResponse.json(
-      { returnCode: 1, message: "Unknown error", data: null },
-      { status: 500 }
-    );
-    res.headers.set("Access-Control-Allow-Origin", "*");
-    res.headers.set("Access-Control-Allow-Methods", "GET,OPTIONS");
-    res.headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
-    return res;
+    const message = err instanceof Error ? err.message : "Unknown error";
+    return createResponse({ returnCode: 1, message, data: null }, 500);
   }
 }
 
 export async function OPTIONS() {
-  const res = NextResponse.json({}, { status: 200 });
+  return createResponse({}, 200);
+}
+
+// Helper để set CORS
+function createResponse(body: any, status = 200) {
+  const res = NextResponse.json(body, { status });
   res.headers.set("Access-Control-Allow-Origin", "*");
   res.headers.set("Access-Control-Allow-Methods", "GET,OPTIONS");
   res.headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
   return res;
 }
-
-
