@@ -7,7 +7,8 @@ export class SemesterSummaryRepository {
       .select("*")
       .eq("student_id", student_id)
       .eq("semester_id", semester_id)
-      .single();
+      // .single();
+       .maybeSingle(); 
 
     if (error) throw error;
     return data;
