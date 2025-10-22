@@ -11,6 +11,12 @@ export interface GetStudentsOverviewParams {
   search?: string;
   gpaMin?: number;
   gpaMax?: number;
+  facultyName?: string;
+  classCode?: string;
+  academicStatus?: string;
+  failedMax?: number;
+  attendanceMin?: number;
+  warningFilter?: string;
 }
 
 export class StudentsOverviewUseCase {
@@ -35,6 +41,12 @@ export class StudentsOverviewUseCase {
       search: typeof params.search === "string" ? params.search.trim() : "",
       gpaMin: this.toFloat(params.gpaMin),
       gpaMax: this.toFloat(params.gpaMax),
+      facultyName: typeof params.facultyName === "string" && params.facultyName.trim() ? params.facultyName.trim() : undefined,
+      classCode: typeof params.classCode === "string" && params.classCode.trim() ? params.classCode.trim() : undefined,
+      academicStatus: typeof params.academicStatus === "string" && params.academicStatus.trim() && params.academicStatus !== "all" ? params.academicStatus.trim() : undefined,
+      failedMax: this.toPositiveInt(params.failedMax),
+      attendanceMin: this.toFloat(params.attendanceMin),
+      warningFilter: typeof params.warningFilter === "string" && params.warningFilter.trim() && params.warningFilter !== "all" ? params.warningFilter.trim() : undefined,
     } as {
       semesterId?: number;
       studentIds?: number[];
@@ -43,6 +55,12 @@ export class StudentsOverviewUseCase {
       search?: string;
       gpaMin?: number;
       gpaMax?: number;
+      facultyName?: string;
+      classCode?: string;
+      academicStatus?: string;
+      failedMax?: number;
+      attendanceMin?: number;
+      warningFilter?: string;
     };
   }
 

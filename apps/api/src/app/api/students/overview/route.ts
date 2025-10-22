@@ -24,6 +24,12 @@ export async function GET(req: NextRequest) {
 			const gpaMinParam = searchParams.get("gpaMin") || searchParams.get("gpa_min");
 			const gpaMaxParam = searchParams.get("gpaMax") || searchParams.get("gpa_max");
 			const search = searchParams.get("search") || undefined;
+			const facultyName = searchParams.get("faculty") || undefined;
+			const classCode = searchParams.get("classCode") || searchParams.get("classroom") || undefined;
+			const academicStatus = searchParams.get("academicStatus") || undefined;
+			const failedMaxParam = searchParams.get("failedMax") || undefined;
+			const attendanceMinParam = searchParams.get("attendanceMin") || undefined;
+			const warningFilter = searchParams.get("warningFilter") || undefined;
 		const semesterId = semesterIdParam ? Number(semesterIdParam) : undefined;
 		const studentIds = studentIdParam
 			? studentIdParam.split(",").map((s) => s.trim()).filter(Boolean)
@@ -32,9 +38,10 @@ export async function GET(req: NextRequest) {
 			const pageSize = pageSizeParam ? Number(pageSizeParam) : undefined;
 			const gpaMin = gpaMinParam != null ? Number(gpaMinParam) : undefined;
 			const gpaMax = gpaMaxParam != null ? Number(gpaMaxParam) : undefined;
+			const failedMax = failedMaxParam != null ? Number(failedMaxParam) : undefined;
+			const attendanceMin = attendanceMinParam != null ? Number(attendanceMinParam) : undefined;
 
-
-			const { items, total, totalPages, page: pg, pageSize: ps } = await getStudentsOverview({ semesterId, studentIds, page, pageSize, search, gpaMin, gpaMax });
+			const { items, total, totalPages, page: pg, pageSize: ps } = await getStudentsOverview({ semesterId, studentIds, page, pageSize, search, gpaMin, gpaMax, facultyName, classCode, academicStatus, failedMax, attendanceMin, warningFilter });
 				const duration = Date.now() - start;
 				const res = NextResponse.json({ returnCode: 0, message: "OK", data: items, meta: { total, totalPages, page: pg, pageSize: ps, executionTime: `${duration}ms` } }, { status: 200 });
 			res.headers.set("Access-Control-Allow-Origin", "*");

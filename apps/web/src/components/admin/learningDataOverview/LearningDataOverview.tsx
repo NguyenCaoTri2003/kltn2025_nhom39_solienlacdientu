@@ -179,6 +179,31 @@ export default function LearningDataOverview() {
     const semId = overrides?.semId ?? semester;
     if (scope === "semester" && semId) params.set("semesterId", semId);
     if (currentSearch) params.set("search", currentSearch);
+    // map active filters to query params (server-side filtering)
+    if (faculty && faculty !== "all") params.set("faculty", faculty);
+    if (classroom && classroom !== "all") params.set("classCode", classroom);
+    if (academicStatus && academicStatus !== "all") params.set("academicStatus", academicStatus);
+    // Convert gpaRange to numeric min/max when selected
+    if (gpaRange && gpaRange !== "all") {
+      if (gpaRange === "4") {
+        params.set("gpaMin", "4");
+        params.set("gpaMax", "4");
+      } else if (gpaRange === "3") {
+        params.set("gpaMin", "3.0");
+        params.set("gpaMax", "3.99");
+      } else if (gpaRange === "2") {
+        params.set("gpaMin", "2.0");
+        params.set("gpaMax", "2.99");
+      } else if (gpaRange === "1") {
+        params.set("gpaMax", "1.99");
+      }
+    }
+    // Optional advanced inputs if used (kept for completeness)
+    if (gpaMinInput) params.set("gpaMin", gpaMinInput);
+    if (gpaMaxInput) params.set("gpaMax", gpaMaxInput);
+    if (failedMaxInput) params.set("failedMax", failedMaxInput);
+    if (attendanceMinInput) params.set("attendanceMin", attendanceMinInput);
+    if (warningFilter && warningFilter !== "all") params.set("warningFilter", warningFilter);
     params.set("page", String(currentPage));
     params.set("pageSize", String(currentPageSize));
     return `${API_BASE}/api/students/overview?${params.toString()}`;
@@ -257,7 +282,7 @@ export default function LearningDataOverview() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
           {/* Phạm vi */}
-          <Select value={scope} onValueChange={(v) => setScope(v as "semester" | "all")}>
+          <Select value={scope} onValueChange={(v: string) => setScope(v as "semester" | "all")}>
             <SelectTrigger>
               <SelectValue placeholder="Phạm vi" />
             </SelectTrigger>
@@ -439,35 +464,7 @@ export default function LearningDataOverview() {
           )}
           {!error && rows.length > 0 && (
             <>
-              {rows
-                .filter((r) => {
-                  if (faculty && faculty !== "all" && r.faculty !== faculty) return false;
-                  if (classroom && classroom !== "all" && r.class !== classroom) return false;
-                  if (academicStatus && academicStatus !== "all" && r.academic_status !== academicStatus) return false;
-                  if (gpaRange && gpaRange !== "all") {
-                    const g = r.gpa ?? 0;
-                    if (gpaRange === "4" && g !== 4.0) return false;
-                    if (gpaRange === "3" && !(g >= 3.0 && g < 4.0)) return false;
-                    if (gpaRange === "2" && !(g >= 2.0 && g < 3.0)) return false;
-                    if (gpaRange === "1" && !(g < 2.0)) return false;
-                  }
-                  const gpaMin = gpaMinInput ? parseFloat(gpaMinInput) : undefined;
-                  const gpaMax = gpaMaxInput ? parseFloat(gpaMaxInput) : undefined;
-                  if (gpaMin != null && (r.gpa ?? 0) < gpaMin) return false;
-                  if (gpaMax != null && (r.gpa ?? 0) > gpaMax) return false;
-                  const failedMax = failedMaxInput ? parseInt(failedMaxInput) : undefined;
-                  if (failedMax != null && r.failed_subjects > failedMax) return false;
-                  const attendMin = attendanceMinInput ? parseFloat(attendanceMinInput) : undefined;
-                  if (attendMin != null && (r.attendance_rate ?? 0) < attendMin) return false;
-                  if (warningFilter && warningFilter !== "all") {
-                    if (warningFilter === "none" && r.total_warning > 0) return false;
-                    if (warningFilter === "warning_1" && r.total_warning < 1) return false;
-                    if (warningFilter === "warning_2" && r.total_warning < 2) return false;
-                    if (warningFilter === "probation" && r.total_warning < 3) return false;
-                  }
-                  return true;
-                })
-                .map((r, idx) => (
+              {rows.map((r, idx) => (
                   <tr key={`${r.student_id}-${idx}`} className="hover:bg-gray-50">
                     <td className="px-4 py-3 border-b">{(meta.page - 1) * meta.pageSize + idx + 1}</td>
                     <td className="px-4 py-3 border-b">{r.student_code}</td>

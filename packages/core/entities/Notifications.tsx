@@ -1,4 +1,6 @@
-export type NotificationType = "system" | "academic_warning" | "violation" | string;
+// Aligned with DB enum public.notification_type_enum
+// Values: 'university' | 'lecturer' | 'system'
+export type NotificationType = "university" | "lecturer" | "system";
 
 export interface Notification {
   id: number; 
