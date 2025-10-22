@@ -14,10 +14,27 @@ export type Offering = {
   };
 };
 
-export async function fetchOfferingsBySemester(semesterId: number): Promise<Offering[]> {
+// export async function fetchOfferingsBySemester(semesterId: number): Promise<Offering[]> {
+//   const token = await getAuthToken();
+
+//   const res = await fetch(`${API_URL}/api/offerings/student?semester_id=${semesterId}`, {
+//     headers: { Authorization: `Bearer ${token}` },
+//   });
+
+//   const json = await res.json();
+//   if (json.returnCode !== 0) throw new Error(json.message);
+//   return json.data;
+// }
+
+export async function fetchOfferingsBySemester(semesterId: number, studentId?: number) {
   const token = await getAuthToken();
 
-  const res = await fetch(`${API_URL}/api/offerings/student?semester_id=${semesterId}`, {
+  const query = new URLSearchParams({
+    semester_id: String(semesterId),
+  });
+  if (studentId) query.append("student_id", String(studentId));
+
+  const res = await fetch(`${API_URL}/api/offerings/student?${query.toString()}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
 
@@ -26,10 +43,14 @@ export async function fetchOfferingsBySemester(semesterId: number): Promise<Offe
   return json.data;
 }
 
-export async function fetchOfferingDetail(id: number) {
+export async function fetchOfferingDetail(offeringId: number, studentId?: number) {
   const token = await getAuthToken();
 
-  const res = await fetch(`${API_URL}/api/offerings/student/${id}`, {
+  const url = new URL(`${API_URL}/api/offerings/student/detail-offering`);
+  url.searchParams.append("offering_id", String(offeringId));
+  if (studentId) url.searchParams.append("student_id", String(studentId));
+
+  const res = await fetch(url.toString(), {
     headers: { Authorization: `Bearer ${token}` },
   });
 
@@ -37,3 +58,15 @@ export async function fetchOfferingDetail(id: number) {
   if (json.returnCode !== 0) throw new Error(json.message);
   return json.data;
 }
+
+// export async function fetchOfferingDetail(id: number) {
+//   const token = await getAuthToken();
+
+//   const res = await fetch(`${API_URL}/api/offerings/student/${id}`, {
+//     headers: { Authorization: `Bearer ${token}` },
+//   });
+
+//   const json = await res.json();
+//   if (json.returnCode !== 0) throw new Error(json.message);
+//   return json.data;
+// }

@@ -26,6 +26,7 @@ type Children = {
     };
     student_code: string;
     relationship?: string;
+    academic_year?: string;
 }
 
 export type User = {

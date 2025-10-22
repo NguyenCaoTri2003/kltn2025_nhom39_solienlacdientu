@@ -36,36 +36,40 @@ export async function GET(req: NextRequest) {
     const semesterId = searchParams.get("semester_id")
       ? Number(searchParams.get("semester_id"))
       : undefined;
+    const studentId = searchParams.get("student_id")
+      ? Number(searchParams.get("student_id"))
+      : undefined;
 
-    // 👉 Kiểm tra role
     if (!["student", "parent", "admin"].includes(user.role)) {
       return NextResponse.json({ returnCode: 1, message: "Forbidden" }, { status: 403 });
     }
 
     const usecase = new StudentOfferingUseCase();
+    const parentRepo = new ParentRepository();
 
-    let studentIds: number[] = [];
+    let allowedStudentId = user.id; // mặc định là sinh viên tự xem
 
-    if (user.role === "student") {
-      studentIds = [user.id];
-    } else if (user.role === "parent") {
-      const parentRepo = new ParentRepository();
-      const children = await parentRepo.getChildrenByParentId(user.id);
-      console.log("Children of parent", user.id, children);
-      studentIds = children.map((c: any) => c.student_id);
-      if (studentIds.length === 0) {
-        return NextResponse.json({ returnCode: 0, message: "Không có con nào", data: [] });
+    // 👨‍👩‍👧 Nếu là phụ huynh → xác thực student_id có phải con mình không
+    if (user.role === "parent") {
+      if (!studentId) {
+        return NextResponse.json({
+          returnCode: 1,
+          message: "Thiếu student_id",
+        });
       }
+
+      const isChild = await parentRepo.isParentOf(user.id, studentId);
+      if (!isChild) {
+        return NextResponse.json({
+          returnCode: 1,
+          message: "Bạn không có quyền xem sinh viên này",
+        });
+      }
+
+      allowedStudentId = studentId;
     }
 
-    // ✅ Lấy offerings của tất cả student_id con
-    const results = await Promise.all(
-      studentIds.map((sid) => usecase.getOfferingsLite(sid, semesterId))
-    );
-
-    // Gộp tất cả lại (nếu phụ huynh có nhiều con)
-    const data = results.flat();
-
+    const data = await usecase.getOfferingsLite(allowedStudentId, semesterId);
     return NextResponse.json({ returnCode: 0, message: "OK", data });
   } catch (err: any) {
     console.error("/api/student/offerings error:", err);

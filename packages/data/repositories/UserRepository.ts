@@ -115,6 +115,7 @@ export class UserRepository {
         students (
           id,
           student_code,
+          academic_year,
           classes:class_id(
             class_code
           ),
