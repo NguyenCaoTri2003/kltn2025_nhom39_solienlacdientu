@@ -1,13 +1,15 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { View, Text, FlatList, TouchableOpacity, StyleSheet } from "react-native";
-import { useGrades } from "../hooks/useGrades";
-import { fetchSemesters, Semester } from "../services/semesterService";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { RouteProp, useRoute } from "@react-navigation/native";
-import { RootStackParamList } from "../types/navigation";
 import { CheckCircle, XCircle, ChevronDown, ChevronUp } from "lucide-react-native";
+
 import HeaderBar from "../components/HeaderBar";
 import LoadingScreen from "../components/LoadingScreen";
+import { useGrades } from "../hooks/useGrades";
+import { useSemesterSummaries } from "../hooks/useSemesterSummary";
+import { fetchSemesters, Semester } from "../services/semesterService";
+import { RootStackParamList } from "../types/navigation";
 import { getClassificationLabel } from "../utils/getClassificationLabel";
 
 type GradesRouteProp = RouteProp<RootStackParamList, "Grades">;
@@ -19,6 +21,7 @@ export default function GradesScreen() {
   const [semesters, setSemesters] = useState<Semester[]>([]);
   const [expandedSemesterIds, setExpandedSemesterIds] = useState<number[]>([]);
 
+  // Load danh sách học kỳ
   useEffect(() => {
     async function loadSemesters() {
       const data = await fetchSemesters();
@@ -27,7 +30,17 @@ export default function GradesScreen() {
     loadSemesters();
   }, []);
 
+  // Lấy điểm theo học kỳ
   const { gradesBySemester, loading } = useGrades(studentId, semesters);
+
+  // Lấy tổng kết học kỳ
+  const semesterIdsWithGrades = useMemo(() => {
+    return semesters
+      .filter((s) => (gradesBySemester[s.id] || []).length > 0)
+      .map((s) => s.id);
+  }, [semesters, gradesBySemester]);
+
+  const { summaries } = useSemesterSummaries(studentId, semesterIdsWithGrades);
 
   const toggleSemester = (id: number) => {
     setExpandedSemesterIds((prev) =>
@@ -35,10 +48,19 @@ export default function GradesScreen() {
     );
   };
 
+  function formatScore(value?: number | null) {
+    return value != null ? value.toFixed(2) : "-";
+  }
+
+  function formatScoresList(scores: number[]) {
+    return scores.map((s) => s.toFixed(2)).join(", ");
+  }
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#F9FAFB" }}>
       <HeaderBar title="Kết quả học tập" />
       {loading && <LoadingScreen text="Đang tải kết quả học tập..." />}
+
       <FlatList
         data={semesters}
         keyExtractor={(item) => item.id.toString()}
@@ -48,6 +70,7 @@ export default function GradesScreen() {
           if (grades.length === 0) return null;
 
           const isExpanded = expandedSemesterIds.includes(semester.id);
+          const summary = summaries[semester.id];
 
           return (
             <View style={styles.semesterContainer}>
@@ -55,7 +78,9 @@ export default function GradesScreen() {
                 onPress={() => toggleSemester(semester.id)}
                 style={styles.semesterHeader}
               >
-                <Text style={styles.semesterTitle}>{semester.name} ({semester.academic_year})</Text>
+                <Text style={styles.semesterTitle}>
+                  {semester.name} ({semester.academic_year})
+                </Text>
                 {isExpanded ? (
                   <ChevronUp size={20} color="#0284C7" />
                 ) : (
@@ -63,67 +88,106 @@ export default function GradesScreen() {
                 )}
               </TouchableOpacity>
 
-              {isExpanded &&
-                grades.map((course) => {
-                  const regularScores = course.theoryScores
-                    .filter((s) => s.score_type === "regular")
-                    .map((s) => s.score);
+              {isExpanded && (
+                <View style={{ paddingBottom: 10 }}>
+                  {/* Danh sách môn */}
+                  {grades.map((course) => {
+                    const regularScores = course.theoryScores
+                      .filter((s) => s.score_type === "regular")
+                      .map((s) => s.score);
+                    const midtermScores = course.theoryScores
+                      .filter((s) => s.score_type === "midterm")
+                      .map((s) => s.score);
+                    const finalScores = course.theoryScores
+                      .filter((s) => s.score_type === "final")
+                      .map((s) => s.score);
+                    const practiceScores = course.practiceScores.map((s) => s.score);
 
-                  const midtermScores = course.theoryScores
-                    .filter((s) => s.score_type === "midterm")
-                    .map((s) => s.score);
+                    return (
+                      <View key={course.offering_id} style={styles.courseCard}>
+                        <Text style={styles.courseName}>{course.offering_name}</Text>
+                        <View style={styles.scoreRowGroup}>
+                          {regularScores.length > 0 && (
+                            <ScoreRow label="Điểm thường kỳ" value={formatScoresList(regularScores)} />
+                          )}
+                          {practiceScores.length > 0 && (
+                            <ScoreRow label="Điểm thực hành" value={formatScoresList(practiceScores)} />
+                          )}
+                          {midtermScores.length > 0 && (
+                            <ScoreRow label="Điểm giữa kỳ" value={formatScoresList(midtermScores)} />
+                          )}
+                          {finalScores.length > 0 && (
+                            <ScoreRow label="Điểm cuối kỳ" value={formatScoresList(finalScores)} />
+                          )}
+                        </View>
 
-                  const finalScores = course.theoryScores
-                    .filter((s) => s.score_type === "final")
-                    .map((s) => s.score);
+                        {course.summary ? (
+                          <View style={styles.summaryBox}>
+                            <ScoreRow label="Thang điểm 4" value={formatScore(course.summary.gpa4 ?? "-")} />
+                            <ScoreRow label="Điểm chữ" value={course.summary.letter_grade} />
+                            <ScoreRow
+                              label="Xếp loại"
+                              value={getClassificationLabel(course.summary.classification)}
+                            />
 
-                  const practiceScores = course.practiceScores.map((s) => s.score);
-
-                  return (
-                    <View key={course.offering_id} style={styles.courseCard}>
-                      <Text style={styles.courseName}>{course.offering_name}</Text>
-                      <View style={styles.scoreRowGroup}>
-                        {regularScores.length > 0 && (
-                          <ScoreRow label="Điểm thường kỳ" value={regularScores.join(", ")} />
-                        )}
-                        {practiceScores.length > 0 && (
-                          <ScoreRow label="Điểm thực hành" value={practiceScores.join(", ")} />
-                        )}
-                        {midtermScores.length > 0 && (
-                          <ScoreRow label="Điểm giữa kỳ" value={midtermScores.join(", ")} />
-                        )}
-                        {finalScores.length > 0 && (
-                          <ScoreRow label="Điểm cuối kỳ" value={finalScores.join(", ")} />
+                            <View style={styles.passRow}>
+                              <Text style={styles.scoreLabel}>Kết quả:</Text>
+                              {course.summary.passed ? (
+                                <View style={styles.passStatus}>
+                                  <CheckCircle color="#22C55E" size={20} />
+                                  <Text style={[styles.scoreValue, { color: "#22C55E" }]}>Đạt</Text>
+                                </View>
+                              ) : (
+                                <View style={styles.passStatus}>
+                                  <XCircle color="#EF4444" size={20} />
+                                  <Text style={[styles.scoreValue, { color: "#EF4444" }]}>
+                                    Không đạt
+                                  </Text>
+                                </View>
+                              )}
+                            </View>
+                          </View>
+                        ) : (
+                          <Text style={styles.noSummaryText}>Chưa có tổng kết</Text>
                         )}
                       </View>
+                    );
+                  })}
 
-                      {course.summary ? (
-                        <View style={styles.summaryBox}>
-                          <ScoreRow label="Thang điểm 4" value={course.summary.gpa4} />
-                          <ScoreRow label="Điểm chữ" value={course.summary.letter_grade} />
-                          <ScoreRow label="Xếp loại" value={getClassificationLabel(course.summary.classification)} />
-
-                          <View style={styles.passRow}>
-                            <Text style={styles.scoreLabel}>Kết quả:</Text>
-                            {course.summary.passed ? (
-                              <View style={styles.passStatus}>
-                                <CheckCircle color="#22C55E" size={20} />
-                                <Text style={[styles.scoreValue, { color: "#22C55E" }]}>Đạt</Text>
-                              </View>
-                            ) : (
-                              <View style={styles.passStatus}>
-                                <XCircle color="#EF4444" size={20} />
-                                <Text style={[styles.scoreValue, { color: "#EF4444" }]}>Không đạt</Text>
-                              </View>
-                            )}
-                          </View>
-                        </View>
-                      ) : (
-                        <Text style={styles.noSummaryText}>Chưa có tổng kết</Text>
-                      )}
+                  {/* --- Tổng kết học kỳ --- */}
+                  {summary && (
+                    <View style={styles.semesterSummary}>
+                      <Text style={styles.semesterSummaryTitle}>Tổng kết học kỳ</Text>
+                      <ScoreRow
+                        label="Điểm trung bình tích lũy hệ 10"
+                        value={formatScore(summary.cum_avg_score_10 ?? "-")}
+                      />
+                      <ScoreRow
+                        label="Điểm trung bình tích lũy hệ 4"
+                        value={formatScore(summary.cum_avg_score_4 ?? "-")}
+                      />
+                      <ScoreRow
+                        label="Xếp loại tích lũy"
+                        value={getClassificationLabel(summary.cumulative_classification)}
+                      />
+                      <ScoreRow label="Điểm trung bình hệ 10" value={formatScore(summary.avg_score_10 ?? "-")} />
+                      <ScoreRow label="Điểm trung bình hệ 4" value={formatScore(summary.avg_score_4 ?? "-")} />
+                      <ScoreRow
+                        label="Xếp loại học kỳ"
+                        value={getClassificationLabel(summary.semester_classification)}
+                      /> 
+                      <ScoreRow
+                        label="Tổng tín chỉ đạt"
+                        value={summary.total_credit_passed ?? 0}
+                      />
+                      <ScoreRow
+                        label="Tổng tín chỉ rớt"
+                        value={summary.total_credit_failed ?? 0}
+                      />
                     </View>
-                  );
-                })}
+                  )}
+                </View>
+              )}
             </View>
           );
         }}
@@ -213,5 +277,20 @@ const styles = StyleSheet.create({
     fontStyle: "italic",
     color: "#6B7280",
     marginTop: 8,
+  },
+  semesterSummary: {
+    marginTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: "#E5E7EB",
+    paddingTop: 10,
+    backgroundColor: "#F0F9FF",
+    borderRadius: 8,
+    paddingHorizontal: 10,
+  },
+  semesterSummaryTitle: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#0369A1",
+    marginBottom: 6,
   },
 });
