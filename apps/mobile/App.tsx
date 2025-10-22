@@ -4,6 +4,7 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { AuthProvider, useAuth } from "./src/context/AuthContext";
 import LoginScreen from "./src/screens/LoginScreen";
 import AppNavigator from "./src/screens/AppNavigator"; // 👈 thay cho HomeScreen
+import { UserProvider } from "./src/context/UserContext";
 
 const Stack = createNativeStackNavigator();
 
@@ -26,9 +27,11 @@ function RootNavigator() {
 export default function App() {
   return (
     <AuthProvider>
-      <NavigationContainer>
-        <RootNavigator />
-      </NavigationContainer>
+      <UserProvider>
+        <NavigationContainer>
+          <RootNavigator />
+        </NavigationContainer>
+      </UserProvider>
     </AuthProvider>
   );
 }

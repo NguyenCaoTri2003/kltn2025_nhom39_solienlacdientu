@@ -1,100 +1,78 @@
-// // import { NextRequest, NextResponse } from "next/server";
-// // import { getOfferingsByStudent } from "@packages/core/usecases/StudentOfferingCourseUseCase";
-// // import { authenticate } from "@packages/utils/auth";
-
-// // export async function GET(req: NextRequest) {
-// //   try {
-// //     const user = authenticate(req);
-
-// //     // Chỉ cho phép role = student
-// //     if (user.role !== "student" && user.role !== "admin") {
-// //       return NextResponse.json(
-// //         { returnCode: 1, message: "Forbidden", data: null },
-// //         { status: 403 }
-// //       );
-// //     }
-
-// //     const { searchParams } = new URL(req.url);
-// //     const semesterIdParam = searchParams.get("semester_id");
-// //     const semesterId = semesterIdParam ? Number(semesterIdParam) : undefined;
-
-// //     const courses = await getOfferingsByStudent(user.id, semesterId);
-
-// //     if (!courses || courses.length === 0) {
-// //       return NextResponse.json(
-// //         { returnCode: 1, message: "No registered courses found", data: null },
-// //         { status: 404 }
-// //       );
-// //     }
-
-// //     return NextResponse.json({
-// //       returnCode: 0,
-// //       message: "OK",
-// //       data: courses,
-// //     });
-// //   } catch (err: unknown) {
-// //     const message = err instanceof Error ? err.message : "Unknown error";
-// //       console.error("❌ API /api/offerings/student error:", err);
-
-// //     return NextResponse.json(
-// //       { returnCode: 1, message, data: null },
-// //       { status: 500 }
-// //     );
-// //   }
-// // }
-
 // import { NextRequest, NextResponse } from "next/server";
 // import { authenticate } from "@packages/utils/auth";
-// import { getOfferingsByStudent } from "@packages/core/usecases/GetStudentOfferingsUseCase";
+// import { StudentOfferingUseCase } from "@packages/core/usecases/StudentOfferingCourseUseCase";
 
 // export async function GET(req: NextRequest) {
 //   try {
 //     const user = authenticate(req);
-
 //     if (user.role !== "student" && user.role !== "admin") {
-//       return NextResponse.json({ message: "Forbidden" }, { status: 403 });
+//       return NextResponse.json({ returnCode: 1, message: "Forbidden" }, { status: 403 });
 //     }
 
 //     const { searchParams } = new URL(req.url);
-//     const semesterIdParam = searchParams.get("semester_id");
-//     const semesterId = semesterIdParam ? Number(semesterIdParam) : undefined;
+//     const semesterId = searchParams.get("semester_id")
+//       ? Number(searchParams.get("semester_id"))
+//       : undefined;
 
-//     const data = await getOfferingsByStudent(user.id, semesterId);
+//     const usecase = new StudentOfferingUseCase();
+//     const data = await usecase.getOfferingsLite(user.id, semesterId);
 
-//     return NextResponse.json({
-//       returnCode: 0,
-//       message: "OK",
-//       data,
-//     });
-//   } catch (err) {
-//     console.error("❌ /api/student/offerings:", err);
-//     const message = err instanceof Error ? err.message : "Unknown error";
-//     return NextResponse.json({ returnCode: 1, message, data: null }, { status: 500 });
+//     return NextResponse.json({ returnCode: 0, message: "OK", data });
+//   } catch (err: any) {
+//     console.error("/api/student/offerings error:", err);
+//     return NextResponse.json({ returnCode: 1, message: err.message }, { status: 500 });
 //   }
 // }
 
 import { NextRequest, NextResponse } from "next/server";
 import { authenticate } from "@packages/utils/auth";
 import { StudentOfferingUseCase } from "@packages/core/usecases/StudentOfferingCourseUseCase";
+import { ParentRepository } from "@packages/data/repositories/ParentRepository";
 
 export async function GET(req: NextRequest) {
   try {
     const user = authenticate(req);
-    if (user.role !== "student" && user.role !== "admin") {
-      return NextResponse.json({ returnCode: 1, message: "Forbidden" }, { status: 403 });
-    }
-
     const { searchParams } = new URL(req.url);
     const semesterId = searchParams.get("semester_id")
       ? Number(searchParams.get("semester_id"))
       : undefined;
+    const studentId = searchParams.get("student_id")
+      ? Number(searchParams.get("student_id"))
+      : undefined;
+
+    if (!["student", "parent", "admin"].includes(user.role)) {
+      return NextResponse.json({ returnCode: 1, message: "Forbidden" }, { status: 403 });
+    }
 
     const usecase = new StudentOfferingUseCase();
-    const data = await usecase.getOfferingsLite(user.id, semesterId);
+    const parentRepo = new ParentRepository();
 
+    let allowedStudentId = user.id; // mặc định là sinh viên tự xem
+
+    // 👨‍👩‍👧 Nếu là phụ huynh → xác thực student_id có phải con mình không
+    if (user.role === "parent") {
+      if (!studentId) {
+        return NextResponse.json({
+          returnCode: 1,
+          message: "Thiếu student_id",
+        });
+      }
+
+      const isChild = await parentRepo.isParentOf(user.id, studentId);
+      if (!isChild) {
+        return NextResponse.json({
+          returnCode: 1,
+          message: "Bạn không có quyền xem sinh viên này",
+        });
+      }
+
+      allowedStudentId = studentId;
+    }
+
+    const data = await usecase.getOfferingsLite(allowedStudentId, semesterId);
     return NextResponse.json({ returnCode: 0, message: "OK", data });
   } catch (err: any) {
-    console.error("❌ /api/student/offerings error:", err);
+    console.error("/api/student/offerings error:", err);
     return NextResponse.json({ returnCode: 1, message: err.message }, { status: 500 });
   }
 }

@@ -19,10 +19,12 @@ import {
   ClipboardList,
 } from "lucide-react-native";
 import { useNavigation } from "@react-navigation/native";
+import { useUser } from "../../context/UserContext";
 
 export default function StudentHomeScreen() {
   const { user } = useAuth();
   const navigation = useNavigation();
+  const {userData} = useUser();
 
   const hours = new Date().getHours();
   const greeting =
@@ -55,7 +57,7 @@ export default function StudentHomeScreen() {
           <Image
             source={{
               uri:
-                user?.avatar ||
+                user?.avatar_url ||
                 "https://cdn-icons-png.flaticon.com/512/3135/3135715.png",
             }}
             style={styles.avatar}
@@ -63,7 +65,7 @@ export default function StudentHomeScreen() {
           <View>
             <Text style={styles.profileName}>{user?.full_name || "User"}</Text>
             <Text style={styles.profileCode}>
-              Mã SV: {user?.student_code || "20210001"}
+              Mã SV: {userData?.student?.student_code || "Chưa có mã sinh viên"}
             </Text>
           </View>
         </View>
@@ -72,7 +74,12 @@ export default function StudentHomeScreen() {
         <Text style={styles.sectionTitle}>Tính năng nổi bật</Text>
 
         <View style={styles.featureGrid}>
-          <FeatureButton icon={<Calendar color="#2563EB" size={28} />} label="Lịch học" />
+          <FeatureButton 
+            icon={<Calendar color="#2563EB" 
+            size={28} />} 
+            label="Lịch học" 
+            onPress={() => navigation.navigate("Schedule" as never)}
+          />
           <FeatureButton
             icon={<BarChart color="#2563EB" size={28} />}
             label="Kết quả học tập"
