@@ -37,6 +37,26 @@ function StudentStack() {
   );
 }
 
+function ParentStack() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="ParentHome" component={ParentHomeScreen} />
+      <Stack.Screen name="CourseOffering" component={CourseOfferingScreen} />
+      <Stack.Screen
+        name="CourseOfferingDetail"
+        component={CourseOfferingDetailScreen}
+        options={{ title: "Chi tiết học phần" }}
+      />
+      <Stack.Screen
+
+        name="Grades"
+        component={GradesScreen}
+        options={{ title: "Kết quả học tập" }}
+      />
+    </Stack.Navigator>
+  );
+}
+
 export default function AppNavigator() {
   const { user } = useAuth();
   const isStudent = user?.role === "student";
@@ -76,7 +96,7 @@ export default function AppNavigator() {
     >
       <Tab.Screen
         name="Home"
-        component={isStudent ? StudentStack : ParentHomeScreen}
+        component={isStudent ? StudentStack : ParentStack}
         options={{ title: "Trang chủ" }}
       />
       <Tab.Screen name="Schedule" component={ScheduleScreen} options={{ title: "Lịch học" }} />

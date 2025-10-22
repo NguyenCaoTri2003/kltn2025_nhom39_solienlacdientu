@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { fetchUserById, User } from "../services/userService";
+import { fetchUserById } from "../services/userService";
 import { useAuth } from "./AuthContext";
+import { User } from "@packages/core/entities/UserRole";
 
 interface UserContextType {
   userData: User | null;         
