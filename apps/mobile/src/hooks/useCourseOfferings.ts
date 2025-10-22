@@ -5,7 +5,7 @@ import {
   fetchOfferingDetail,
 } from "../services/offeringService";
 
-export function useCourseOfferings() {
+export function useCourseOfferings(studentYear?: string) {
   const [loading, setLoading] = useState(true);
   const [semesters, setSemesters] = useState<any[]>([]);
   const [semester, setSemester] = useState<any>(null);
@@ -42,7 +42,15 @@ export function useCourseOfferings() {
   async function initialize() {
     try {
       setLoading(true);
-      const semesters = await fetchSemesters();
+
+      // 🔹 Nếu có chuỗi dạng "2021 - 2022", tách lấy phần năm đầu
+      let fromYear: number | undefined = undefined;
+      if (studentYear) {
+        const match = studentYear.match(/(\d{4})/); // Lấy số đầu tiên trong chuỗi
+        if (match) fromYear = Number(match[1]);
+      }
+
+      const semesters = await fetchSemesters(fromYear);
       setSemesters(semesters);
 
       const current = getCurrentSemester(semesters);
@@ -61,7 +69,7 @@ export function useCourseOfferings() {
 
   useEffect(() => {
     initialize();
-  }, []);
+  }, [studentYear]);
 
   return {
     semesters,

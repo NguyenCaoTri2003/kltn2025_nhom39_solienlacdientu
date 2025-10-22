@@ -1,6 +1,4 @@
-// import { API_URL } from "../constants/config";
-
-const API_URL = "http://192.168.237.197:3000";
+import { API_URL } from "../constants/config";
 
 export async function login(identifier: string, password: string, role: "student" | "parent") {
   console.log("API_URL:", API_URL);

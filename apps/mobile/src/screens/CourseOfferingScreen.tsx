@@ -17,6 +17,8 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../types/navigation";
 import LoadingScreen from "../components/LoadingScreen";
 import HeaderBar from "../components/HeaderBar";
+import { useAuth } from "../context/AuthContext";
+import { useUser } from "../context/UserContext";
 
 const DAY_NAMES = [
     "Chủ nhật",
@@ -35,6 +37,8 @@ type CourseOfferingNav = NativeStackNavigationProp<
 
 export default function CourseOfferingScreen() {
     const navigation = useNavigation<CourseOfferingNav>();
+    const { userData } = useUser();
+    const studentYear = userData?.student?.academic_year;
     const {
         semesters,
         semester,
@@ -43,7 +47,7 @@ export default function CourseOfferingScreen() {
         loading,
         error,
         loadOfferingsBySemester,
-    } = useCourseOfferings();
+    } = useCourseOfferings(studentYear);
 
     const [modalVisible, setModalVisible] = useState(false);
 

@@ -72,7 +72,12 @@ export default function StudentHomeScreen() {
         <Text style={styles.sectionTitle}>Tính năng nổi bật</Text>
 
         <View style={styles.featureGrid}>
-          <FeatureButton icon={<Calendar color="#2563EB" size={28} />} label="Lịch học" />
+          <FeatureButton 
+            icon={<Calendar color="#2563EB" 
+            size={28} />} 
+            label="Lịch học" 
+            onPress={() => navigation.navigate("Schedule" as never)}
+          />
           <FeatureButton
             icon={<BarChart color="#2563EB" size={28} />}
             label="Kết quả học tập"
