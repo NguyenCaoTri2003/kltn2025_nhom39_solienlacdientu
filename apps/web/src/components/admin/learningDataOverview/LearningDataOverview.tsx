@@ -14,6 +14,7 @@ import { CreateWarningModal } from "@/components/admin/modals_UI/CreateWarningMo
 import { translateAcademicStatus } from "@packages/utils/translations";
 
 type OverviewItem = {
+  user_id?: number | string;
   student_id: number | string;
   student_code: string;
   full_name: string;
@@ -481,7 +482,7 @@ export default function LearningDataOverview() {
                     <td className="px-4 py-3 border-b">{r.proposed_action || "-"}</td>
                     <td className="px-4 py-3 border-b">
                       <RowActionsLearningDataOverview
-                        studentId={String(r.student_id)}
+                        studentId={String(r.user_id ?? r.student_id)}
                         studentName={r.full_name}
                         isBusy={false}
                         proposedLabel={r.proposed_action}
@@ -535,8 +536,10 @@ export default function LearningDataOverview() {
         studentId={selectedForCreate ? Number(selectedForCreate) : null}
         semesterId={selectedSemesterIdForCreate}
         apiBase={API_BASE}
-        defaultLevel={(rows.find(r => String(r.student_id) === String(selectedForCreate))?.proposed_warning_level ?? 1) === 3 ? "major"
-          : (rows.find(r => String(r.student_id) === String(selectedForCreate))?.proposed_warning_level ?? 1) === 2 ? "moderate" : "minor"}
+        defaultLevel={(() => {
+          const lvl = rows.find(r => String(r.user_id ?? r.student_id) === String(selectedForCreate))?.proposed_warning_level ?? 1;
+          return lvl === 3 ? "FINAL" : lvl === 2 ? "SECOND" : "FIRST";
+        })()}
       />
 
     </div>

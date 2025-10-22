@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { authenticate } from "@packages/utils/auth";
 import { AcademicWarningUseCase } from "@packages/core/usecases/AcademicWarningUseCase";
+import { notificationsUseCase } from "@packages/core/usecases/NotificationsUseCase";
 
 const uc = new AcademicWarningUseCase();
 
@@ -29,7 +30,16 @@ export async function POST(req: NextRequest) {
       return res;
     }
 
-  interface CreateWarningBody { studentId?: number | string; semesterId?: number | string; level?: string; reason?: string }
+  interface CreateWarningBody {
+    studentId?: number | string;
+    semesterId?: number | string;
+    level?: "FIRST" | "SECOND" | "FINAL" | string;
+    reason?: string;
+    cumulativeGpa?: number | string | null;
+    debtCredits?: number | string | null;
+    progressStatus?: string | null;
+    note?: string | null;
+  }
   let body: CreateWarningBody | null = null;
     try {
       body = await req.json();
@@ -44,7 +54,7 @@ export async function POST(req: NextRequest) {
       return res;
     }
 
-    const { studentId, semesterId, level, reason } = body || {};
+  const { studentId, semesterId, level, reason, cumulativeGpa, debtCredits, progressStatus, note } = body || {};
 
     if (studentId == null || semesterId == null || !level || !reason) {
       const res = NextResponse.json(
@@ -57,11 +67,11 @@ export async function POST(req: NextRequest) {
       return res;
     }
 
-    const levelStr = String(level).toLowerCase();
-    const allowedLevels = new Set(["minor", "moderate", "major"]);
+    const levelStr = String(level).toUpperCase();
+    const allowedLevels = new Set(["FIRST", "SECOND", "FINAL"]);
     if (!allowedLevels.has(levelStr)) {
       const res = NextResponse.json(
-        { returnCode: -1, message: "Invalid level. Use one of: minor|moderate|major", data: null },
+        { returnCode: -1, message: "Invalid level. Use one of: FIRST|SECOND|FINAL", data: null },
         { status: 400 }
       );
       res.headers.set("Access-Control-Allow-Origin", "*");
@@ -75,7 +85,24 @@ export async function POST(req: NextRequest) {
       semesterId: Number(semesterId),
       level: levelStr,
       reason,
+      createdBy: user.id,
+      cumulativeGpa: cumulativeGpa != null ? Number(cumulativeGpa) : null,
+      debtCredits: debtCredits != null ? Number(debtCredits) : null,
+      progressStatus: progressStatus ?? null,
+      note: note ?? null,
     });
+
+    // tạo notification cho sinh viên
+    try {
+      const content = `Cảnh cáo học vụ (${levelStr}): ${reason}`;
+      await notificationsUseCase.create({
+        user_id: Number(studentId),
+        content,
+        type: "university",
+      });
+    } catch (notifyErr) {
+      console.warn("Failed to create notification for academic warning:", notifyErr); 
+    }
 
     const res = NextResponse.json({
       returnCode: 0,

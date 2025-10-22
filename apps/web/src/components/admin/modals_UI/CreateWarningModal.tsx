@@ -15,7 +15,7 @@ interface CreateWarningModalProps {
   semesterId: number | null;
   apiBase?: string;
   onCreated?: () => void;
-  defaultLevel?: "minor" | "moderate" | "major";
+  defaultLevel?: "FIRST" | "SECOND" | "FINAL";
   studentName?: string;
 }
 
@@ -30,7 +30,7 @@ export function CreateWarningModal({
 }: CreateWarningModalProps) {
   const API_BASE = apiBase || process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
 
-  const [level, setLevel] = useState<string>(defaultLevel || "minor");
+  const [level, setLevel] = useState<string>(defaultLevel || "FIRST");
   const [reason, setReason] = useState<string>("");
   const [loading, setLoading] = useState(false);
 
@@ -170,9 +170,9 @@ export function CreateWarningModal({
                 <SelectValue placeholder="Chọn mức độ" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="minor">Nhẹ</SelectItem>
-                <SelectItem value="moderate">Trung bình</SelectItem>
-                <SelectItem value="major">Nặng</SelectItem>
+                <SelectItem value="FIRST">Cảnh cáo lần 1</SelectItem>
+                <SelectItem value="SECOND">Cảnh cáo lần 2</SelectItem>
+                <SelectItem value="FINAL">Cảnh cáo lần 3</SelectItem>
               </SelectContent>
             </Select>
           </div>

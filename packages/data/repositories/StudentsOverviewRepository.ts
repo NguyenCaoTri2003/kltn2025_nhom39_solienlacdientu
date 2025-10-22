@@ -1,6 +1,7 @@
 import { supabase } from "@packages/data/supabaseClient";
 
 export type StudentsOverviewRow = {
+  user_id?: number;
   student_id: number;
   student_code: string;
   full_name: string;
@@ -80,6 +81,7 @@ export class StudentsOverviewRepository {
     // - If GPA filter not needed: fetch paginated data directly from DB with count
     // - If GPA filter needed: fetch all candidates matching search (server-side search), then filter & paginate in memory
     let studentsToProcess: Array<{
+      user_id?: number;
       student_id: number;
       student_code: string;
       full_name: string;
@@ -235,6 +237,7 @@ export class StudentsOverviewRepository {
           : `Đề xuất Cảnh cáo 1: ${proposedReason}`;
 
       return {
+        user_id: student.user_id,
         student_id: sid,
         student_code: student.student_code,
         full_name: student.full_name,
@@ -271,6 +274,7 @@ export class StudentsOverviewRepository {
     academicStatus?: string;
   }): Promise<{
     students: Array<{
+      user_id?: number;
       student_id: number;
       student_code: string;
       full_name: string;
@@ -337,6 +341,7 @@ export class StudentsOverviewRepository {
     if (error) throw error;
 
     const students = (data ?? []).map((s: any) => ({
+      user_id: s.users?.id != null ? Number(s.users.id) : undefined,
       student_id: s.id,
       student_code: s.student_code || "",
       full_name: s.users?.full_name || "",
@@ -478,19 +483,44 @@ export class StudentsOverviewRepository {
     semesterIdMap: Map<number, number | null>
   ): Promise<Map<number, WarningData>> {
     if (studentIds.length === 0) return new Map();
+    // Map students.id -> users.id
+    const { data: stuUsers, error: mapErr } = await supabase
+      .from("students")
+      .select("id, users:id ( id )")
+      .in("id", studentIds);
+    if (mapErr) throw mapErr;
+    const studentToUser = new Map<number, number>();
+    const userToStudent = new Map<number, number>();
+    (stuUsers ?? []).forEach((row: any) => {
+      const sid = Number(row.id);
+      const uid = Number(row.users?.id);
+      if (Number.isFinite(sid) && Number.isFinite(uid)) {
+        studentToUser.set(sid, uid);
+        userToStudent.set(uid, sid);
+      }
+    });
+    const userIds = Array.from(userToStudent.keys());
+    if (userIds.length === 0) return new Map(studentIds.map((id) => [id, { total: 0, latestDate: null }]));
+
     const { data, error } = await supabase
       .from("academic_warnings")
       .select("student_id, semester_id, warned_at")
-      .in("student_id", studentIds)
+      .in("student_id", userIds)
       .order("warned_at", { ascending: false });
     if (error) throw error;
+    const byStudent = new Map<number, Array<{ semester_id: number | null; warned_at: string }>>();
+    (data ?? []).forEach((w: any) => {
+      const uid = Number(w.student_id);
+      const sid = userToStudent.get(uid);
+      if (!sid) return;
+      if (!byStudent.has(sid)) byStudent.set(sid, []);
+      byStudent.get(sid)!.push({ semester_id: w.semester_id ?? null, warned_at: w.warned_at });
+    });
     const result = new Map<number, WarningData>();
     studentIds.forEach((sid) => {
       const targetSemId = semesterIdMap.get(sid);
-      const studentWarnings = (data ?? []).filter((w: any) => {
-        if (w.student_id !== sid) return false;
-        return targetSemId != null ? w.semester_id === targetSemId : true;
-      });
+      const warnings = byStudent.get(sid) ?? [];
+      const studentWarnings = warnings.filter((w) => (targetSemId != null ? w.semester_id === targetSemId : true));
       result.set(sid, {
         total: studentWarnings.length,
         latestDate: studentWarnings[0]?.warned_at ?? null,

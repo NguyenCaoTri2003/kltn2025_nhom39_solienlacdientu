@@ -4,7 +4,7 @@ import { AcademicWarningUseCase } from "@packages/core/usecases/AcademicWarningU
 
 const uc = new AcademicWarningUseCase();
 
-// GET /api/students/[id]/warnings?semesterId=optional
+
 export async function GET(
   req: NextRequest,
   ctx: { params: Promise<{ id: string }> }
