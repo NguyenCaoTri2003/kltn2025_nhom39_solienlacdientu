@@ -5,6 +5,7 @@ import {
   FlatList,
   TouchableOpacity,
   StyleSheet,
+  ScrollView,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -13,10 +14,22 @@ import { useAuth } from "../context/AuthContext";
 import LoadingScreen from "../components/LoadingScreen";
 import HeaderBar from "../components/HeaderBar";
 import dayjs from "dayjs";
+import { useUser } from "../context/UserContext";
 
 export default function ScheduleScreen() {
-  const { user } = useAuth();
-  const studentId = user?.role === "student" ? user.id : 0;
+  const { userData } = useUser();
+  const children = userData?.children || [];
+  const isParent = userData?.role === "parent";
+
+  const initialStudentId: number | null =
+    userData?.role === "student"
+      ? userData?.student?.id
+      : children.length > 0
+        ? children[0].id
+        : null;
+
+  const [selectedStudentId, setSelectedStudentId] = useState<number | null>(initialStudentId);
+
   const {
     schedules,
     loading,
@@ -25,12 +38,10 @@ export default function ScheduleScreen() {
     nextWeek,
     prevWeek,
     weekDays,
-  } = useStudentSchedule(studentId);
+  } = useStudentSchedule(selectedStudentId);
 
-  // lưu ngày đang chọn
   const [selectedDate, setSelectedDate] = useState(dayjs().format("YYYY-MM-DD"));
 
-  // lọc lịch theo ngày đang chọn
   const filteredSchedules = schedules.filter(
     (s) => dayjs(s.schedule_date).format("YYYY-MM-DD") === selectedDate
   );
@@ -40,7 +51,38 @@ export default function ScheduleScreen() {
       <HeaderBar title="Lịch học / Lịch thi" />
 
       <View style={styles.container}>
-        {/* Thanh chọn tuần */}
+
+        <View>
+          {isParent && children.length > 0 && (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.childTabs}
+              contentContainerStyle={{ paddingHorizontal: 10, height: 30, alignItems: "center", flex: 1, justifyContent: "center", gap: 8 }}
+            >
+              {children.map((child: any) => (
+                <TouchableOpacity
+                  key={child.id}
+                  style={[
+                    styles.childTab,
+                    selectedStudentId === child.id && styles.childTabActive,
+                  ]}
+                  onPress={() => setSelectedStudentId(child.id)}
+                >
+                  <Text
+                    style={[
+                      styles.childTabText,
+                      selectedStudentId === child.id && styles.childTabTextActive,
+                    ]}
+                  >
+                    {child?.users?.full_name}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          )}
+        </View>
+
         <View style={styles.weekHeader}>
           <TouchableOpacity onPress={prevWeek} style={styles.navBtn}>
             <Ionicons name="chevron-back" size={24} color="#1E3A8A" />
@@ -51,7 +93,6 @@ export default function ScheduleScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* 7 ô ngày trong tuần */}
         <View style={styles.daySelector}>
           {weekDays.map((day) => {
             const dateStr = day.format("YYYY-MM-DD");
@@ -71,7 +112,7 @@ export default function ScheduleScreen() {
                     isSelected && styles.dayLabelSelected,
                   ]}
                 >
-                  {day.format("dd").toUpperCase()} {/* Thứ (Mo, Tu...) */}
+                  {day.format("dd").toUpperCase()}
                 </Text>
                 <Text
                   style={[
@@ -102,7 +143,7 @@ export default function ScheduleScreen() {
             data={filteredSchedules}
             keyExtractor={(item) => item.id.toString()}
             showsVerticalScrollIndicator={false}
-            contentContainerStyle={{ paddingBottom: 40 }}
+            contentContainerStyle={{ paddingBottom: 40, paddingHorizontal: 10 }}
             renderItem={({ item }) => {
               const isPractice = item.type === "practice";
 
@@ -124,9 +165,7 @@ export default function ScheduleScreen() {
 
                   <View style={styles.row}>
                     <Text style={styles.label}>Phòng:</Text>
-                    <Text style={styles.value}>
-                      {item.classroom}
-                    </Text>
+                    <Text style={styles.value}>{item.classroom}</Text>
                   </View>
 
                   {item.lecturer && (
@@ -148,16 +187,48 @@ export default function ScheduleScreen() {
               );
             }}
           />
-
         )}
       </View>
     </SafeAreaView>
   );
 }
 
+// --- Styles tab con ---
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: "#F9FAFB" },
-  container: { flex: 1, padding: 16, backgroundColor: "#F9FAFB" },
+  container: { flex: 1, backgroundColor: "#F9FAFB" },
+
+  childTabs: {
+    flexDirection: "row",
+    backgroundColor: "#EEF2FF",
+    paddingVertical: 8,
+    gap: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: "#E5E7EB",
+    marginBottom: 8,
+  },
+
+  childTab: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 20,
+    backgroundColor: "#E5E7EB",
+  },
+
+  childTabActive: {
+    backgroundColor: "#1E3A8A",
+  },
+
+  childTabText: {
+    color: "#374151",
+    fontSize: 14,
+    fontWeight: "500",
+  },
+
+  childTabTextActive: {
+    color: "#fff",
+  },
+
   weekHeader: {
     flexDirection: "row",
     alignItems: "center",
@@ -171,6 +242,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     marginBottom: 20,
+    paddingHorizontal: 3
   },
   dayBox: {
     flex: 1,
@@ -197,7 +269,6 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
-
   theoryCard: {
     backgroundColor: "#E0F2FE",
     borderLeftWidth: 4,
@@ -208,39 +279,10 @@ const styles = StyleSheet.create({
     borderLeftWidth: 4,
     borderLeftColor: "#9333EA",
   },
-
-  title: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#111827",
-    marginBottom: 6,
-  },
-  subText: {
-    color: "#374151",
-    fontSize: 14,
-    marginTop: 2,
-  },
-  note: {
-    color: "#6B7280",
-    fontStyle: "italic",
-    marginTop: 6,
-  },
-  row: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: 2,
-  },
-
-  label: {
-    color: "#111827",
-    width: 120, 
-  },
-
-  value: {
-    color: "#374151",
-    fontSize: 14,
-    flexShrink: 1,
-    fontWeight: "600"
-  },
+  title: { fontSize: 16, fontWeight: "700", color: "#111827", marginBottom: 6 },
+  note: { color: "#6B7280", fontStyle: "italic", marginTop: 6 },
+  row: { flexDirection: "row", alignItems: "center", marginTop: 2 },
+  label: { color: "#111827", width: 120 },
+  value: { color: "#374151", fontSize: 14, flexShrink: 1, fontWeight: "600" },
   center: { flex: 1, justifyContent: "center", alignItems: "center" },
 });
