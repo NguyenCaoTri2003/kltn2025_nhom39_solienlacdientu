@@ -19,7 +19,7 @@ export async function GET(
       );
     }
 
-    const user = authenticate(req);
+    const user = await authenticate(req);
     const { id } = await ctx.params;
     const studentId = Number(id);
 

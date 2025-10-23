@@ -8,7 +8,7 @@ const usecase = new ScheduleUseCase(repo);
 
 export async function GET(req: NextRequest) {
   try {
-    const user = authenticate(req);
+    const user = await authenticate(req);
     const { searchParams } = new URL(req.url);
 
     const lecturerId = Number(searchParams.get("lecturer_id"));

@@ -8,7 +8,7 @@ const repo = new UserAuditLogRepository();
 // GET /api/user-audit-logs?user_id=123&page=1&limit=10
 export async function GET(req: NextRequest) {
   try {
-    const auth = authenticate(req);
+    const auth = await authenticate(req);
     if (!auth) {
       return NextResponse.json(
         { returnCode: -1, message: "Invalid token", data: null },
@@ -55,7 +55,7 @@ export async function GET(req: NextRequest) {
 // Body: { user_id: number; changed_by?: number|null; change_type: ChangeType; changes: Record<string,any> }
 export async function POST(req: NextRequest) {
   try {
-    const auth = authenticate(req);
+    const auth = await authenticate(req);
     if (!auth) {
       return NextResponse.json(
         { returnCode: -1, message: "Invalid token", data: null },

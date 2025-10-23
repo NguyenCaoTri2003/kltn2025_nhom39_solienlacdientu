@@ -21,7 +21,7 @@
 //       );
 //     }
 
-//     const user = authenticate(req);
+//     const user = await authenticate(req);
 
 //     // ✅ Chỉ admin hoặc chính sinh viên đó mới xem được
 //     if (user.role !== "admin" && user.id !== student_id) {
@@ -74,7 +74,7 @@ export async function GET(req: NextRequest) {
       ? Number(searchParams.get("semester_id"))
       : undefined;
 
-    const user = authenticate(req);
+    const user = await authenticate(req);
 
     if (!["student", "parent", "admin"].includes(user.role)) {
       return NextResponse.json(

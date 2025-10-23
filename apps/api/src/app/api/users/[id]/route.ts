@@ -8,7 +8,7 @@ const repo = new UserRepository();
 export async function GET(req: NextRequest, { params }: { params: any }) {
   try {
     const { id } = await params; 
-    const userPayload = authenticate(req);
+    const userPayload = await authenticate(req);
 
     if (userPayload.id !== Number(id) && userPayload.role !== "admin") {
       return new Response(JSON.stringify({ error: "Forbidden" }), { status: 403 });
@@ -24,7 +24,7 @@ export async function GET(req: NextRequest, { params }: { params: any }) {
 // export async function PATCH(req: NextRequest, { params }: { params: any }) {
 //   try {
 //     const { id } = await params; 
-//     const payload = authenticate(req); 
+//     const payload = await authenticate(req); 
 
 //     if (payload.id !== Number(id) && payload.role !== "admin") {
 //       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -43,7 +43,7 @@ export async function GET(req: NextRequest, { params }: { params: any }) {
 export async function PATCH(req: NextRequest, { params }: { params: any }) {
   try {
     const { id } = params;
-    const payload = authenticate(req);
+    const payload = await authenticate(req);
 
     // THÊM DÒNG LOG NÀY
     console.log("PATCH /api/users:", {

@@ -10,7 +10,7 @@ export async function GET(req: NextRequest) {
   try {
     console.log("==> [API] /api/attendance called");
 
-    const user = authenticate(req); // nếu bạn chưa cần auth có thể comment dòng này
+    const user = await authenticate(req); // nếu bạn chưa cần auth có thể comment dòng này
     const { searchParams } = new URL(req.url);
 
     const studentId = searchParams.get("student_id")
@@ -78,7 +78,7 @@ export async function GET(req: NextRequest) {
 
 // export async function POST(req: NextRequest) {
 //   try {
-//     const user = authenticate(req);
+//     const user = await authenticate(req);
 //     if (user.role !== "lecturer") {
 //       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 //     }
@@ -129,7 +129,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const user = authenticate(req);
+    const user = await authenticate(req);
     if (user.role !== "lecturer") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
@@ -185,7 +185,7 @@ export async function POST(req: NextRequest) {
 
 export async function PATCH(req: NextRequest) {
   try {
-    const user = authenticate(req);
+    const user = await authenticate(req);
     if (user.role !== "lecturer") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
@@ -220,7 +220,7 @@ export async function PATCH(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   try {
-    const user = authenticate(req);
+    const user = await authenticate(req);
     if (user.role !== "lecturer") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }

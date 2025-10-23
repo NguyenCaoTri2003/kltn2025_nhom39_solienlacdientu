@@ -6,7 +6,7 @@ const uc = new AcademicWarningUseCase();
 
 export async function POST(req: NextRequest) {
   try {
-    const user = authenticate(req);
+    const user = await authenticate(req);
     if (!user || user.role !== "admin")
       return NextResponse.json({ returnCode: -1, message: "Forbidden", data: null }, { status: 403 });
 

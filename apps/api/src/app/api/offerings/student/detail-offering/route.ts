@@ -5,7 +5,7 @@ import { ParentRepository } from "@packages/data/repositories/ParentRepository";
 
 export async function GET(req: NextRequest) {
   try {
-    const user = authenticate(req);
+    const user = await authenticate(req);
     const { searchParams } = new URL(req.url);
 
     const studentId = searchParams.get("student_id")

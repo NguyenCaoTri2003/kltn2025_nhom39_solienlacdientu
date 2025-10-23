@@ -10,7 +10,7 @@ export async function GET(
 ) {
   try {
     // Xác thực người dùng
-    const user = authenticate(req);
+    const user = await authenticate(req);
     
     // Kiểm tra quyền truy cập - chỉ cho phép lecturer, admin hoặc chính giảng viên đó
     if (user.role !== "lecturer" && user.role !== "admin") {

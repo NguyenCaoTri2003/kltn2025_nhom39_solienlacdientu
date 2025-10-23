@@ -17,7 +17,7 @@
 //       return NextResponse.json({ error: "Missing student_id" }, { status: 400 });
 //     }
 
-//     const user = authenticate(req);
+//     const user = await authenticate(req);
 
 //     if (offering_id) {
 //       const grades = await usecase.getGradesByOffering(student_id, offering_id, user);
@@ -57,7 +57,7 @@ export async function GET(req: NextRequest) {
       ? Number(searchParams.get("semester_id"))
       : undefined;
 
-    const user = authenticate(req);
+    const user = await authenticate(req);
 
     if (!["student", "parent", "admin"].includes(user.role)) {
       return NextResponse.json(

@@ -5,7 +5,7 @@ import { authenticate } from "@packages/utils/auth";
 // GET /api/classes
 export async function GET(req: NextRequest) {
   try {
-    const user = authenticate(req);
+    const user = await authenticate(req);
     const data = await getAllClasses(user);
 
     if (!data || data.length === 0) {

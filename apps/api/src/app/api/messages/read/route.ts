@@ -5,7 +5,7 @@ import { authenticate } from "@packages/utils/auth";
 const usecase = new MessageUseCase();
 
 export async function POST(req: Request) {
-  const user = authenticate(req);
+  const user = await authenticate(req);
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await req.json();

@@ -21,7 +21,7 @@ export async function GET(
       );
     }
 
-    const { id: userId, role } = authenticate(req);
+    const { id: userId, role } = await authenticate(req);
     const { id: studentId } = await ctx.params;
 
     if (role !== "admin" && role !== "lecturer" && String(userId) !== String(studentId)) {

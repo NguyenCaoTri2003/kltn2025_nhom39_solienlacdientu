@@ -4,7 +4,7 @@ import { supabase } from "@packages/data/supabaseClient";
 
 export async function GET(req: NextRequest) {
   try {
-    const user = authenticate(req);
+    const user = await authenticate(req);
 
     const { data: conversations, error: convError } = await supabase
       .from("conversations")

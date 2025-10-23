@@ -8,7 +8,7 @@
 
 // export async function GET(req: NextRequest) {
 //   try {
-//     const user = authenticate(req);
+//     const user = await authenticate(req);
 //     const { searchParams } = new URL(req.url);
 
 //     const studentId = Number(searchParams.get("student_id"));
@@ -58,7 +58,7 @@ const parentRepo = new ParentRepository();
 
 export async function GET(req: NextRequest) {
   try {
-    const user = authenticate(req);
+    const user = await authenticate(req);
     const { searchParams } = new URL(req.url);
 
     const student_id = searchParams.get("student_id")

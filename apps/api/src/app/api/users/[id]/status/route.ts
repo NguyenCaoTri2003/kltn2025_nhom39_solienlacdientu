@@ -22,7 +22,7 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
   try {
     const resolvedParams = 'then' in context.params ? await context.params : context.params;
     const { id } = resolvedParams;
-    const userPayload = authenticate(req);
+    const userPayload = await authenticate(req);
     if (!userPayload) {
       return NextResponse.json(
         { returnCode: -1, message: "Invalid or missing token", data: null },
