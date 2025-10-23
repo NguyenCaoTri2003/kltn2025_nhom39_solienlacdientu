@@ -10,7 +10,7 @@ const studentUseCase = new StudentUseCase(studentRepo, gradeRepo)
 
 export async function GET(req: NextRequest) {
   try {
-    const user = authenticate(req)
+    const user = await authenticate(req)
     if (user.role !== "lecturer" && user.role !== "admin") {
       return NextResponse.json(
         { returnCode: 1, message: "Forbidden", data: null },

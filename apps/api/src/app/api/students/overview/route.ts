@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
 			return NextResponse.json({ returnCode: -1, message: "No token", data: null }, { status: 401 });
 		}
 
-		const user = authenticate(req);
+		const user = await authenticate(req);
 		if (user.role !== "admin" && user.role !== "lecturer") {
 			return NextResponse.json({ returnCode: -1, message: "Forbidden", data: null }, { status: 403 });
 		}

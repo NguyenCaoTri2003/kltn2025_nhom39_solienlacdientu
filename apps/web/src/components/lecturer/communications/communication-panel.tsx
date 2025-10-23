@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Loader2, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -9,6 +9,7 @@ import ConversationList from "./conversation-list";
 import ChatWindow from "./chat-window";
 import { supabase } from "@packages/data/supabaseClient";
 import EmptyState from "@/components/empty-state";
+import { is } from "date-fns/locale";
 
 export interface User {
   avatar_url: string;
@@ -18,11 +19,14 @@ export interface User {
 }
 
 export interface Message {
+  conversation_id: number;
   type: string;
   id: number;
   sender_id: number;
   content: string;
   created_at: string;
+  status: string;
+  is_read: boolean;
 }
 
 export interface Conversation {
@@ -31,6 +35,7 @@ export interface Conversation {
   user2: User;
   lastMessage?: Message | null;
   messages?: Message[];
+  unreadCount?: number;
 }
 
 export default function CommunicationPanel() {
@@ -49,7 +54,6 @@ export default function CommunicationPanel() {
     }
   };
 
-  // Fetch conversation list
   const fetchConversations = async () => {
     try {
       setLoading(true);
@@ -67,6 +71,89 @@ export default function CommunicationPanel() {
       setLoading(false);
     }
   };
+
+  const selectedConversationRef = useRef<Conversation | null>(null);
+    useEffect(() => {
+      selectedConversationRef.current = selectedConversation;
+    }, [selectedConversation]);
+
+  useEffect(() => {
+    if (!token) return;
+
+    const myId = getMyUserId();
+    if (!myId) return;
+
+    const channel = supabase
+      .channel("messages-global")
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "messages",
+        },
+        (payload) => {
+          const newMsg = payload.new as Message;
+
+          if (newMsg.sender_id === myId) return;
+
+          setConversations((prev) => {
+            const existing = prev.find((c) => c.id === newMsg.conversation_id);
+
+            //   const isActive = selectedConversation?.id === newMsg.conversation_id;
+
+            //   return prev.map((c) =>
+            //     c.id === newMsg.conversation_id
+            //       ? {
+            //         ...c,
+            //         lastMessage: newMsg,
+            //         unreadCount: isActive
+            //           ? 0
+            //           : (c.unreadCount || 0) + 1,
+            //         messages: c.messages || [],
+            //       }
+            //       : c
+            //   );
+            // } 
+            if (existing) {
+              const isActive = selectedConversation?.id === newMsg.conversation_id;
+
+              return prev.map((c) => {
+                if (c.id !== newMsg.conversation_id) return c;
+
+                return {
+                  ...c,
+                  lastMessage: newMsg,
+                  unreadCount: isActive ? 0 : (c.unreadCount || 0) + 1,
+                  messages: isActive
+                    ? [...(c.messages || []), newMsg]
+                    : c.messages || [],
+                };
+              });
+            }
+            else {
+              fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/conversations/${newMsg.conversation_id}`, {
+                headers: { Authorization: `Bearer ${token}` },
+              })
+                .then((res) => res.json())
+                .then((conv) => {
+                  setConversations((p) => [
+                    { ...conv, unreadCount: 1 },
+                    ...p,
+                  ]);
+                });
+              return prev;
+            }
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [token]);
+  
 
   useEffect(() => {
     if (!token) return;
@@ -96,9 +183,33 @@ export default function CommunicationPanel() {
           <ConversationList
             conversations={conversations}
             selectedConversation={selectedConversation}
-            onSelectConversation={setSelectedConversation}
+            onSelectConversation={async (conv) => {
+              setSelectedConversation(conv);
+
+              if (conv.unreadCount && conv.unreadCount > 0) {
+                try {
+                  await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/messages/read`, {
+                    method: "POST",
+                    headers: {
+                      "Content-Type": "application/json",
+                      Authorization: `Bearer ${token}`,
+                    },
+                    body: JSON.stringify({ conversationId: conv.id }),
+                  });
+
+                  setConversations((prev) =>
+                    prev.map((c) =>
+                      c.id === conv.id ? { ...c, unreadCount: 0 } : c
+                    )
+                  );
+                } catch (err) {
+                  console.error("Không thể đánh dấu đã đọc:", err);
+                }
+              }
+            }}
             myId={getMyUserId()}
           />
+
         )}
       </div>
 

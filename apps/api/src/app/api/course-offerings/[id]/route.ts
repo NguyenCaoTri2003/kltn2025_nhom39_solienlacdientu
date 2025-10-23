@@ -15,7 +15,7 @@ export async function GET(
       );
     }
 
-    const user = authenticate(req);
+    const user = await authenticate(req);
     const data = await getOfferingDetail(id, user);
 
     if (!data) {

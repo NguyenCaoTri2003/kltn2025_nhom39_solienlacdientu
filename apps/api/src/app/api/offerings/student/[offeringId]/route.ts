@@ -10,7 +10,7 @@
 
 // // export async function GET(req: NextRequest, { params }: Params) {
 // //   try {
-// //     const user = authenticate(req);
+// //     const user = await authenticate(req);
 
 // //     if (user.role !== "student" && user.role !== "admin") {
 // //       return NextResponse.json({ message: "Forbidden" }, { status: 403 });
@@ -46,7 +46,7 @@
 
 // export async function GET(req: NextRequest, { params }: Params) {
 //   try {
-//     const user = authenticate(req);
+//     const user = await authenticate(req);
 //     if (user.role !== "student" && user.role !== "admin") {
 //       return NextResponse.json({ returnCode: 1, message: "Forbidden" }, { status: 403 });
 //     }
@@ -79,7 +79,7 @@ type Params = { params: { offeringId: string } };
 
 export async function GET(req: NextRequest, { params }: Params) {
   try {
-    const user = authenticate(req);
+    const user = await authenticate(req);
     const { searchParams } = new URL(req.url);
     const studentId = searchParams.get("student_id")
       ? Number(searchParams.get("student_id"))

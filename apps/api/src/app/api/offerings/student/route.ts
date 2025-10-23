@@ -4,7 +4,7 @@
 
 // export async function GET(req: NextRequest) {
 //   try {
-//     const user = authenticate(req);
+//     const user = await authenticate(req);
 //     if (user.role !== "student" && user.role !== "admin") {
 //       return NextResponse.json({ returnCode: 1, message: "Forbidden" }, { status: 403 });
 //     }
@@ -31,7 +31,7 @@ import { ParentRepository } from "@packages/data/repositories/ParentRepository";
 
 export async function GET(req: NextRequest) {
   try {
-    const user = authenticate(req);
+    const user = await authenticate(req);
     const { searchParams } = new URL(req.url);
     const semesterId = searchParams.get("semester_id")
       ? Number(searchParams.get("semester_id"))

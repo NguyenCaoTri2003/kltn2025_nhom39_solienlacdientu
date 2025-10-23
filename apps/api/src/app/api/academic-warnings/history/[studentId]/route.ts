@@ -6,7 +6,7 @@ const uc = new AcademicWarningUseCase();
 
 export async function GET(req: NextRequest, { params }: { params: { studentId: string } }) {
   try {
-    const user = authenticate(req);
+    const user = await authenticate(req);
     if (!user) return NextResponse.json({ returnCode: -1, message: "Unauthorized", data: null }, { status: 401 });
     // Allow admin and the student themself; expand as needed
     if (user.role !== "admin" && Number(params.studentId) !== user.id)

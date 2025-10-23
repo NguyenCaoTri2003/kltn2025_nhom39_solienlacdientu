@@ -17,7 +17,7 @@ const userRepo = new UserRepository();
  */
 export async function POST(req: NextRequest) {
   try {
-    const { id: adminId, role } = authenticate(req); 
+    const { id: adminId, role } = await authenticate(req); 
 
     if (role !== "admin") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });

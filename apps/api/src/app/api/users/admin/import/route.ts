@@ -170,7 +170,7 @@ function parseTypeOfTraining(value: unknown): "regular" | "advanced" | undefined
 
 export async function POST(req: NextRequest) {
   try {
-    const authUser = authenticate(req);
+    const authUser = await authenticate(req);
     if (!authUser || authUser.role !== "admin") {
       return NextResponse.json(
         { error: "Bạn không có quyền thực hiện hành động này." },

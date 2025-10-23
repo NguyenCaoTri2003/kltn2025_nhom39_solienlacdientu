@@ -7,7 +7,7 @@ const userRepo = new UserRepository();
 
 export async function GET(req: NextRequest) {
   try {
-    const user = authenticate(req);
+    const user = await authenticate(req);
     if (!user) {
       return NextResponse.json(
         { returnCode: -1, message: "Invalid token", data: null },

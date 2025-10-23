@@ -5,7 +5,7 @@ import { authenticate } from '@packages/utils/auth'
 const usecase = new MessageUseCase()
 
 export async function GET(req: Request) {
-  const user = authenticate(req)
+  const user = await authenticate(req)
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { searchParams } = new URL(req.url)

@@ -4,7 +4,7 @@ import { authenticate } from "@packages/utils/auth";
 
 export async function GET(req: NextRequest) {
   try {
-    const user = authenticate(req);
+    const user = await authenticate(req);
 
     if (user.role !== "lecturer" && user.role !== "admin") {
       return NextResponse.json(

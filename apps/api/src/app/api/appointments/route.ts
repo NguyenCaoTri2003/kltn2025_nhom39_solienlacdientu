@@ -7,7 +7,7 @@ const usecase = new AppointmentUseCase(new AppointmentRepository());
 
 export async function POST(req: NextRequest) {
   try {
-    const user = authenticate(req);
+    const user = await authenticate(req);
     const body = await req.json();
 
     const { title, content, start_time, end_time, location } = body;
@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
 
 export async function GET(req: NextRequest) {
   try {
-    const user = authenticate(req);
+    const user = await authenticate(req);
     const result = await usecase.getAppointments(user);
     return NextResponse.json(result);
   } catch (e: any) {
@@ -94,7 +94,7 @@ export async function PATCH(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   try {
-    const user = authenticate(req);
+    const user = await authenticate(req);
     const { searchParams } = new URL(req.url);
     const id = searchParams.get("id");
 

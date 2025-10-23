@@ -6,7 +6,7 @@ const uc = new AcademicWarningUseCase();
 
 export async function POST(req: NextRequest) {
   try {
-    const user = authenticate(req);
+    const user = await authenticate(req);
     if (!user) {
       const res = NextResponse.json(
         { returnCode: -1, message: "Unauthorized", data: null },

@@ -50,27 +50,49 @@ export class MessageRepository {
       .order("created_at", { ascending: true });
 
     if (error) throw error;
-    return data;
+    console.log("Fetched messages:", data);
+    return data.map(msg => ({
+      ...msg,
+      status: msg.is_read ? "read" : "sent",
+    }));
   }
 
   async listConversations(userId: number) {
     const { data, error } = await supabase
       .from("conversations")
       .select(`
-        id,
-        user1:users!user1_id(id, full_name, role, avatar_url),
-        user2:users!user2_id(id, full_name, role, avatar_url),
-        messages(id, content, created_at, sender_id, type)
-      `)
+      id,
+      user1:users!user1_id(id, full_name, role, avatar_url),
+      user2:users!user2_id(id, full_name, role, avatar_url),
+      messages(id, content, created_at, sender_id, type, is_read),
+      messages_unread:messages(count)
+    `)
       .or(`user1_id.eq.${userId},user2_id.eq.${userId}`)
       .order("updated_at", { ascending: false });
 
     if (error) throw error;
 
-    return data.map((c) => ({
-      ...c,
-      lastMessage: c.messages?.[c.messages.length - 1] || null,
-    }));
+    const conversationsWithUnread = await Promise.all(
+      data.map(async (c) => {
+        const { count, error: countError } = await supabase
+          .from("messages")
+          .select("id", { count: "exact", head: true })
+          .eq("conversation_id", c.id)
+          .neq("sender_id", userId)
+          .eq("is_read", false);
+
+        if (countError) throw countError;
+
+        return {
+          ...c,
+          lastMessage: c.messages?.[c.messages.length - 1] || null,
+          unreadCount: count || 0,
+          isUnread: (count || 0) > 0,
+        };
+      })
+    );
+
+    return conversationsWithUnread;
   }
 
   async getConversationById(conversationId: number) {
@@ -79,6 +101,18 @@ export class MessageRepository {
       .select("id, user1_id, user2_id")
       .eq("id", conversationId)
       .single();
+
+    if (error) throw error;
+    return data;
+  }
+
+  async markMessagesAsRead(conversationId: number, userId: number) {
+    const { data, error } = await supabase
+      .from("messages")
+      .update({ is_read: true })
+      .eq("conversation_id", conversationId)
+      .neq("sender_id", userId)
+      .eq("is_read", false);
 
     if (error) throw error;
     return data;

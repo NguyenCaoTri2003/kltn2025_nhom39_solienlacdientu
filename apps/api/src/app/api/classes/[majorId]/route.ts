@@ -10,7 +10,7 @@ export async function GET(
   { params }: { params: { majorId: string } }
 ) {
   try {
-    const user = authenticate(req);
+    const user = await authenticate(req);
     const majorId = Number(params.majorId);
     const classesList = await getClassesByMajor(majorId, user);
 

@@ -22,7 +22,7 @@ export async function GET(
       );
     }
 
-  const { id: userId, role } = authenticate(req);
+  const { id: userId, role } = await authenticate(req);
   const { id: studentId } = await ctx.params;
 
     // 🧩 Nếu không phải admin/lecturer, chỉ cho phép chính sinh viên đó xem GPA

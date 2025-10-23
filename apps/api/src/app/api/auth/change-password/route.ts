@@ -16,7 +16,7 @@ const userRepo = new UserRepository();
 
 export async function POST(req: NextRequest) {
   try {
-    const { id } = authenticate(req);
+    const { id } = await authenticate(req);
     const body = await req.json();
     const { currentPassword, newPassword } = body as {
       currentPassword?: string;
