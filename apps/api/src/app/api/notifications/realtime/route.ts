@@ -1,19 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 import { authenticate } from "@packages/utils/auth";
-import { notificationsUseCase } from "@packages/core/usecases/NotificationsUseCase";
+import { createSSEStream, createSSEHeaders } from "../helpers/sse-handler";
+import { broadcastToUser } from "../helpers/connection-manager";
 
-// Store active connections
-const connections = new Map<number, ReadableStreamDefaultController>();
-
+/**
+ * Thiết lập kết nối SSE cho realtime notifications
+ * Hỗ trợ token từ query parameter (cho EventSource) hoặc header/cookie
+ */
 export async function GET(req: NextRequest) {
   try {
-    // Try to get token from query parameter first (for EventSource)
+    // Thử lấy token từ query parameter trước (cho EventSource)
     const { searchParams } = new URL(req.url);
     const tokenFromQuery = searchParams.get('token');
     
     let user;
     if (tokenFromQuery) {
-      // Create a mock request with token from query
+      // Tạo mock request với token từ query
       const mockReq = {
         headers: new Headers({ 'Authorization': `Bearer ${tokenFromQuery}` }),
         cookies: { get: () => undefined }
@@ -23,55 +25,13 @@ export async function GET(req: NextRequest) {
       user = authenticate(req);
     }
     
-    // Create SSE connection
-    const stream = new ReadableStream({
-      start(controller) {
-        // Store connection for this user
-        connections.set(user.id, controller);
-        
-        // Send initial connection message
-        const data = JSON.stringify({
-          type: 'connected',
-          message: 'Connected to notifications stream',
-          timestamp: new Date().toISOString()
-        });
-        controller.enqueue(`data: ${data}\n\n`);
-        
-        // Keep connection alive with heartbeat
-        const heartbeat = setInterval(() => {
-          try {
-            const heartbeatData = JSON.stringify({
-              type: 'heartbeat',
-              timestamp: new Date().toISOString()
-            });
-            controller.enqueue(`data: ${heartbeatData}\n\n`);
-          } catch (error) {
-            clearInterval(heartbeat);
-            connections.delete(user.id);
-          }
-        }, 30000); // 30 seconds heartbeat
-        
-        // Clean up on close
-        req.signal.addEventListener('abort', () => {
-          clearInterval(heartbeat);
-          connections.delete(user.id);
-        });
-      },
-      cancel() {
-        connections.delete(user.id);
-      }
-    });
-
+    // Tạo SSE stream
+    const stream = createSSEStream(req, user);
+    
     return new Response(stream, {
-      headers: {
-        'Content-Type': 'text/event-stream',
-        'Cache-Control': 'no-cache',
-        'Connection': 'keep-alive',
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET,OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-      },
+      headers: createSSEHeaders(),
     });
+    
   } catch (error) {
     console.error('SSE connection error:', error);
     return NextResponse.json(
@@ -81,22 +41,12 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// Function to broadcast notification to specific user
+/**
+ * Broadcast thông báo đến user cụ thể
+ * Được gọi từ NotificationsUseCase khi tạo thông báo mới
+ */
 export async function broadcastNotification(userId: number, notification: any) {
-  const controller = connections.get(userId);
-  if (controller) {
-    try {
-      const data = JSON.stringify({
-        type: 'notification',
-        data: notification,
-        timestamp: new Date().toISOString()
-      });
-      controller.enqueue(`data: ${data}\n\n`);
-    } catch (error) {
-      console.error('Error broadcasting notification:', error);
-      connections.delete(userId);
-    }
-  }
+  await broadcastToUser(userId, notification);
 }
 
 export async function OPTIONS() {

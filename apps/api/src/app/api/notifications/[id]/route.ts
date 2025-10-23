@@ -1,34 +1,39 @@
 import { NextRequest, NextResponse } from "next/server";
 import { authenticate } from "@packages/utils/auth";
 import { notificationsUseCase } from "@packages/core/usecases/NotificationsUseCase";
+import { handleNotificationError, createSuccessResponse } from "../helpers/error-handler";
 
-export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
+/**
+ * Xóa thông báo theo ID
+ * Chỉ admin mới có quyền xóa
+ */
+export async function DELETE(
+  _req: NextRequest, 
+  { params }: { params: { id: string } }
+) {
   try {
+    // Kiểm tra ID có tồn tại
     const id = params?.id;
     if (!id) {
-      return NextResponse.json({ returnCode: -1, message: "Missing id", data: null }, { status: 400 });
+      return NextResponse.json(
+        { returnCode: -1, message: "Missing id", data: null }, 
+        { status: 400 }
+      );
     }
 
+    // Xác thực quyền admin
     const user = authenticate(_req);
     if (user.role !== "admin") {
-      return NextResponse.json({ returnCode: -1, message: "Forbidden", data: null }, { status: 403 });
+      throw new Error("Forbidden");
     }
 
+    // Xóa thông báo
     await notificationsUseCase.delete(id);
-    const res = NextResponse.json({ returnCode: 0, message: "Deleted", data: null }, { status: 200 });
-    res.headers.set("Access-Control-Allow-Origin", "*");
-    res.headers.set("Access-Control-Allow-Methods", "DELETE,OPTIONS");
-    res.headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
-    return res;
-  } catch (e: unknown) {
-    const message = e instanceof Error ? e.message : "System error";
-    const isUnauthorized = message === "No token" || message === "Invalid token" || message === "Token expired";
-    const status = isUnauthorized ? 401 : 500;
-    const res = NextResponse.json({ returnCode: -1, message, data: null }, { status });
-    res.headers.set("Access-Control-Allow-Origin", "*");
-    res.headers.set("Access-Control-Allow-Methods", "DELETE,OPTIONS");
-    res.headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
-    return res;
+    
+    return createSuccessResponse(null, "Deleted", undefined, "DELETE,OPTIONS");
+    
+  } catch (error) {
+    return handleNotificationError(error, "DELETE,OPTIONS");
   }
 }
 

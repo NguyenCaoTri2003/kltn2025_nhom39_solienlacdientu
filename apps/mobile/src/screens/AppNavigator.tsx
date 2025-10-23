@@ -10,7 +10,7 @@ import ScheduleScreen from "./ScheduleScreen";
 import MessagesScreen from "./MessagesScreen";
 import AppointmentsScreen from "./AppointmentsScreen";
 import CourseOfferingScreen from "./CourseOfferingScreen";
-import NotificationsStack from "./NotificationsStack";
+import NotificationStack from "./notification_/NotificationStack";
 import { useAuth } from "../context/AuthContext";
 import CourseOfferingDetailScreen from "./CourseOfferingDetailScreen";
 import { RootStackParamList } from "../types/navigation";
@@ -110,7 +110,7 @@ export default function AppNavigator() {
       <Tab.Screen name="Messages" component={MessagesScreen} options={{ title: "Nhắn tin" }} />
       <Tab.Screen 
         name="Notifications" 
-        component={NotificationsStack} 
+        component={NotificationStack} 
         options={{ 
           title: "Thông báo",
           tabBarBadge: unreadCount > 0 ? unreadCount : undefined,

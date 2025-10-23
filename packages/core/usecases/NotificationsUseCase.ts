@@ -1,5 +1,6 @@
 import { NotificationsRepository, type ListParams, type ListResult, type NotificationRow, type NotificationType, type UserNotificationRow } from "@packages/data/repositories/NotificationsRepository";
 import { NotificationCategory } from "@packages/core/entities/Notifications";
+import { NotificationBroadcaster } from "./helpers/NotificationBroadcaster";
 
 export class NotificationsUseCase {
   private repo: NotificationsRepository;
@@ -23,17 +24,23 @@ export class NotificationsUseCase {
     return this.repo.getById(nid);
   }
 
+  /**
+   * Tạo thông báo mới
+   * Tự động tạo user notification record và broadcast realtime
+   */
   async create(payload: { 
     user_id?: number | string | null; 
     content?: string | null; 
     type?: NotificationType | null;
     category?: NotificationCategory | null;
   }): Promise<NotificationRow> {
+    // Validate và parse input
     const user_id = payload.user_id != null ? this.toPositiveInt(payload.user_id) ?? null : null;
     const content = typeof payload.content === "string" ? payload.content : null;
     const type = (payload.type ?? null) as NotificationType | null;
     const category = (payload.category ?? null) as NotificationCategory | null;
     
+    // Tạo notification record
     const notification = await this.repo.create({ 
       user_id, 
       content, 
@@ -41,21 +48,17 @@ export class NotificationsUseCase {
       category
     });
     
-  
+    // Nếu có user_id, tạo user notification và broadcast
     if (user_id) {
-      try {
-        await this.repo.createUserNotification(user_id, notification.id);
-        
-        // Broadcast to realtime connections
-        try {
-          const { broadcastNotification } = await import("../../../apps/api/src/app/api/notifications/realtime/route");
-          await broadcastNotification(user_id, notification);
-        } catch (error) {
-          console.warn("Failed to broadcast notification:", error);
-        }
-      } catch (error) {
-        console.warn(`Failed to create user notification for user ${user_id}:`, error);
-      }
+      // Tạo user notification record (async, không block)
+      NotificationBroadcaster.createUserNotificationRecord(
+        this.repo, 
+        user_id, 
+        notification.id
+      );
+      
+      // Broadcast realtime (async, không block)
+      NotificationBroadcaster.broadcastToUser(user_id, notification);
     }
     
     return notification;
