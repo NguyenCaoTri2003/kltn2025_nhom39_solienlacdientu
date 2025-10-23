@@ -5,6 +5,7 @@ import { AuthProvider, useAuth } from "./src/context/AuthContext";
 import LoginScreen from "./src/screens/LoginScreen";
 import AppNavigator from "./src/screens/AppNavigator"; // 👈 thay cho HomeScreen
 import { UserProvider } from "./src/context/UserContext";
+import { NotificationProvider } from "./src/context/NotificationContext";
 
 const Stack = createNativeStackNavigator();
 
@@ -28,9 +29,11 @@ export default function App() {
   return (
     <AuthProvider>
       <UserProvider>
-        <NavigationContainer>
-          <RootNavigator />
-        </NavigationContainer>
+        <NotificationProvider>
+          <NavigationContainer>
+            <RootNavigator />
+          </NavigationContainer>
+        </NotificationProvider>
       </UserProvider>
     </AuthProvider>
   );

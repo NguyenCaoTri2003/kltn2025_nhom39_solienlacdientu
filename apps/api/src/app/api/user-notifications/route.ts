@@ -6,7 +6,6 @@ export async function GET(req: NextRequest) {
   const start = Date.now();
   try {
     const headerToken = req.headers.get("authorization");
-
     if (!headerToken) {
       return NextResponse.json({ returnCode: -1, message: "No token", data: null }, { status: 401 });
     }
@@ -16,26 +15,21 @@ export async function GET(req: NextRequest) {
     const pageParam = searchParams.get("page");
     const pageSizeParam = searchParams.get("pageSize") || searchParams.get("limit");
 
-
     const page = pageParam ? Number(pageParam) : undefined;
     const pageSize = pageSizeParam ? Number(pageSizeParam) : undefined;
-  // userId param is ignored for non-admin route
 
-    // Split behavior: non-admin can only view their own; admin should call /api/notifications/admin
-    if (user.role === "admin") {
-      const res = NextResponse.json({ returnCode: -1, message: "Admins: use /api/notifications/admin for listing.", data: null }, { status: 400 });
-      res.headers.set("Access-Control-Allow-Origin", "*");
-      res.headers.set("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
-      res.headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
-      return res;
-    }
-
-    const effectiveUserId = user.id;
-    const { items, total, totalPages, page: pg, pageSize: ps } = await notificationsUseCase.getUserNotifications(effectiveUserId, { page, pageSize });
+    const { items, total, totalPages, page: pg, pageSize: ps } = await notificationsUseCase.getUserNotifications(user.id, { page, pageSize });
     const duration = Date.now() - start;
-    const res = NextResponse.json({ returnCode: 0, message: "OK", data: items, meta: { total, totalPages, page: pg, pageSize: ps, executionTime: `${duration}ms` } }, { status: 200 });
+    
+    const res = NextResponse.json({ 
+      returnCode: 0, 
+      message: "OK", 
+      data: items, 
+      meta: { total, totalPages, page: pg, pageSize: ps, executionTime: `${duration}ms` } 
+    }, { status: 200 });
+    
     res.headers.set("Access-Control-Allow-Origin", "*");
-    res.headers.set("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
+    res.headers.set("Access-Control-Allow-Methods", "GET,PUT,DELETE,OPTIONS");
     res.headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
     return res;
   } catch (e: unknown) {
@@ -44,43 +38,38 @@ export async function GET(req: NextRequest) {
     const status = isUnauthorized ? 401 : 500;
     const res = NextResponse.json({ returnCode: -1, message, data: null }, { status });
     res.headers.set("Access-Control-Allow-Origin", "*");
-    res.headers.set("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
+    res.headers.set("Access-Control-Allow-Methods", "GET,PUT,DELETE,OPTIONS");
     res.headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
     return res;
   }
 }
 
-export async function POST(req: NextRequest) {
+export async function PUT(req: NextRequest) {
   try {
     const headerToken = req.headers.get("authorization");
     if (!headerToken) {
       return NextResponse.json({ returnCode: -1, message: "No token", data: null }, { status: 401 });
     }
     const user = authenticate(req);
-    if (user.role !== "admin") {
-      return NextResponse.json({ returnCode: -1, message: "Forbidden", data: null }, { status: 403 });
+
+    const body = await req.json();
+    const { userNotificationId, action } = body;
+
+    if (!userNotificationId || !action) {
+      return NextResponse.json({ returnCode: -1, message: "Missing userNotificationId or action", data: null }, { status: 400 });
     }
 
-    const body = await req.json().catch(() => ({}));
-    const allowedTypes = new Set(["university", "lecturer", "system"]);
-    const requestedType = body?.type ?? null;
-    if (requestedType != null && !allowedTypes.has(String(requestedType))) {
-      const res = NextResponse.json({ returnCode: -1, message: "Invalid notification type", data: null }, { status: 400 });
-      res.headers.set("Access-Control-Allow-Origin", "*");
-      res.headers.set("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
-      res.headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
-      return res;
+    if (action === "markAsRead") {
+      await notificationsUseCase.markAsRead(userNotificationId);
+    } else if (action === "markAsDeleted") {
+      await notificationsUseCase.markAsDeleted(userNotificationId);
+    } else {
+      return NextResponse.json({ returnCode: -1, message: "Invalid action", data: null }, { status: 400 });
     }
-    const payload = {
-      user_id: body?.user_id ?? null,
-      content: typeof body?.content === "string" ? body.content : null,
-      type: requestedType,
-      category: body?.category ?? null,
-    };
-    const created = await notificationsUseCase.create(payload);
-    const res = NextResponse.json({ returnCode: 0, message: "Created", data: created }, { status: 201 });
+
+    const res = NextResponse.json({ returnCode: 0, message: "Updated", data: null }, { status: 200 });
     res.headers.set("Access-Control-Allow-Origin", "*");
-    res.headers.set("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
+    res.headers.set("Access-Control-Allow-Methods", "GET,PUT,DELETE,OPTIONS");
     res.headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
     return res;
   } catch (e: unknown) {
@@ -89,7 +78,7 @@ export async function POST(req: NextRequest) {
     const status = isUnauthorized ? 401 : 500;
     const res = NextResponse.json({ returnCode: -1, message, data: null }, { status });
     res.headers.set("Access-Control-Allow-Origin", "*");
-    res.headers.set("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
+    res.headers.set("Access-Control-Allow-Methods", "GET,PUT,DELETE,OPTIONS");
     res.headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
     return res;
   }
@@ -98,7 +87,7 @@ export async function POST(req: NextRequest) {
 export async function OPTIONS() {
   const res = NextResponse.json({}, { status: 200 });
   res.headers.set("Access-Control-Allow-Origin", "*");
-  res.headers.set("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
+  res.headers.set("Access-Control-Allow-Methods", "GET,PUT,DELETE,OPTIONS");
   res.headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
   return res;
 }

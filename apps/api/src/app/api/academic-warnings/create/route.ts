@@ -99,6 +99,7 @@ export async function POST(req: NextRequest) {
         user_id: Number(studentId),
         content,
         type: "university",
+        category: "ACADEMIC",
       });
     } catch (notifyErr) {
       console.warn("Failed to create notification for academic warning:", notifyErr); 
