@@ -7,6 +7,7 @@
 
 - Node.js (phiên bản 18.x trở lên)
 - pnpm (hoặc npm/yarn)
+- Expo Go (phiên bản ~54.0.9)
 
 ### Cài đặt
 
@@ -36,6 +37,16 @@
     pnpm dev:mobile
     ```
 
+    hoặc 
+
+    ```bash
+    cd apps/mobile/
+    ```
+
+    ```bash
+    npx expo start -c
+    ```
+
 ### Setup .env.local
 
 * Thêm vào api
@@ -54,9 +65,14 @@ FROM_EMAIL="Hệ thống Sổ Liên Lạc IUH"
 ```
 
 * Thêm vào mobile
+.env
 
 ```
-NEXT_PUBLIC_API_URL=http://192.168.1.10:3000 
+EXPO_PUBLIC_PORT=192.168.1.10
+EXPO_PUBLIC_API_URL="http://192.168.1.5:3000"
+EXPO_PUBLIC_SUPABASE_URL=https://ceocmvtxpdqgmremuqgb.supabase.co
+EXPO_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNlb2NtdnR4cGRxZ21yZW11cWdiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUwNzc4NDYsImV4cCI6MjA3MDY1Mzg0Nn0._TewLybeTBvwJRFHTLldjiR5HJhvVZnLsZ3UTiAaeds
+
 ```
 
 vào cmd gõ ipconfig lấy link ở đây
