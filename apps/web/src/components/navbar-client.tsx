@@ -25,6 +25,7 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { getAvatarColor } from "@/utils/color-hash";
+import { useUnreadMessageCount } from "@/hooks/useUnreadMessageCount";
 
 interface NavbarProps {
   userRole: "admin" | "teacher" | null;
@@ -37,10 +38,11 @@ export default function NavbarClient({ userRole, userName, avatarUrl, userId }: 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
-  // Hooks must execute unconditionally; guard for userRole moved lower
+  const unreadCount = useUnreadMessageCount();
 
-  // We'll set these after the guard once userRole is confirmed
-  let roleBasePath = "/"; // temp placeholder
+  console.log("NavbarClient - unreadCount:", unreadCount);
+
+  let roleBasePath = "/";
   const profilePath = (subPath: "info" | "change-password") => `${roleBasePath}/profile/${subPath}`;
 
   const handleLogout = () => {
@@ -61,7 +63,7 @@ export default function NavbarClient({ userRole, userName, avatarUrl, userId }: 
     { icon: Home, label: "Trang chủ", href: "/lecturer" },
     { icon: Users, label: "Lớp học", href: "/lecturer/classes" },
     { icon: Calendar, label: "Lịch hẹn", href: "/lecturer/appointments" },
-    { icon: MessageSquare, label: "Tương tác", href: "/lecturer/communications" },
+    { icon: MessageSquare, label: "Nhắn tin", href: "/lecturer/communications" },
     // { icon: BarChart3, label: "Thống kê", href: "/lecturer/statistics" }
   ];
 
@@ -126,6 +128,7 @@ export default function NavbarClient({ userRole, userName, avatarUrl, userId }: 
                   }`}
                 >
                   <item.icon className={`w-4 h-4 ${active ? 'text-primary' : 'group-hover:scale-110 transition-transform'}`} />
+                  
                   <span>{item.label}</span>
                 </button>
               );
@@ -270,6 +273,11 @@ export default function NavbarClient({ userRole, userName, avatarUrl, userId }: 
                     {item.label}
                     {isActive && (
                       <span className="absolute inset-0 rounded-lg bg-gradient-to-r from-primary/10 to-blue-500/10 animate-pulse pointer-events-none"></span>
+                    )}
+                    {item.icon === MessageSquare && unreadCount > 0 && (
+                      <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-semibold rounded-full px-[5px] py-[1px]">
+                        {unreadCount > 9 ? "9+" : unreadCount}
+                      </span>
                     )}
                   </button>
                 );

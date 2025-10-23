@@ -27,10 +27,16 @@ export class MessageUseCase {
       conversation.user1_id === userId || conversation.user2_id === userId;
     if (!isParticipant) throw new Error("Forbidden: not your conversation");
 
+    await this.repo.markMessagesAsRead(conversationId, userId);
+
     return await this.repo.getMessages(conversationId);
   }
 
   async getUserConversations(userId: number) {
     return await this.repo.listConversations(userId);
+  }
+
+  async markAsRead(conversationId: number, userId: number) {
+    return await this.repo.markMessagesAsRead(conversationId, userId);
   }
 }

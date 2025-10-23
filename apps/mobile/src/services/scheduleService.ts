@@ -22,7 +22,7 @@ export type ScheduleItem = {
 };
 
 export async function fetchStudentSchedule(
-  studentId: number,
+  studentId: number | null | undefined,
   startDate?: string,
   endDate?: string
 ): Promise<ScheduleItem[]> {

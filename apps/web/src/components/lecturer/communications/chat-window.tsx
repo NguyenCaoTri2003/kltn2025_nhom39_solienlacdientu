@@ -3,13 +3,14 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Loader2, Paperclip, X } from "lucide-react";
+import { Loader2, MessageSquare, Paperclip, X } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@packages/data/supabaseClient";
 import { Conversation, Message } from "./communication-panel";
 import { FileIcon, defaultStyles } from "react-file-icon";
 import { getAvatarColor } from "@/utils/color-hash";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import EmptyState from "@/components/empty-state";
 
 interface ChatWindowProps {
     selectedConversation: Conversation | null;
@@ -178,8 +179,8 @@ export default function ChatWindow({
         selectedConversation && selectedConversation.user1.id === myId
             ? selectedConversation.user2
             : selectedConversation
-            ? selectedConversation.user1
-            : { id: null, full_name: "", avatar_url: "", role: "" };
+                ? selectedConversation.user1
+                : { id: null, full_name: "", avatar_url: "", role: "" };
 
     const initials = useMemo(() => {
         const parts = partner.full_name.trim().split(" ");
@@ -197,7 +198,11 @@ export default function ChatWindow({
     if (!selectedConversation)
         return (
             <div className="flex-1 flex items-center justify-center text-muted-foreground">
-                Chọn một cuộc trò chuyện để xem tin nhắn
+                <EmptyState
+                    icon={<MessageSquare className="w-10 h-10" />}
+                    text="Chọn một cuộc trò chuyện để bắt đầu"
+                    className="py-1"
+                />
             </div>
         );
 
@@ -275,8 +280,21 @@ export default function ChatWindow({
                             ) : (
                                 <span>{msg.content}</span>
                             )}
-                            <div className="text-xs text-muted-foreground mt-1 text-right">
+                            {/* <div className="text-xs text-muted-foreground mt-1 text-right">
                                 {formatTime(msg.created_at)}
+                            </div> */}
+                            <div className="text-xs text-muted-foreground mt-1 text-right flex items-center justify-end gap-1">
+                                <span>{formatTime(msg.created_at)}</span>
+
+                                {msg.sender_id === myId && (
+                                    <>
+                                        {msg.status === "read" ? (
+                                            <span className="text-blue-500 font-semibold ml-1">Đã xem</span>
+                                        ) : (
+                                            <span className="text-muted-foreground ml-1">Đã gửi</span>
+                                        )}
+                                    </>
+                                )}
                             </div>
                         </div>
                     </div>

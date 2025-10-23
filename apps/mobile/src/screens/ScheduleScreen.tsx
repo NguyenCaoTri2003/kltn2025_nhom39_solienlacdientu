@@ -21,14 +21,14 @@ export default function ScheduleScreen() {
   const children = userData?.children || [];
   const isParent = userData?.role === "parent";
 
-  const initialStudentId: number | null =
+  const initialStudentId: number | null | undefined =
     userData?.role === "student"
       ? userData?.student?.id
       : children.length > 0
         ? children[0].id
         : null;
 
-  const [selectedStudentId, setSelectedStudentId] = useState<number | null>(initialStudentId);
+  const [selectedStudentId, setSelectedStudentId] = useState<number | null | undefined>(initialStudentId);
 
   const {
     schedules,

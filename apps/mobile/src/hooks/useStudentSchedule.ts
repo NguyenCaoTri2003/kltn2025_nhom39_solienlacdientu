@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo } from "react";
 import { fetchStudentSchedule, ScheduleItem } from "../services/scheduleService";
 import dayjs from "dayjs";
 
-export function useStudentSchedule(studentId: number) {
+export function useStudentSchedule(studentId: number | null | undefined) {
   const [weekOffset, setWeekOffset] = useState(0);
   const [schedules, setSchedules] = useState<ScheduleItem[]>([]);
   const [loading, setLoading] = useState(false);
