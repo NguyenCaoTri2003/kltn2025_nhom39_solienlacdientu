@@ -212,7 +212,7 @@ export default function NotificationScreen() {
         />
       )}
 
-      {/* Connection status indicator */}
+      {/* Trạng thái kết nối*/}
       <View style={styles.connectionStatus}>
         <View style={[styles.statusDot, { backgroundColor: isConnected ? '#10B981' : '#EF4444' }]} />
         <Text style={styles.statusText}>
@@ -220,7 +220,7 @@ export default function NotificationScreen() {
         </Text>
       </View>
 
-      {/* Toast notification */}
+      {/* Toast thông báo */}
       <NotificationToast
         visible={toastVisible}
         notification={toastNotification}

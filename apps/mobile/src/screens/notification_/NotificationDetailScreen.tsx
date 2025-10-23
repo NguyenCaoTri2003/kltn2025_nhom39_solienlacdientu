@@ -154,7 +154,6 @@ const NotificationDetailScreen: React.FC<NotificationDetailScreenProps> = ({ nav
           </View>
         </View>
 
-        {/* Warning Level Badge */}
         {warningLevel && (
           <View style={[styles.warningBadge, { backgroundColor: getWarningLevelColor(warningLevel) }]}>
             <AlertCircle size={16} color="#FFFFFF" />
@@ -162,13 +161,13 @@ const NotificationDetailScreen: React.FC<NotificationDetailScreenProps> = ({ nav
           </View>
         )}
 
-        {/* Content */}
+        {/* Nội dung */}
         <View style={styles.contentSection}>
           <Text style={styles.contentTitle}>Nội dung thông báo</Text>
           <Text style={styles.contentText}>{content}</Text>
         </View>
 
-        {/* Additional Info */}
+        {/*  Thông tin  */}
         <View style={styles.infoSection}>
           <Text style={styles.sectionTitle}>Thông tin chi tiết</Text>
           
@@ -208,7 +207,6 @@ const NotificationDetailScreen: React.FC<NotificationDetailScreenProps> = ({ nav
                 [
                   { text: 'Hủy', style: 'cancel' },
                   { text: 'Xóa', style: 'destructive', onPress: () => {
-                    // TODO: Implement delete functionality
                     navigation.goBack();
                   }}
                 ]
