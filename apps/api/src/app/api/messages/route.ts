@@ -15,6 +15,7 @@ export async function GET(req: Request) {
   }
 
   const data = await usecase.getConversationMessages(conversationId, user.id);
+  console.log("GET messages data:", data);
   return NextResponse.json(data);
 }
 

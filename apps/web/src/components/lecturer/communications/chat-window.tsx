@@ -1,4 +1,4 @@
-"use client";
+
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ import { FileIcon, defaultStyles } from "react-file-icon";
 import { getAvatarColor } from "@/utils/color-hash";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import EmptyState from "@/components/empty-state";
+import { formatDateLabel } from "@/utils/format-date-label";
 
 interface ChatWindowProps {
     selectedConversation: Conversation | null;
@@ -28,6 +29,7 @@ export default function ChatWindow({
     myId,
 }: ChatWindowProps) {
     const [message, setMessage] = useState("");
+    const [messages, setMessages] = useState<Message[]>([]);
     const [sending, setSending] = useState(false);
     const [files, setFiles] = useState<File[]>([]);
     const [previewUrls, setPreviewUrls] = useState<string[]>([]);
@@ -35,53 +37,93 @@ export default function ChatWindow({
     const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
     useEffect(() => {
-        if (!selectedConversation) return;
+        if (!selectedConversation?.id || !token) return;
 
+        const fetchMessages = async () => {
+            try {
+                const res = await fetch(
+                    `${process.env.NEXT_PUBLIC_API_URL}/api/messages?conversationId=${selectedConversation.id}`,
+                    {
+                        headers: { Authorization: `Bearer ${token}` },
+                    }
+                );
+                if (!res.ok) throw new Error("Không thể tải tin nhắn");
+                const data = await res.json();
+                setMessages(data);
+            } catch (err) {
+                console.error(err);
+                toast.error("Lỗi khi tải tin nhắn");
+            }
+        };
+
+        fetchMessages();
+    }, [selectedConversation?.id, token]);
+
+    useEffect(() => {
+        if (!selectedConversation) return;
         const conversationId = selectedConversation.id;
+
         const channel = supabase
             .channel(`messages:conversationId=${conversationId}`)
-            .on("postgres_changes", {
-                event: "INSERT",
-                schema: "public",
-                table: "messages",
-                filter: `conversation_id=eq.${conversationId}`,
-            }, (payload) => {
-                const newMsg = payload.new as Message;
+            .on(
+                "postgres_changes",
+                {
+                    event: "INSERT",
+                    schema: "public",
+                    table: "messages",
+                    filter: `conversation_id=eq.${conversationId}`,
+                },
+                (payload) => {
+                    const newMsg = payload.new as Message;
 
-                setSelectedConversation((prev) => {
-                    if (!prev) return prev;
-                    if (prev.messages?.some((m) => m.id === newMsg.id)) return prev;
+                    setMessages((prev) => {
+                        if (prev.some((m) => m.id === newMsg.id)) return prev;
+                        return [...prev, newMsg];
+                    });
 
-                    return {
-                        ...prev,
-                        messages: [...(prev.messages || []), newMsg],
-                        lastMessage: newMsg,
-                    };
-                });
+                    setConversations((prev) =>
+                        prev.map((c) =>
+                            c.id === conversationId ? { ...c, lastMessage: newMsg } : c
+                        )
+                    );
+                }
+            )
 
-                setConversations((prev) =>
-                    prev.map((c) =>
-                        c.id === conversationId
-                            ? {
-                                ...c,
-                                lastMessage: newMsg,
-                                messages: [...(c.messages || []), newMsg],
-                            }
-                            : c
-                    )
-                );
-            })
+            .on(
+                "postgres_changes",
+                {
+                    event: "UPDATE",
+                    schema: "public",
+                    table: "messages",
+                    filter: `conversation_id=eq.${conversationId}`,
+                },
+                (payload) => {
+                    const updatedMsg = payload.new as Message;
+                    setMessages((prev) =>
+                        prev.map((m) =>
+                            m.id === updatedMsg.id ? { ...m, is_read: updatedMsg.is_read } : m
+                        )
+                    );
 
+                    setConversations((prev) =>
+                        prev.map((c) =>
+                            c.id === conversationId && c.lastMessage?.id === updatedMsg.id
+                                ? { ...c, lastMessage: updatedMsg }
+                                : c
+                        )
+                    );
+                }
+            )
             .subscribe();
 
         return () => {
             supabase.removeChannel(channel);
         };
-    }, [selectedConversation, setConversations, setSelectedConversation]);
+    }, [selectedConversation, setConversations]);
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    }, [selectedConversation?.messages]);
+    }, [messages.length]);
 
     const uploadFile = async (file: File): Promise<string> => {
         const filePath = `${Date.now()}_${file.name}`;
@@ -109,19 +151,15 @@ export default function ChatWindow({
     };
 
     const handleSend = async () => {
-        if ((!message.trim() && files.length === 0) || !selectedConversation || !myId) return;
+        if ((!message.trim() && files.length === 0) || !selectedConversation || !myId)
+            return;
         setSending(true);
 
         try {
-            const uploadedUrls: { url: string; type: "image" | "file" }[] = [];
-
-            for (const file of files) {
-                const url = await uploadFile(file);
-                uploadedUrls.push({
-                    url,
-                    type: file.type.startsWith("image/") ? "image" : "file",
-                });
-            }
+            const receiverId =
+                selectedConversation.user1.id === myId
+                    ? selectedConversation.user2.id
+                    : selectedConversation.user1.id;
 
             if (message.trim()) {
                 await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/messages`, {
@@ -131,17 +169,15 @@ export default function ChatWindow({
                         Authorization: `Bearer ${token}`,
                     },
                     body: JSON.stringify({
-                        receiverId:
-                            selectedConversation.user1.id === myId
-                                ? selectedConversation.user2.id
-                                : selectedConversation.user1.id,
+                        receiverId,
                         content: message.trim(),
                         type: "text",
                     }),
                 });
             }
 
-            for (const fileMsg of uploadedUrls) {
+            for (const file of files) {
+                const url = await uploadFile(file);
                 await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/messages`, {
                     method: "POST",
                     headers: {
@@ -149,12 +185,9 @@ export default function ChatWindow({
                         Authorization: `Bearer ${token}`,
                     },
                     body: JSON.stringify({
-                        receiverId:
-                            selectedConversation.user1.id === myId
-                                ? selectedConversation.user2.id
-                                : selectedConversation.user1.id,
-                        content: fileMsg.url,
-                        type: fileMsg.type,
+                        receiverId,
+                        content: url,
+                        type: file.type.startsWith("image/") ? "image" : "file",
                     }),
                 });
             }
@@ -221,6 +254,7 @@ export default function ChatWindow({
 
     return (
         <div className="flex flex-col flex-1 h-full">
+            {/* Header */}
             <div className="flex items-center justify-between border-b p-3 bg-background sticky top-0 z-10">
                 <div className="flex items-center gap-3">
                     <Avatar className="w-10 h-10 sm:w-10 sm:h-10">
@@ -235,9 +269,7 @@ export default function ChatWindow({
                         )}
                     </Avatar>
                     <div>
-                        <div className="font-semibold">
-                            {partner.full_name}
-                        </div>
+                        <div className="font-semibold">{partner.full_name}</div>
                         <div className="text-sm text-muted-foreground">
                             {getRoleLabel(partner.role)}
                         </div>
@@ -245,64 +277,93 @@ export default function ChatWindow({
                 </div>
             </div>
 
+            {/* Danh sách tin nhắn */}
             <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-background">
-                {selectedConversation.messages?.map((msg, index) => (
-                    <div
-                        key={`${msg.id}-${index}`}
-                        className={`flex ${msg.sender_id === myId ? "justify-end" : "justify-start"}`}
-                    >
-                        <div
-                            className={`rounded-lg px-3 py-2 max-w-[75%] break-anywhere ${msg.sender_id === myId ? "bg-primary text-white" : "bg-muted text-foreground"}`}
-                        >
-                            {msg.type === "image" ? (
-                                <img
-                                    src={msg.content}
-                                    alt="image"
-                                    className="rounded-lg max-w-full max-h-64 object-cover"
-                                />
-                            ) : msg.type === "file" ? (
-                                <a
-                                    href={msg.content}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="flex items-center gap-2 p-2 rounded-lg border bg-background hover:bg-muted transition-colors w-fit max-w-[80%]"
-                                >
-                                    <div className="w-6 h-6 shrink-0">
-                                        <FileIcon
-                                            extension={msg.content.split(".").pop()?.toLowerCase() || ""}
-                                            {...defaultStyles[msg.content.split(".").pop()?.toLowerCase() || "default"]}
-                                        />
-                                    </div>
-                                    <span className="truncate text-sm text-primary underline">
-                                        {msg.content.split("/").pop()}
-                                    </span>
-                                </a>
-                            ) : (
-                                <span>{msg.content}</span>
-                            )}
-                            {/* <div className="text-xs text-muted-foreground mt-1 text-right">
-                                {formatTime(msg.created_at)}
-                            </div> */}
-                            <div className="text-xs text-muted-foreground mt-1 text-right flex items-center justify-end gap-1">
-                                <span>{formatTime(msg.created_at)}</span>
+                {messages.map((msg, index) => {
+                    const prevMsg = messages[index - 1];
+                    const msgDate = new Date(msg.created_at);
+                    const prevDate = prevMsg ? new Date(prevMsg.created_at) : null;
 
-                                {msg.sender_id === myId && (
-                                    <>
-                                        {msg.status === "read" ? (
-                                            <span className="text-blue-500 font-semibold ml-1">Đã xem</span>
-                                        ) : (
-                                            <span className="text-muted-foreground ml-1">Đã gửi</span>
+                    const isNewDay =
+                        !prevDate ||
+                        msgDate.toDateString() !== prevDate.toDateString();
+
+                    return (
+                        <div key={`${msg.id}-${index}`}>
+                            {isNewDay && (
+                                <div className="flex justify-center my-3">
+                                    <div className="text-xs text-muted-foreground bg-muted px-3 py-1 rounded-full">
+                                        {formatDateLabel(msgDate)}
+                                    </div>
+                                </div>
+                            )}
+
+                            <div
+                                className={`flex ${msg.sender_id === myId ? "justify-end" : "justify-start"}`}
+                            >
+                                <div
+                                    className={`rounded-lg px-3 py-2 max-w-[75%] break-anywhere ${msg.sender_id === myId
+                                        ? "bg-primary text-white"
+                                        : "bg-muted text-foreground"
+                                        }`}
+                                >
+                                    {msg.type === "image" ? (
+                                        <img
+                                            src={msg.content}
+                                            alt="image"
+                                            className="rounded-lg max-w-full max-h-64 object-cover"
+                                        />
+                                    ) : msg.type === "file" ? (
+                                        <a
+                                            href={msg.content}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="flex items-center gap-2 p-2 rounded-lg border bg-background hover:bg-muted transition-colors w-fit max-w-[80%]"
+                                        >
+                                            <div className="w-6 h-6 shrink-0">
+                                                <FileIcon
+                                                    extension={msg.content.split(".").pop()?.toLowerCase() || ""}
+                                                    {...defaultStyles[msg.content.split(".").pop()?.toLowerCase() || "default"]}
+                                                />
+                                            </div>
+                                            <span className="truncate text-sm text-primary underline">
+                                                {msg.content.split("/").pop()}
+                                            </span>
+                                        </a>
+                                    ) : (
+                                        <span>{msg.content}</span>
+                                    )}
+
+                                    <div
+                                        className={`text-xs mt-1 text-right flex items-center justify-end gap-1 ${msg.sender_id === myId ? "opacity-90" : "text-muted-foreground"
+                                            }`}
+                                    >
+                                        <span
+                                            className={
+                                                msg.sender_id === myId ? "text-white/80" : "text-muted-foreground"
+                                            }
+                                        >
+                                            {formatTime(msg.created_at)}
+                                        </span>
+
+                                        {msg.sender_id === myId && index === messages.length - 1 && (
+                                            msg.is_read ? (
+                                                <span className="text-emerald-400 font-medium ml-1">Đã xem</span>
+                                            ) : (
+                                                <span className="text-gray-300 ml-1">Đã gửi</span>
+                                            )
                                         )}
-                                    </>
-                                )}
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                ))}
+                    );
+                })}
+
                 <div ref={messagesEndRef} />
             </div>
 
-            {/* xem trước*/}
+            {/* Xem trước file */}
             {files.length > 0 && (
                 <div className="p-3 border-t bg-muted/30 flex flex-wrap gap-3 overflow-x-auto">
                     {files.map((file, idx) => (
@@ -321,7 +382,9 @@ export default function ChatWindow({
                                             {...defaultStyles[file.name.split(".").pop() || "default"]}
                                         />
                                     </div>
-                                    <span className="text-sm truncate max-w-[120px]">{file.name}</span>
+                                    <span className="text-sm truncate max-w-[120px]">
+                                        {file.name}
+                                    </span>
                                 </div>
                             )}
                             <button
@@ -335,6 +398,7 @@ export default function ChatWindow({
                 </div>
             )}
 
+            {/* Ô nhập */}
             <div className="p-3 border-t flex gap-2 shrink-0 bg-background sticky bottom-0 z-10">
                 <Input
                     value={message}

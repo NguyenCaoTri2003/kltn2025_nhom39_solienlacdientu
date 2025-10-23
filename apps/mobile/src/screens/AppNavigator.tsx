@@ -14,6 +14,7 @@ import { useAuth } from "../context/AuthContext";
 import CourseOfferingDetailScreen from "./CourseOfferingDetailScreen";
 import { RootStackParamList } from "../types/navigation";
 import GradesScreen from "./GradesScreen";
+import MessagesStack from "./MessagesStack";
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -101,7 +102,8 @@ export default function AppNavigator() {
       />
       <Tab.Screen name="Schedule" component={ScheduleScreen} options={{ title: "Lịch học" }} />
       <Tab.Screen name="Attendance" component={AttendanceScreen} options={{ title: "Điểm danh" }} />
-      <Tab.Screen name="Messages" component={MessagesScreen} options={{ title: "Nhắn tin" }} />
+      {/* <Tab.Screen name="Messages" component={MessagesScreen} options={{ title: "Nhắn tin" }} /> */}
+      <Tab.Screen name="Messages" component={MessagesStack} options={{ title: "Nhắn tin" }} />
       {!isStudent && (
         <Tab.Screen
           name="Appointments"

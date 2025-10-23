@@ -42,17 +42,6 @@ export class MessageRepository {
     return data;
   }
 
-  // async getMessages(conversationId: number) {
-  //   const { data, error } = await supabase
-  //     .from("messages")
-  //     .select("*, sender:users(id, full_name, role, avatar_url)")
-  //     .eq("conversation_id", conversationId)
-  //     .order("created_at", { ascending: true });
-
-  //   if (error) throw error;
-  //   return data;
-  // }
-
   async getMessages(conversationId: number) {
     const { data, error } = await supabase
       .from("messages")
@@ -61,31 +50,12 @@ export class MessageRepository {
       .order("created_at", { ascending: true });
 
     if (error) throw error;
+    console.log("Fetched messages:", data);
     return data.map(msg => ({
       ...msg,
       status: msg.is_read ? "read" : "sent",
     }));
   }
-
-  // async listConversations(userId: number) {
-  //   const { data, error } = await supabase
-  //     .from("conversations")
-  //     .select(`
-  //       id,
-  //       user1:users!user1_id(id, full_name, role, avatar_url),
-  //       user2:users!user2_id(id, full_name, role, avatar_url),
-  //       messages(id, content, created_at, sender_id, type)
-  //     `)
-  //     .or(`user1_id.eq.${userId},user2_id.eq.${userId}`)
-  //     .order("updated_at", { ascending: false });
-
-  //   if (error) throw error;
-
-  //   return data.map((c) => ({
-  //     ...c,
-  //     lastMessage: c.messages?.[c.messages.length - 1] || null,
-  //   }));
-  // }
 
   async listConversations(userId: number) {
     const { data, error } = await supabase
@@ -94,7 +64,7 @@ export class MessageRepository {
       id,
       user1:users!user1_id(id, full_name, role, avatar_url),
       user2:users!user2_id(id, full_name, role, avatar_url),
-      messages(id, content, created_at, sender_id, type),
+      messages(id, content, created_at, sender_id, type, is_read),
       messages_unread:messages(count)
     `)
       .or(`user1_id.eq.${userId},user2_id.eq.${userId}`)
