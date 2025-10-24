@@ -96,9 +96,11 @@ export async function POST(req: NextRequest) {
     // tạo notification cho sinh viên
     try {
       const viLevel = translateWarningLevel(levelStr);
-      const content = `Cảnh cáo học vụ (${viLevel}): ${reason}`;
+      const title = `Cảnh cáo học vụ: ${viLevel}`;
+      const content = reason;
       await notificationsUseCase.create({
         user_id: Number(studentId),
+        title,
         content,
         type: "university",
         category: "ACADEMIC",

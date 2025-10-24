@@ -73,6 +73,7 @@ export async function POST(req: NextRequest) {
     }
     const payload = {
       user_id: body?.user_id ?? null,
+      title: typeof body?.title === "string" ? body.title : null,
       content: typeof body?.content === "string" ? body.content : null,
       type: requestedType,
       category: body?.category ?? null,

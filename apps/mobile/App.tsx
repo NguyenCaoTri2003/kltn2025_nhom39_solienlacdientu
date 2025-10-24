@@ -5,11 +5,27 @@ import { AuthProvider, useAuth } from "./src/context/AuthContext";
 import LoginScreen from "./src/screens/LoginScreen";
 import AppNavigator from "./src/screens/AppNavigator"; // 👈 thay cho HomeScreen
 import { UserProvider } from "./src/context/UserContext";
-import { NotificationProvider } from "./src/context/NotificationContext";
+import { NotificationProvider, useNotificationContext } from "./src/context/NotificationContext";
 import { MessageProvider } from "./src/context/MessageProvider";
 import ChatScreen from "./src/screens/ChatScreen";
+import GlobalNotificationToast from "./src/components/GlobalNotificationToast";
 
 const Stack = createNativeStackNavigator();
+
+function GlobalToastWrapper() {
+  const { toastVisible, toastNotification, hideToast } = useNotificationContext();
+
+  return (
+    <>
+      <RootNavigator />
+      <GlobalNotificationToast
+        visible={toastVisible}
+        notification={toastNotification}
+        onClose={hideToast}
+      />
+    </>
+  );
+}
 
 function RootNavigator() {
   const { user } = useAuth();
@@ -42,7 +58,7 @@ export default function App() {
         <NotificationProvider>
           <MessageProvider>
             <NavigationContainer>
-              <RootNavigator />
+              <GlobalToastWrapper />
             </NavigationContainer>
           </MessageProvider>
         </NotificationProvider>

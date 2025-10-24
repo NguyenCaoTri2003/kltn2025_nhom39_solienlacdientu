@@ -53,11 +53,11 @@ export function translateWarningLevel(level?: string | null): string {
     case "severe":
       return "Cảnh cáo nặng";
     case "FIRST":
-      return "Cảnh lần 1";
+      return "Cảnh cáo lần 1";
     case "SECOND":
-      return "Cảnh lần 2";
+      return "Cảnh cáo lần 2";
     case "FINAL":
-      return "Cảnh lần 3";
+      return "Cảnh cáo lần 3";
     default:
       return level || "";
   }

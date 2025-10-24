@@ -12,6 +12,7 @@ if (typeof global !== 'undefined' && !global.EventSource) {
 export interface Notification {
   id: number;
   user_id: number | null;
+  title: string | null;
   content: string | null;
   type: 'university' | 'lecturer' | 'system' | null;
   created_at?: string;

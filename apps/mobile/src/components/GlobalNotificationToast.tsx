@@ -8,8 +8,9 @@ import {
   Dimensions,
 } from 'react-native';
 import { Bell, X, AlertCircle, MessageSquare, University } from 'lucide-react-native';
+import { useNavigation } from '@react-navigation/native';
 
-interface NotificationToastProps {
+interface GlobalNotificationToastProps {
   visible: boolean;
   notification: {
     id: number;
@@ -18,20 +19,19 @@ interface NotificationToastProps {
     type: 'university' | 'lecturer' | 'system' | null;
   } | null;
   onClose: () => void;
-  onPress: () => void;
 }
 
-export default function NotificationToast({
+export default function GlobalNotificationToast({
   visible,
   notification,
   onClose,
-  onPress,
-}: NotificationToastProps) {
+}: GlobalNotificationToastProps) {
+  const navigation = useNavigation();
   const [animation] = useState(new Animated.Value(0));
   const [translateY] = useState(new Animated.Value(-100));
 
   useEffect(() => {
-    if (visible) {
+    if (visible && notification) {
       Animated.parallel([
         Animated.timing(animation, {
           toValue: 1,
@@ -47,7 +47,7 @@ export default function NotificationToast({
 
       const timer = setTimeout(() => {
         onClose();
-      }, 3000);
+      }, 3000); // thời gian hiển thị
 
       return () => clearTimeout(timer);
     } else {
@@ -64,7 +64,7 @@ export default function NotificationToast({
         }),
       ]).start();
     }
-  }, [visible, animation, translateY, onClose]);
+  }, [visible, notification, animation, translateY, onClose]);
 
   if (!visible || !notification) return null;
 
@@ -94,6 +94,12 @@ export default function NotificationToast({
     }
   };
 
+  const handlePress = () => {
+    onClose();
+    // Navigate to notification detail
+    (navigation as any).navigate('NotificationDetail', { notification });
+  };
+
   return (
     <Animated.View
       style={[
@@ -106,7 +112,7 @@ export default function NotificationToast({
     >
       <TouchableOpacity
         style={styles.toast}
-        onPress={onPress}
+        onPress={handlePress}
         activeOpacity={0.8}
       >
         <View style={styles.content}>
@@ -118,7 +124,7 @@ export default function NotificationToast({
               {getNotificationTypeLabel(notification.type)}
             </Text>
             <Text style={styles.message} numberOfLines={2}>
-              {notification.title || notification.content}
+              {notification.title || notification.content || 'Bạn có thông báo mới'}
             </Text>
           </View>
           <TouchableOpacity
@@ -142,7 +148,7 @@ const styles = StyleSheet.create({
     top: 50,
     left: 16,
     right: 16,
-    zIndex: 1000,
+    zIndex: 9999,
   },
   toast: {
     backgroundColor: '#FFFFFF',

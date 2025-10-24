@@ -34,6 +34,7 @@ const NotificationDetailScreen: React.FC<NotificationDetailScreenProps> = ({ nav
   
   // Lấy thông tin notification (ưu tiên từ nested object)
   const notificationData = notification.notifications || notification;
+  const title = notificationData.title || notification.title || null;
   const content = notificationData.content || notification.content || 'Không có nội dung';
   const type = notificationData.type || notification.type || 'system';
   const category = notificationData.category || notification.category || 'GENERAL';
@@ -108,13 +109,13 @@ const NotificationDetailScreen: React.FC<NotificationDetailScreenProps> = ({ nav
   const getWarningLevelColor = (level: string) => {
     switch (level) {
       case 'FIRST':
-        return '#F59E0B'; // Amber
+        return '#F59E0B'; 
       case 'SECOND':
-        return '#EF4444'; // Red
+        return '#EF4444'; 
       case 'FINAL':
-        return '#DC2626'; // Dark red
+        return '#DC2626'; 
       default:
-        return '#6B7280'; // Gray
+        return '#6B7280'; 
     }
   };
 
@@ -163,7 +164,12 @@ const NotificationDetailScreen: React.FC<NotificationDetailScreenProps> = ({ nav
 
         {/* Nội dung */}
         <View style={styles.contentSection}>
-          <Text style={styles.contentTitle}>Nội dung thông báo</Text>
+          {title && (
+            <>
+              <Text style={styles.titleText}>{title}</Text>
+            </>
+          )}
+          <Text style={styles.contentTitle}>Nội dung chi tiết</Text>
           <Text style={styles.contentText}>{content}</Text>
         </View>
 
@@ -302,6 +308,21 @@ const styles = StyleSheet.create({
     color: '#111827',
     marginBottom: 12,
   },
+  titleText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#b71c1c',
+    backgroundColor: '#fdecea', // nền đỏ nhạt
+    borderWidth: 1,
+    borderColor: '#f5c6cb',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    textAlign: 'center',
+    marginBottom: 16,
+    lineHeight: 22,
+  },
+  
   contentText: {
     fontSize: 14,
     color: '#374151',
