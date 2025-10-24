@@ -20,11 +20,13 @@ import {
 } from "lucide-react-native";
 import { useNavigation } from "@react-navigation/native";
 import { useUser } from "../../context/UserContext";
+import { useNotificationContext } from "../../context/NotificationContext";
 
 export default function StudentHomeScreen() {
   const { user } = useAuth();
   const navigation = useNavigation();
   const {userData} = useUser();
+  const { unreadCount } = useNotificationContext();
 
   const hours = new Date().getHours();
   const greeting =
@@ -47,8 +49,18 @@ export default function StudentHomeScreen() {
             <Text style={styles.name}>{user?.full_name || "Sinh viên"}</Text>
           </View>
 
-          <TouchableOpacity style={styles.notifyBtn}>
+          <TouchableOpacity 
+            style={styles.notifyBtn}
+            onPress={() => navigation.navigate("Notifications" as never)}
+          >
             <Bell color="#1E3A8A" size={24} />
+            {unreadCount > 0 && (
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </Text>
+              </View>
+            )}
           </TouchableOpacity>
         </View>
 
@@ -149,6 +161,26 @@ const styles = StyleSheet.create({
     backgroundColor: "#F3F4F6",
     padding: 10,
     borderRadius: 14,
+    position: "relative",
+  },
+  badge: {
+    position: "absolute",
+    top: -2,
+    right: -2,
+    backgroundColor: "#EF4444",
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 2,
+    borderColor: "#FFFFFF",
+  },
+  badgeText: {
+    color: "#FFFFFF",
+    fontSize: 10,
+    fontWeight: "600",
+    textAlign: "center",
   },
 
   /** Profile Card */

@@ -44,6 +44,7 @@ export function AddUserModal({ open, onClose, onSuccess }: AddUserModalProps) {
     failed: number;
     errors: { row: number; message: string }[];
   } | null>(null);
+  const [singleFormValid, setSingleFormValid] = useState(true);
 
   const handleSubmit = async () => {
     setLoading(true);
@@ -216,7 +217,18 @@ export function AddUserModal({ open, onClose, onSuccess }: AddUserModalProps) {
           {/* Chọn loại tài khoản */}
           <div className="space-y-2">
             <Label>Loại tài khoản</Label>
-            <Select value={role} onValueChange={(v: RoleType) => setRole(v)}>
+            <Select
+              value={role}
+              onValueChange={(v: RoleType) => {
+                setRole(v);
+                // Reset single form states to avoid cross-role residue
+                setSingleData(null);
+                setSingleFormValid(true);
+                setSummary(null);
+                setFile(null);
+                setDisableConfirm(false);
+              }}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Chọn loại tài khoản" />
               </SelectTrigger>
@@ -231,7 +243,12 @@ export function AddUserModal({ open, onClose, onSuccess }: AddUserModalProps) {
 
           {/* Nội dung theo mode */}
           {mode === "single" ? (
-            <AddSingleUserForm role={role} onChange={setSingleData} />
+            <AddSingleUserForm
+              key={`single-${role}`}
+              role={role}
+              onChange={setSingleData}
+              onValidityChange={setSingleFormValid}
+            />
           ) : (
             <div className="space-y-3">
               <Label>Chọn tệp Excel để import</Label>
@@ -283,7 +300,11 @@ export function AddUserModal({ open, onClose, onSuccess }: AddUserModalProps) {
           </Button>
           <Button
             onClick={handleSubmit}
-            disabled={loading || (mode === "import" && disableConfirm)}
+            disabled={
+              loading ||
+              (mode === "import" && disableConfirm) ||
+              (mode === "single" && !singleFormValid)
+            }
             className="bg-primary text-primary-foreground hover:bg-primary/90"
           >
             {loading ? (

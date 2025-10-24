@@ -5,4 +5,22 @@ export type RootStackParamList = {
   CourseOffering: undefined;
   CourseOfferingDetail: { id: number; studentId?: number };
   Grades: { studentId: number };
+  NotificationsList: undefined;
+  NotificationDetail: { 
+    notification: {
+      id: number;
+      content: string;
+      type: string;
+      category: string;
+      created_at: string;
+      warning_level?: string;
+      notifications?: {
+        content: string;
+        type: string;
+        category: string;
+        created_at: string;
+        warning_level?: string;
+      };
+    };
+  };
 };

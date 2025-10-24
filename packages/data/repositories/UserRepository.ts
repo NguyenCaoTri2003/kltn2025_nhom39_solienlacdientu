@@ -319,7 +319,8 @@ export class UserRepository {
         "id, full_name, email, phone, role, status, created_at, last_login",
         { count: "exact" }
       )
-      .order("id", { ascending: true });
+      // Newest first
+      .order("created_at", { ascending: false });
 
     // Lọc theo role/status nếu có
     if (
@@ -777,38 +778,44 @@ export class UserRepository {
 
               if (existingParent) {
                 parentUserId = existingParent.id;
-                console.log(`Dùng lại phụ huynh có sẵn: ${existingParent.full_name} (${citizenId})`);
+                console.log(
+                  `Dùng lại phụ huynh có sẵn: ${existingParent.full_name} (${citizenId})`
+                );
               } else {
                 // Nếu chưa có thì tạo mới phụ huynh
                 const passwordParent = await bcrypt.hash("11111111", 10);
-                const { data: parentUser, error: parentUserError } = await supabase
-                  .from("users")
-                  .insert({
-                    full_name: p.user.full_name,
-                    password_hash: passwordParent,
-                    role: "parent",
-                    phone: p.user.phone,
-                    email: p.user.email,
-                    status: "suspended",
-                    citizen_id_card: citizenId || null,
-                    address: p.user.address ?? null,
-                    ethnic: p.user.ethnic ?? null,
-                  })
-                  .select("id, role")
-                  .single();
+                const { data: parentUser, error: parentUserError } =
+                  await supabase
+                    .from("users")
+                    .insert({
+                      full_name: p.user.full_name,
+                      password_hash: passwordParent,
+                      role: "parent",
+                      phone: p.user.phone,
+                      email: p.user.email,
+                      status: "suspended",
+                      citizen_id_card: citizenId || null,
+                      address: p.user.address ?? null,
+                      ethnic: p.user.ethnic ?? null,
+                    })
+                    .select("id, role")
+                    .single();
 
                 if (parentUserError) throw parentUserError;
 
                 parentUserId = parentUser.id;
                 createdUsers.push({ id: parentUserId, role: "parent" });
-
-                const { error: parentError } = await supabase.from("parents").insert({
-                  id: parentUserId,
-                  occupation: p.parent.occupation ?? null,
-                });
+                const { error: parentError } = await supabase
+                  .from("parents")
+                  .insert({
+                    id: parentUserId,
+                    occupation: p.parent.occupation ?? null,
+                  });
                 if (parentError) throw parentError;
 
-                console.log(`👶 Tạo mới phụ huynh: ${p.user.full_name} (${citizenId})`);
+                console.log(
+                  `👶 Tạo mới phụ huynh: ${p.user.full_name} (${citizenId})`
+                );
               }
 
               // Tạo liên kết student–parent (nếu chưa có)
@@ -831,9 +838,14 @@ export class UserRepository {
                   });
 
                 if (spError) throw spError;
-                console.log(`Tạo liên kết student-parent thành công: ${newUserId} ↔ ${parentUserId}`);
+                console.log(
+                  `Tạo liên kết student-parent thành công: ${newUserId} ↔ ${parentUserId}`
+                );
               } else {
-                console.log(`Liên kết đã tồn tại: student ${newUserId} ↔ parent ${parentUserId}`);
+                console.log(
+                  `Liên kết đã tồn tại: student ${newUserId} ↔ parent ${parentUserId}`
+                );
+
               }
             }
           }

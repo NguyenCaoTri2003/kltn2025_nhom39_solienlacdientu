@@ -1,6 +1,7 @@
 import { supabase } from "@packages/data/supabaseClient";
 
 export type StudentsOverviewRow = {
+  user_id?: number;
   student_id: number;
   student_code: string;
   full_name: string;
@@ -45,6 +46,12 @@ export class StudentsOverviewRepository {
     search?: string;
     gpaMin?: number;
     gpaMax?: number;
+    facultyName?: string;
+    classCode?: string;
+    academicStatus?: string;
+    failedMax?: number;
+    attendanceMin?: number;
+    warningFilter?: string;
   }): Promise<StudentsOverviewResult> {
     const {
       semesterId,
@@ -54,33 +61,85 @@ export class StudentsOverviewRepository {
       search = "",
       gpaMin,
       gpaMax,
+      facultyName,
+      classCode,
+      academicStatus,
+      failedMax,
+      attendanceMin,
+      warningFilter,
     } = params;
 
     const page = Math.max(1, Math.floor(rawPage));
     const pageSize = Math.min(100, Math.max(1, Math.floor(rawPageSize)));
     const offset = (page - 1) * pageSize;
     const needGpaFilter = gpaMin != null || gpaMax != null;
+    const needDerivedFilters =
+      needGpaFilter || failedMax != null || attendanceMin != null || !!warningFilter;
+    const needBaseFilters = !!facultyName || !!classCode;
 
-    // Step 1: lightweight base students list
-    const baseStudents = await this.getBaseStudents({
-      studentIds: filterStudentIds,
-      search: search.trim(),
-    });
-    if (baseStudents.length === 0) {
-      return {
-        items: [],
-        total: 0,
+    // Step 1: base students list with server-side search and pagination
+    // - If GPA filter not needed: fetch paginated data directly from DB with count
+    // - If GPA filter needed: fetch all candidates matching search (server-side search), then filter & paginate in memory
+    let studentsToProcess: Array<{
+      user_id?: number;
+      student_id: number;
+      student_code: string;
+      full_name: string;
+      class: string;
+      faculty: string;
+      academic_status: string;
+    }> = [];
+    let totalCount = 0;
+
+    if (!needDerivedFilters && !needBaseFilters) {
+      const { students, total } = await this.getBaseStudents({
+        studentIds: filterStudentIds,
+        search: search.trim(),
         page,
         pageSize,
-        totalPages: 0,
-      };
-    }
-
-    let studentsToProcess = baseStudents;
-    let totalCount = baseStudents.length;
-
-    if (!needGpaFilter) {
-      studentsToProcess = baseStudents.slice(offset, offset + pageSize);
+        academicStatus,
+      });
+      studentsToProcess = students;
+      totalCount = total;
+      if (studentsToProcess.length === 0) {
+        return {
+          items: [],
+          total: 0,
+          page,
+          pageSize,
+          totalPages: 0,
+        };
+      }
+    } else {
+      const { students } = await this.getBaseStudents({
+        studentIds: filterStudentIds,
+        search: search.trim(),
+        academicStatus,
+      });
+      if (students.length === 0) {
+        return {
+          items: [],
+          total: 0,
+          page,
+          pageSize,
+          totalPages: 0,
+        };
+      }
+      // Apply base-level filters in-memory to reduce subsequent batch size
+      studentsToProcess = students.filter((s) => {
+        if (facultyName && s.faculty !== facultyName) return false;
+        if (classCode && s.class !== classCode) return false;
+        return true;
+      });
+      if (studentsToProcess.length === 0) {
+        return {
+          items: [],
+          total: 0,
+          page,
+          pageSize,
+          totalPages: 0,
+        };
+      }
     }
 
     const studentIds = studentsToProcess.map((s) => s.student_id);
@@ -100,21 +159,48 @@ export class StudentsOverviewRepository {
       ),
     ]);
 
-    // Step 5: GPA filter if needed (after having grades)
+    // Step 5: Derived filters if needed (after having grades/attendance/warnings)
     let finalStudents = studentsToProcess;
-    if (needGpaFilter) {
+    if (needDerivedFilters || needBaseFilters) {
       finalStudents = studentsToProcess.filter((s) => {
         const grades = gradesMap.get(s.student_id);
+        const warnings = warningsMap.get(s.student_id);
+        const attendance = attendanceMap.get(s.student_id);
         const gpa = grades?.gpa4 ?? null;
-        if (gpa == null) return false;
-        const passMin = gpaMin != null ? gpa >= gpaMin : true;
-        const passMax = gpaMax != null ? gpa <= gpaMax : true;
-        return passMin && passMax;
+
+        // GPA range
+        if (gpaMin != null || gpaMax != null) {
+          if (gpa == null) return false;
+          const passMin = gpaMin != null ? gpa >= gpaMin : true;
+          const passMax = gpaMax != null ? gpa <= gpaMax : true;
+          if (!(passMin && passMax)) return false;
+        }
+        // Failed subjects max
+        if (failedMax != null) {
+          const failed = grades?.failedCount ?? 0;
+          if (failed > failedMax) return false;
+        }
+        // Attendance minimum
+        if (attendanceMin != null) {
+          const att = attendance ?? null;
+          if (att == null || att < attendanceMin) return false;
+        }
+        // Warning filter
+        if (warningFilter) {
+          const totalW = warnings?.total ?? 0;
+          if (
+            (warningFilter === "none" && totalW > 0) ||
+            (warningFilter === "warning_1" && totalW < 1) ||
+            (warningFilter === "warning_2" && totalW < 2) ||
+            (warningFilter === "probation" && totalW < 3)
+          ) {
+            return false;
+          }
+        }
+        return true;
       });
       totalCount = finalStudents.length;
       finalStudents = finalStudents.slice(offset, offset + pageSize);
-    } else {
-      totalCount = baseStudents.length;
     }
 
     // Step 6: final mapping
@@ -151,6 +237,7 @@ export class StudentsOverviewRepository {
           : `Đề xuất Cảnh cáo 1: ${proposedReason}`;
 
       return {
+        user_id: student.user_id,
         student_id: sid,
         student_code: student.student_code,
         full_name: student.full_name,
@@ -182,16 +269,27 @@ export class StudentsOverviewRepository {
   private async getBaseStudents(params: {
     studentIds?: number[];
     search?: string;
-  }): Promise<
-    Array<{
+    page?: number;
+    pageSize?: number;
+    academicStatus?: string;
+  }): Promise<{
+    students: Array<{
+      user_id?: number;
       student_id: number;
       student_code: string;
       full_name: string;
       class: string;
       faculty: string;
       academic_status: string;
-    }>
-  > {
+    }>;
+    total: number;
+  }> {
+    const page = Math.max(1, Math.floor(params.page ?? 1));
+    const pageSize = Math.min(100, Math.max(1, Math.floor(params.pageSize ?? 20)));
+    const hasPagination = params.page != null && params.pageSize != null;
+    const from = (page - 1) * pageSize;
+    const to = from + pageSize - 1;
+
     let query = supabase
       .from("students")
       .select(
@@ -215,18 +313,35 @@ export class StudentsOverviewRepository {
           id,
           full_name
         )
-      `
+      `,
+        { count: "exact" }
       )
-      .order("student_code", { ascending: true });
+  .order("student_code", { ascending: true });
 
     if (params.studentIds && params.studentIds.length > 0) {
       query = query.in("id", params.studentIds);
     }
+    if (params.academicStatus) {
+      query = query.eq("academic_status", params.academicStatus);
+    }
 
-    const { data, error } = await query;
+    const q = (params.search || "").trim();
+    if (q) {
+      // server-side search on student_code or user full_name
+      query = query.or(
+        `student_code.ilike.%${q}%,users.full_name.ilike.%${q}%`
+      );
+    }
+
+    if (hasPagination) {
+      query = query.range(from, to);
+    }
+
+    const { data, error, count } = await query;
     if (error) throw error;
 
-    let students = (data ?? []).map((s: any) => ({
+    const students = (data ?? []).map((s: any) => ({
+      user_id: s.users?.id != null ? Number(s.users.id) : undefined,
       student_id: s.id,
       student_code: s.student_code || "",
       full_name: s.users?.full_name || "",
@@ -235,16 +350,10 @@ export class StudentsOverviewRepository {
       academic_status: s.academic_status || "active",
     }));
 
-    if (params.search) {
-      const searchLower = params.search.toLowerCase();
-      students = students.filter(
-        (s) =>
-          s.student_code.toLowerCase().includes(searchLower) ||
-          s.full_name.toLowerCase().includes(searchLower)
-      );
-    }
+    // If no pagination requested (e.g., for GPA filtering phase), total is data length (post DB search)
+    const total = hasPagination ? count || 0 : students.length;
 
-    return students;
+    return { students, total };
   }
 
   private async batchGetLatestSemesters(studentIds: number[]): Promise<Map<number, number | null>> {
@@ -374,19 +483,44 @@ export class StudentsOverviewRepository {
     semesterIdMap: Map<number, number | null>
   ): Promise<Map<number, WarningData>> {
     if (studentIds.length === 0) return new Map();
+    // Map students.id -> users.id
+    const { data: stuUsers, error: mapErr } = await supabase
+      .from("students")
+      .select("id, users:id ( id )")
+      .in("id", studentIds);
+    if (mapErr) throw mapErr;
+    const studentToUser = new Map<number, number>();
+    const userToStudent = new Map<number, number>();
+    (stuUsers ?? []).forEach((row: any) => {
+      const sid = Number(row.id);
+      const uid = Number(row.users?.id);
+      if (Number.isFinite(sid) && Number.isFinite(uid)) {
+        studentToUser.set(sid, uid);
+        userToStudent.set(uid, sid);
+      }
+    });
+    const userIds = Array.from(userToStudent.keys());
+    if (userIds.length === 0) return new Map(studentIds.map((id) => [id, { total: 0, latestDate: null }]));
+
     const { data, error } = await supabase
       .from("academic_warnings")
       .select("student_id, semester_id, warned_at")
-      .in("student_id", studentIds)
+      .in("student_id", userIds)
       .order("warned_at", { ascending: false });
     if (error) throw error;
+    const byStudent = new Map<number, Array<{ semester_id: number | null; warned_at: string }>>();
+    (data ?? []).forEach((w: any) => {
+      const uid = Number(w.student_id);
+      const sid = userToStudent.get(uid);
+      if (!sid) return;
+      if (!byStudent.has(sid)) byStudent.set(sid, []);
+      byStudent.get(sid)!.push({ semester_id: w.semester_id ?? null, warned_at: w.warned_at });
+    });
     const result = new Map<number, WarningData>();
     studentIds.forEach((sid) => {
       const targetSemId = semesterIdMap.get(sid);
-      const studentWarnings = (data ?? []).filter((w: any) => {
-        if (w.student_id !== sid) return false;
-        return targetSemId != null ? w.semester_id === targetSemId : true;
-      });
+      const warnings = byStudent.get(sid) ?? [];
+      const studentWarnings = warnings.filter((w) => (targetSemId != null ? w.semester_id === targetSemId : true));
       result.set(sid, {
         total: studentWarnings.length,
         latestDate: studentWarnings[0]?.warned_at ?? null,

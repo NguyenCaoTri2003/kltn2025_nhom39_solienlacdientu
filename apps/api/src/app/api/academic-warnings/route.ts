@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { authenticate } from "@packages/utils/auth";
 import { AcademicWarningUseCase } from "@packages/core/usecases/AcademicWarningUseCase";
+import { notificationsUseCase } from "@packages/core/usecases/NotificationsUseCase";
 
 const uc = new AcademicWarningUseCase();
 
@@ -17,6 +18,19 @@ export async function POST(req: NextRequest) {
     }
 
     const created = await uc.createWarning({ studentId: Number(studentId), semesterId: Number(semesterId), level: String(level), reason: String(reason) });
+
+    // tạo notification cho sinh viên
+    try {
+      const content = `Cảnh cáo học vụ (${String(level).toUpperCase()}): ${String(reason)}`;
+      await notificationsUseCase.create({
+        user_id: Number(studentId),
+        content,
+        type: "university",
+        category: "ACADEMIC",
+      });
+    } catch (notifyErr) {
+      console.warn("Failed to create notification for academic warning:", notifyErr); 
+    }
 
     return NextResponse.json({ returnCode: 0, message: "OK", data: created });
   } catch (err) {

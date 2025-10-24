@@ -4,7 +4,17 @@ type SortParam = `${string},asc` | `${string},desc`;
 
 export class AcademicWarningRepository {
   
-  async createWarning(input: { studentId: number; semesterId: number; level: string; reason: string }) {
+  async createWarning(input: {
+    studentId: number;
+    semesterId: number;
+    level: "FIRST" | "SECOND" | "FINAL" | string;
+    reason: string;
+    createdBy?: number;
+    cumulativeGpa?: number | null;
+    debtCredits?: number | null;
+    progressStatus?: string | null;
+    note?: string | null;
+  }) {
     const { data: warning, error: warnErr } = await supabase
       .from("academic_warnings")
       .insert({
@@ -12,20 +22,15 @@ export class AcademicWarningRepository {
         semester_id: input.semesterId,
         level: input.level,
         reason: input.reason,
+        created_by: input.createdBy ?? null,
+        cumulative_gpa: input.cumulativeGpa ?? null,
+        debt_credits: input.debtCredits ?? null,
+        progress_status: input.progressStatus ?? null,
+        note: input.note ?? null,
       })
       .select("id, student_id, semester_id, level, reason, warned_at")
       .single();
     if (warnErr) throw warnErr;
-
-    const content = `Bạn nhận được cảnh cáo học vụ: ${input.reason}`;
-    // Fire-and-forget notification to avoid blocking response time
-    void (supabase
-      .from("notifications")
-      .insert({ user_id: input.studentId, content, type: "academic_warning" })
-      .then(({ error }) => {
-        if (error) console.error("Failed to create notification:", error.message);
-      }, (e) => console.error("Notification error:", e))
-    );
 
     return warning;
   }

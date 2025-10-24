@@ -10,10 +10,12 @@ import ScheduleScreen from "./ScheduleScreen";
 import MessagesScreen from "./MessagesScreen";
 import AppointmentsScreen from "./AppointmentsScreen";
 import CourseOfferingScreen from "./CourseOfferingScreen";
+import NotificationStack from "./notification_/NotificationStack";
 import { useAuth } from "../context/AuthContext";
 import CourseOfferingDetailScreen from "./CourseOfferingDetailScreen";
 import { RootStackParamList } from "../types/navigation";
 import GradesScreen from "./GradesScreen";
+import { useNotificationContext } from "../context/NotificationContext";
 import MessagesStack from "./MessagesStack";
 
 const Tab = createBottomTabNavigator();
@@ -60,6 +62,7 @@ function ParentStack() {
 
 export default function AppNavigator() {
   const { user } = useAuth();
+  const { unreadCount } = useNotificationContext();
   const isStudent = user?.role === "student";
 
   return (
@@ -84,6 +87,9 @@ export default function AppNavigator() {
             case "Messages":
               iconName = "chatbubbles";
               break;
+            case "Notifications":
+              iconName = "notifications";
+              break;
             case "Appointments":
               iconName = "alarm";
               break;
@@ -102,8 +108,15 @@ export default function AppNavigator() {
       />
       <Tab.Screen name="Schedule" component={ScheduleScreen} options={{ title: "Lịch học" }} />
       <Tab.Screen name="Attendance" component={AttendanceScreen} options={{ title: "Điểm danh" }} />
-      {/* <Tab.Screen name="Messages" component={MessagesScreen} options={{ title: "Nhắn tin" }} /> */}
       <Tab.Screen name="Messages" component={MessagesStack} options={{ title: "Nhắn tin" }} />
+      <Tab.Screen 
+        name="Notifications" 
+        component={NotificationStack} 
+        options={{ 
+          title: "Thông báo",
+          tabBarBadge: unreadCount > 0 ? unreadCount : undefined,
+        }} 
+      />
       {!isStudent && (
         <Tab.Screen
           name="Appointments"
