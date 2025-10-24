@@ -267,7 +267,7 @@ const styles = StyleSheet.create({
     maxWidth: "80%",
   },
   leftBubble: { backgroundColor: "#eee", alignSelf: "flex-start" },
-  rightBubble: { backgroundColor: "#DCF8C6", alignSelf: "flex-end" },
+  rightBubble: { backgroundColor: "#D6E4FF", alignSelf: "flex-end" },
   messageText: { fontSize: 16 },
   image: { width: 200, height: 200, borderRadius: 10 },
   file: {

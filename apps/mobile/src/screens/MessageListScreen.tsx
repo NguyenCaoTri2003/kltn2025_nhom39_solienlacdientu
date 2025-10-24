@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   StyleSheet,
+  Image,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useMessageContext } from "../context/MessageProvider";
@@ -13,6 +14,7 @@ import { useNavigation } from "@react-navigation/native";
 import { useAuth } from "../context/AuthContext";
 import dayjs from "dayjs";
 import { getRoleLabel } from "../utils/roleHelper";
+import HeaderBar from "../components/HeaderBar";
 
 export default function MessageListScreen() {
   const { conversations, loading, refresh } = useMessageContext();
@@ -24,7 +26,8 @@ export default function MessageListScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <Text style={styles.header}>Hộp thư đến</Text>
+      <HeaderBar title="Hộp thư đến" unShowOnBack />
+
       <FlatList
         data={[...conversations].sort(
           (a, b) =>
@@ -34,6 +37,7 @@ export default function MessageListScreen() {
         keyExtractor={(item) => item.id.toString()}
         refreshing={loading}
         onRefresh={refresh}
+        contentContainerStyle={styles.listContent}
         renderItem={({ item }) => {
           const partner = item.user1?.id === myId ? item.user2 : item.user1;
           const lastMsgTime = item.lastMessage?.created_at
@@ -42,6 +46,7 @@ export default function MessageListScreen() {
 
           return (
             <TouchableOpacity
+              activeOpacity={0.8}
               style={styles.conversationItem}
               onPress={() =>
                 navigation.navigate("Chat", {
@@ -52,25 +57,45 @@ export default function MessageListScreen() {
                 })
               }
             >
-              <View style={{ flex: 1 }}>
-                <Text style={styles.name}>
-                  {partner?.full_name}{" "}
-                  <Text style={styles.role}>({getRoleLabel(partner?.role)})</Text>
-                </Text>
-                <Text style={styles.lastMsg} numberOfLines={1}>
-                  {item.lastMessage?.content || "Chưa có tin nhắn"}
-                </Text>
+              <View style={styles.avatarWrapper}>
+                <Image
+                  source={{
+                    uri:
+                      partner?.avatar_url ||
+                      `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                        partner?.full_name?.trim().split(" ").pop()?.charAt(0).toUpperCase() || "U"
+                      )
+                      }&background=1E3A8A&color=fff&size=128`,
+                  }}
+                  style={styles.avatar}
+                />
               </View>
 
-              <View style={{ alignItems: "flex-end" }}>
-                <Text style={styles.time}>{lastMsgTime}</Text>
-                {(item.unreadCount ?? 0) > 0 && (
-                  <View style={styles.unreadBadge}>
-                    <Text style={styles.unreadText}>
-                      {item.unreadCount ?? 0}
-                    </Text>
-                  </View>
-                )}
+              {/* Nội dung */}
+              <View style={styles.messageContent}>
+                <View style={styles.nameRow}>
+                  <Text style={styles.name} numberOfLines={1}>
+                    {partner?.full_name}
+                  </Text>
+                  <Text style={styles.time}>{lastMsgTime}</Text>
+                </View>
+
+                <Text style={styles.role} numberOfLines={1}>
+                  {getRoleLabel(partner?.role)}
+                </Text>
+
+                <View style={styles.lastMsgRow}>
+                  <Text style={styles.lastMsg} numberOfLines={1}>
+                    {item.lastMessage?.content || "Chưa có tin nhắn"}
+                  </Text>
+                  {(item.unreadCount ?? 0) > 0 && (
+                    <View style={styles.unreadBadge}>
+                      <Text style={styles.unreadText}>
+                        {item.unreadCount ?? 0}
+                      </Text>
+                    </View>
+                  )}
+                </View>
               </View>
             </TouchableOpacity>
           );
@@ -81,29 +106,85 @@ export default function MessageListScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#fff", padding: 16 },
-  header: { fontSize: 20, fontWeight: "bold", marginBottom: 12 },
+  container: {
+    flex: 1,
+    backgroundColor: "#F8FAFC",
+  },
+  listContent: {
+    paddingHorizontal: 12,
+    paddingTop: 8,
+    paddingBottom: 16,
+  },
   conversationItem: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "#eee",
-  },
-  name: { fontSize: 16, fontWeight: "500" },
-  role: {
-    fontSize: 14,
-    color: "#666",
-    fontWeight: "400",
-  },
-  lastMsg: { color: "#888", marginTop: 4 },
-  unreadBadge: {
-    backgroundColor: "#f00",
-    borderRadius: 12,
-    minWidth: 24,
     alignItems: "center",
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    marginBottom: 10,
+    shadowColor: "#000",
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 1 },
+    elevation: 2,
+  },
+  avatarWrapper: {
+    marginRight: 12,
+  },
+  avatar: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+  },
+  messageContent: {
+    flex: 1,
     justifyContent: "center",
   },
-  unreadText: { color: "#fff", fontWeight: "bold", paddingHorizontal: 6 },
-  time: { fontSize: 12, color: "#888", marginBottom: 4 },
+  nameRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  name: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#111827",
+    flexShrink: 1,
+  },
+  time: {
+    fontSize: 12,
+    color: "#9CA3AF",
+    marginLeft: 6,
+  },
+  role: {
+    fontSize: 13,
+    color: "#6B7280",
+    marginTop: 2,
+  },
+  lastMsgRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 4,
+  },
+  lastMsg: {
+    flex: 1,
+    color: "#4B5563",
+    fontSize: 14,
+  },
+  unreadBadge: {
+    backgroundColor: "#EF4444",
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    marginLeft: 6,
+  },
+  unreadText: {
+    color: "#fff",
+    fontSize: 12,
+    fontWeight: "700",
+    paddingHorizontal: 4,
+  },
 });
