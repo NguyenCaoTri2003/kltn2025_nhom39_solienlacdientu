@@ -1,41 +1,72 @@
 import React from "react";
-import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView } from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet, Alert } from "react-native";
 import { MaterialIcons, FontAwesome5 } from "@expo/vector-icons";
 import { ChevronRight } from "lucide-react-native";
+import { useAuth } from "../context/AuthContext";
+import { useNavigation } from "@react-navigation/native";
 
 export default function ProfileScreen() {
+  const { logout } = useAuth();
+  const navigation = useNavigation();
+
+  const handleLogout = () => {
+    Alert.alert(
+      "Đăng xuất",
+      "Bạn có chắc chắn muốn đăng xuất?",
+      [
+        {
+          text: "Hủy",
+          style: "cancel",
+        },
+        {
+          text: "Đăng xuất",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await logout();
+            } catch (error) {
+              console.error("Logout error:", error);
+            }
+          },
+        },
+      ]
+    );
+  };
+
   return (
     <View style={styles.container}>
-      {/* Header xanh đậm */}
       <View style={styles.header}>
         <Text style={styles.headerText}>THÔNG TIN</Text>
       </View>
 
-      {/* Card trắng với bo góc trên */}
       <View style={styles.card}>
-        {/* Nhóm 1: Tài khoản */}
         <Text style={styles.sectionTitle}>Tài khoản</Text>
 
-        <TouchableOpacity style={styles.item}>
+        <TouchableOpacity 
+          style={styles.item}
+          onPress={() => (navigation as any).navigate('ProfileInfo')}
+        >
           <MaterialIcons name="person-outline" size={22} color="#1E88E5" />
           <Text style={styles.itemText}>Thông tin cá nhân</Text>
           <ChevronRight size={20} color="#BDBDBD" />
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.item}>
-          <FontAwesome5 name="lock" size={20} color="#E53935" />
-          <Text style={styles.itemText}>Đổi mật khẩu</Text>
-          <ChevronRight size={20} color="#BDBDBD" />
-        </TouchableOpacity>
+                <TouchableOpacity 
+                  style={styles.item}
+                  onPress={() => (navigation as any).navigate('ChangePassword')}
+                >
+                  <FontAwesome5 name="lock" size={20} color="#E53935" />
+                  <Text style={styles.itemText}>Đổi mật khẩu</Text>
+                  <ChevronRight size={20} color="#BDBDBD" />
+                </TouchableOpacity>
 
-        <TouchableOpacity style={styles.item}>
+        <TouchableOpacity style={styles.item} onPress={handleLogout}>
           <MaterialIcons name="logout" size={22} color="#FBC02D" />
           <Text style={styles.itemText}>Đăng xuất</Text>
           <ChevronRight size={20} color="#BDBDBD" />
         </TouchableOpacity>
       </View>
 
-      {/* Thông tin chung ở cuối */}
       <View style={styles.footer}>
         <Text style={styles.footerText}>Được phát triển bởi Nhóm 36</Text>
       </View>

@@ -4,7 +4,7 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { Ionicons } from "@expo/vector-icons";
 import StudentHomeScreen from "./student/StudentHomeScreen";
 import ParentHomeScreen from "./parent/ParentHomeScreen";
-import ProfileScreen from "./ProfileScreen";
+import ProfileStack from "./profile/ProfileStack";
 import AttendanceScreen from "./AttendanceScreen";
 import ScheduleScreen from "./ScheduleScreen";
 import MessagesScreen from "./MessagesScreen";
@@ -135,7 +135,7 @@ export default function AppNavigator() {
           options={{ title: "Lịch hẹn" }}
         />
       )}
-      <Tab.Screen name="Profile" component={ProfileScreen} options={{ title: "Cá nhân" }} />
+      <Tab.Screen name="Profile" component={ProfileStack} options={{ title: "Cá nhân" }} />
     </Tab.Navigator>
   );
 }

@@ -77,3 +77,40 @@ export function translateAcademicStatus(status?: string): string {
       return status || "";
   }
 }
+
+export function translateTrainingType(type?: string): string {
+  switch (type) {
+    case "regular":
+      return "Đại trà";
+    case "advanced":
+      return "Chất lượng cao";
+    default:
+      return type || "";
+  }
+}
+
+export function translateTrainingLevel(level?: string): string {
+  switch (level) {
+    case "bachelor":
+      return "Đại học";
+    case "master":
+      return "Thạc sĩ";
+    case "phd":
+      return "Tiến sĩ";
+    default:
+      return level || "";
+  }
+}
+
+export function translateRelationship(relationship?: string): string {
+  switch (relationship) {
+    case "father":
+      return "Cha";
+    case "mother":
+      return "Mẹ";
+    case "guardian":
+      return "Người giám hộ";
+    default:
+      return relationship || "";
+  }
+}
