@@ -3,7 +3,17 @@ import { AcademicWarningRepository } from "@packages/data/repositories/AcademicW
 export class AcademicWarningUseCase {
 	constructor(private repo: AcademicWarningRepository = new AcademicWarningRepository()) {}
 
-	async createWarning(input: { studentId: number; semesterId: number; level: string; reason: string }) {
+	async createWarning(input: {
+		studentId: number;
+		semesterId: number;
+		level: "FIRST" | "SECOND" | "FINAL" | string;
+		reason: string;
+		createdBy?: number;
+		cumulativeGpa?: number | null;
+		debtCredits?: number | null;
+		progressStatus?: string | null;
+		note?: string | null;
+	}) {
 		return this.repo.createWarning(input);
 	}
 

@@ -9,11 +9,14 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, useRoute } from "@react-navigation/native";
+import type { NavigationProp, NavigatorScreenParams } from "@react-navigation/native";
 import LoadingScreen from "../components/LoadingScreen";
 import HeaderBar from "../components/HeaderBar";
 import { fetchOfferingDetail } from "../services/offeringService";
 import { getStatusLabel } from "../utils/getStatusLabel";
 import { useUser } from "../context/UserContext";
+import { useAuth } from "../context/AuthContext";
+import { conversationService } from "../services/conversationService";
 
 export default function CourseOfferingDetailScreen() {
   const route = useRoute();
@@ -21,11 +24,24 @@ export default function CourseOfferingDetailScreen() {
     id: number;
     studentId?: number;
   };
+  type MessagesParams = {
+    Chat: {
+      conversationId: number | string;
+      receiverId: number;
+      receiverName?: string;
+      receiverRole?: string;
+    };
+  };
 
-  const navigation = useNavigation();
+  type RootStackParamList = {
+    Messages: NavigatorScreenParams<MessagesParams>;
+  };
+
+  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const { userData } = useUser();
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const { token } = useAuth();
 
   const studentId =
     userData?.role === "student"
@@ -44,6 +60,23 @@ export default function CourseOfferingDetailScreen() {
       }
     })();
   }, [id, studentId]);
+
+  const handleChat = async (receiverId: number, receiverName: string) => {
+    try {
+      if (!token) return alert("Chưa đăng nhập!");
+
+      const conv = await conversationService.getOrCreateConversation(token, receiverId);
+      const conversationId = conv.conversation_id || conv.id;
+
+      navigation.navigate("Messages", {
+        screen: "Chat",
+        params: { conversationId, receiverId, receiverName: receiverName, receiverRole: "lecturer" },
+      });
+    } catch (err) {
+      console.error("Chat error:", err);
+      alert("Không thể mở cuộc trò chuyện.");
+    }
+  };
 
   const dayNames = [
     "Chủ nhật",
@@ -67,7 +100,7 @@ export default function CourseOfferingDetailScreen() {
         </View>
       ) : (
         <ScrollView contentContainerStyle={styles.container}>
-  
+
           <View style={styles.headerBox}>
             <Text style={styles.header}>{data.name}</Text>
             <Text style={styles.sub}>
@@ -134,7 +167,7 @@ export default function CourseOfferingDetailScreen() {
               <Text style={styles.email}>{data.lecturer.email}</Text>
 
               {new Date(data.semester.end_date) >= new Date() && (
-                <TouchableOpacity style={styles.button}>
+                <TouchableOpacity style={styles.button} onPress={() => handleChat(data.lecturer.id, data.lecturer.full_name)}>
                   <Ionicons
                     name="chatbubble-ellipses-outline"
                     size={16}
@@ -195,6 +228,7 @@ export default function CourseOfferingDetailScreen() {
                       styles.button,
                       { backgroundColor: "#10B981" },
                     ]}
+                    onPress={() => handleChat(data.lecturer.id, data.lecturer.full_name)}
                   >
                     <Ionicons
                       name="chatbubble-ellipses-outline"

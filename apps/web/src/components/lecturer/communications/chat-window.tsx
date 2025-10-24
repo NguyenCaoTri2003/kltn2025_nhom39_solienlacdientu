@@ -303,7 +303,7 @@ export default function ChatWindow({
                             >
                                 <div
                                     className={`rounded-lg px-3 py-2 max-w-[75%] break-anywhere ${msg.sender_id === myId
-                                        ? "bg-primary text-white"
+                                        ? "bg-[#D6E4FF] text-black"
                                         : "bg-muted text-foreground"
                                         }`}
                                 >
@@ -340,7 +340,7 @@ export default function ChatWindow({
                                     >
                                         <span
                                             className={
-                                                msg.sender_id === myId ? "text-white/80" : "text-muted-foreground"
+                                                msg.sender_id === myId ? "text-black" : "text-muted-foreground"
                                             }
                                         >
                                             {formatTime(msg.created_at)}
@@ -348,9 +348,9 @@ export default function ChatWindow({
 
                                         {msg.sender_id === myId && index === messages.length - 1 && (
                                             msg.is_read ? (
-                                                <span className="text-emerald-400 font-medium ml-1">Đã xem</span>
+                                                <span className="text-primary font-medium ml-1">Đã xem</span>
                                             ) : (
-                                                <span className="text-gray-300 ml-1">Đã gửi</span>
+                                                <span className="text-gray-700 ml-1">Đã gửi</span>
                                             )
                                         )}
                                     </div>

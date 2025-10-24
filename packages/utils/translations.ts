@@ -3,71 +3,77 @@
 export function translateRole(role?: string): string {
   switch (role) {
     case "student":
-      return "Sinh viên"
+      return "Sinh viên";
     case "lecturer":
-      return "Giảng viên"
+      return "Giảng viên";
     case "parent":
-      return "Phụ huynh"
+      return "Phụ huynh";
     case "admin":
-      return "Quản trị viên"
+      return "Quản trị viên";
     default:
-      return role || ""
+      return role || "";
   }
 }
 
 export function translateAcademicRank(rank?: string): string {
   switch (rank) {
     case "master":
-      return "Thạc sĩ"
+      return "Thạc sĩ";
     case "doctor":
-      return "Tiến sĩ"
+      return "Tiến sĩ";
     case "associate_professor":
-      return "Phó giáo sư"
+      return "Phó giáo sư";
     case "professor":
-      return "Giáo sư"
+      return "Giáo sư";
     default:
-      return rank || ""
+      return rank || "";
   }
 }
 
 export function translateStatus(status?: string): string {
   switch (status) {
     case "active":
-      return "Hoạt động"
+      return "Hoạt động";
     case "inactive":
-      return "Bị khóa"
+      return "Bị khóa";
     case "suspended":
-      return "Chờ kích hoạt"
+      return "Chờ kích hoạt";
     default:
-      return status || ""
+      return status || "";
   }
 }
-export function translateWarningLevel(level?: string): string {
+export function translateWarningLevel(level?: string | null): string {
   switch (level) {
     case "minor":
-      return "Cảnh cáo nhẹ"
+      return "Cảnh cáo nhẹ";
     case "moderate":
-      return "Cảnh cáo trung bình"
+      return "Cảnh cáo trung bình";
     case "major":
-      return "Cảnh cáo nặng"
+      return "Cảnh cáo nặng";
     case "severe":
-      return "Cảnh cáo nặng"
+      return "Cảnh cáo nặng";
+    case "FIRST":
+      return "Cảnh lần 1";
+    case "SECOND":
+      return "Cảnh lần 2";
+    case "FINAL":
+      return "Cảnh lần 3";
     default:
-      return level || ""
+      return level || "";
   }
 }
 
 export function translateAcademicStatus(status?: string): string {
   switch (status) {
     case "studing":
-      return "Đang học"
+      return "Đang học";
     case "graduated":
-      return "Đã tốt nghiệp"
+      return "Đã tốt nghiệp";
     case "warned":
-      return "Bị cảnh cáo"
+      return "Bị cảnh cáo";
     case "suspended":
-      return "Bị đình chỉ"
+      return "Bị đình chỉ";
     default:
-      return status || ""
+      return status || "";
   }
 }

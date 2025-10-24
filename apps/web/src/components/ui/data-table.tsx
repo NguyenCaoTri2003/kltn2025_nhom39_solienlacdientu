@@ -15,6 +15,7 @@ export function DataTable({
   maxHeight = "400px",
   maxWidth = "100%",
 }: DataTableProps) {
+  const noYScroll = maxHeight === "auto" || maxHeight === "none";
   return (
     <div
       className="relative border rounded-xl shadow-sm bg-white overflow-hidden"
@@ -24,9 +25,9 @@ export function DataTable({
       <div
         className="overflow-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100"
         style={{
-          maxHeight,
-          overflowX: "scroll",
-          overflowY: "scroll",
+          ...(noYScroll ? {} : { maxHeight }),
+          overflowX: "auto",
+          overflowY: noYScroll ? "visible" : "auto",
         }}
       >
         <table className="min-w-full text-sm text-left border-collapse">

@@ -10,6 +10,7 @@ type HeaderBarProps = {
   onRightPress?: () => void;
   backgroundColor?: string;
   style?: ViewStyle;
+  unShowOnBack?: boolean; 
 };
 
 export default function HeaderBar({
@@ -19,17 +20,22 @@ export default function HeaderBar({
   onRightPress,
   backgroundColor = "#1E3A8A",
   style,
+  unShowOnBack,
 }: HeaderBarProps) {
   const navigation = useNavigation();
 
   return (
     <View style={[styles.header, { backgroundColor }, style]}>
-      <TouchableOpacity
-        onPress={onBack || (() => navigation.goBack())}
-        style={styles.iconButton}
-      >
-        <Ionicons name="arrow-back" size={24} color="#fff" />
-      </TouchableOpacity>
+      {!unShowOnBack ? (
+        <TouchableOpacity
+          onPress={onBack || (() => navigation.goBack())}
+          style={styles.iconButton}
+        >
+          <Ionicons name="arrow-back" size={24} color="#fff" />
+        </TouchableOpacity>
+      ) : (
+        <View style={styles.iconPlaceholder} />
+      )}
 
       <Text style={styles.title} numberOfLines={1}>
         {title}

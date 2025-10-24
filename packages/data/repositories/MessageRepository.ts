@@ -72,20 +72,49 @@ export class MessageRepository {
 
     if (error) throw error;
 
+    // const conversationsWithUnread = await Promise.all(
+    //   data.map(async (c) => {
+    //     const { count, error: countError } = await supabase
+    //       .from("messages")
+    //       .select("id", { count: "exact", head: true })
+    //       .eq("conversation_id", c.id)
+    //       .neq("sender_id", userId)
+    //       .eq("is_read", false);
+
+    //     if (countError) throw countError;
+
+    //     return {
+    //       ...c,
+    //       lastMessage: c.messages?.[c.messages.length - 1] || null,
+    //       unreadCount: count || 0,
+    //       isUnread: (count || 0) > 0,
+    //     };
+    //   })
+    // );
+
     const conversationsWithUnread = await Promise.all(
       data.map(async (c) => {
-        const { count, error: countError } = await supabase
+        // Lấy last message mới nhất
+        const { data: lastMsgs } = await supabase
+          .from("messages")
+          .select("id, content, created_at, sender_id, type, is_read")
+          .eq("conversation_id", c.id)
+          .order("created_at", { ascending: false })
+          .limit(1);
+
+        const lastMessage = lastMsgs?.[0] || null;
+
+        // Count messages chưa đọc
+        const { count } = await supabase
           .from("messages")
           .select("id", { count: "exact", head: true })
           .eq("conversation_id", c.id)
           .neq("sender_id", userId)
           .eq("is_read", false);
 
-        if (countError) throw countError;
-
         return {
           ...c,
-          lastMessage: c.messages?.[c.messages.length - 1] || null,
+          lastMessage,
           unreadCount: count || 0,
           isUnread: (count || 0) > 0,
         };
