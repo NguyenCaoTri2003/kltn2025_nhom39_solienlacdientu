@@ -8,7 +8,6 @@ export function useConversations(token?: string, userId?: number) {
     const [conversations, setConversations] = useState<Conversation[]>([]);
     const [loading, setLoading] = useState(false);
 
-    // Fetch lần đầu
     const fetchConversations = useCallback(async () => {
         if (!token || !userId) return;
         setLoading(true);
@@ -20,7 +19,6 @@ export function useConversations(token?: string, userId?: number) {
         }
     }, [token, userId]);
 
-    // Realtime cập nhật lastMessage + unreadCount
     useEffect(() => {
         if (!token || !userId) return;
 
@@ -42,14 +40,14 @@ export function useConversations(token?: string, userId?: number) {
                         conv.lastMessage = {
                             content: newMsg.content,
                             created_at: newMsg.created_at,
+                            type: newMsg.type || "text",
+                            sender_id: newMsg.sender_id,
                         };
 
-                        // Nếu tin nhắn không phải của mình => tăng unread
                         if (newMsg.sender_id !== userId) {
                             conv.unreadCount = (conv.unreadCount ?? 0) + 1;
                         }
 
-                        // Đưa cuộc hội thoại đó lên đầu
                         updated.splice(idx, 1);
                         return [conv, ...updated];
                     });
@@ -57,7 +55,6 @@ export function useConversations(token?: string, userId?: number) {
             )
             .subscribe();
 
-        // ✅ Cleanup đồng bộ, không trả Promise
         return () => {
             supabase.removeChannel(channel);
         };
@@ -86,6 +83,8 @@ export function useMessages(
     try {
       const data = await messageService.getMessages(conversationId, token);
       setMessages(data);
+
+      // Đánh dấu tất cả đã đọc khi fetch
       await messageService.markAsRead(conversationId, token);
       onReadAll?.();
     } finally {
@@ -111,7 +110,6 @@ export function useMessages(
           fileUri,
           fileName
         );
-        // setMessages((prev) => [...prev, newMsg]);
       } catch (err) {
         console.error("Send message failed:", err);
       }
@@ -127,7 +125,7 @@ export function useMessages(
       .on(
         "postgres_changes",
         {
-          event: "INSERT",
+          event: "*", // lắng nghe INSERT + UPDATE
           schema: "public",
           table: "messages",
           filter: `conversation_id=eq.${conversationId}`,
@@ -136,11 +134,27 @@ export function useMessages(
           const newMsg = payload.new as Message;
 
           setMessages((prev) => {
-            if (prev.some((m) => m.id === newMsg.id)) return prev;
-            return [...prev, newMsg];
+            const idx = prev.findIndex((m) => m.id === newMsg.id);
+
+            if (payload.eventType === "INSERT") {
+              // Nếu tin nhắn mới
+              if (idx !== -1) return prev;
+              return [...prev, newMsg];
+            }
+
+            if (payload.eventType === "UPDATE") {
+              // Nếu trạng thái đã xem thay đổi
+              if (idx === -1) return prev;
+              const updated = [...prev];
+              updated[idx] = { ...updated[idx], ...newMsg };
+              return updated;
+            }
+
+            return prev;
           });
 
-          if (newMsg.sender_id !== userId) {
+          // Nếu tin nhắn mới và không phải của mình => đánh dấu đã đọc
+          if (payload.eventType === "INSERT" && newMsg.sender_id !== userId) {
             try {
               await messageService.markAsRead(conversationId, token);
               onReadAll?.();

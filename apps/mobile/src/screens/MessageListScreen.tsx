@@ -24,6 +24,25 @@ export default function MessageListScreen() {
 
   if (loading) return <ActivityIndicator style={{ flex: 1 }} />;
 
+  function formatLastMessage(lastMessage: any, myId?: number, partnerName?: string) {
+    if (!lastMessage) return "Chưa có tin nhắn";
+
+    console.log("Last message:", lastMessage);
+
+    const senderLabel = lastMessage.sender_id === myId ? "Bạn" : partnerName || "Người khác";
+
+    switch (lastMessage.type) {
+      case "text":
+        return `${senderLabel}: ${lastMessage.content}`;
+      case "image":
+        return `${senderLabel}: Đã gửi 1 ảnh`;
+      case "file":
+        return `${senderLabel}: Đã gửi 1 tệp`;
+      default:
+        return `${senderLabel}: Tin nhắn mới`;
+    }
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <HeaderBar title="Hộp thư đến" unShowOnBack />
@@ -86,7 +105,7 @@ export default function MessageListScreen() {
 
                 <View style={styles.lastMsgRow}>
                   <Text style={styles.lastMsg} numberOfLines={1}>
-                    {item.lastMessage?.content || "Chưa có tin nhắn"}
+                    {formatLastMessage(item.lastMessage, myId, partner?.full_name)}
                   </Text>
                   {(item.unreadCount ?? 0) > 0 && (
                     <View style={styles.unreadBadge}>

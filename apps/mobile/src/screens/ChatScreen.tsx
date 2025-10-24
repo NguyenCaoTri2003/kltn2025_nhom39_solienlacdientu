@@ -31,7 +31,9 @@ export default function ChatScreen({ route }: any) {
   const flatListRef = useRef<FlatList>(null);
   const [content, setContent] = useState("");
   const [isNearBottom, setIsNearBottom] = useState(true);
+  const [showScrollToBottom, setShowScrollToBottom] = useState(false);
   const [selectedImages, setSelectedImages] = useState<any[]>([]);
+  const [sending, setSending] = useState(false);
 
   const handleMarkRead = useCallback(() => {
     setConversations((prev: any) =>
@@ -45,7 +47,7 @@ export default function ChatScreen({ route }: any) {
 
   const { messages, sendMessage } = useMessages(
     conversationId,
-    myId!,
+    myId,
     token,
     handleMarkRead
   );
@@ -56,31 +58,43 @@ export default function ChatScreen({ route }: any) {
         flatListRef.current?.scrollToEnd({ animated: true });
       });
     }
-  }, [messages.length]);
+  }, [messages.length, isNearBottom]);
 
   const handleScroll = (event: any) => {
     const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
     const distanceFromBottom =
       contentSize.height - (layoutMeasurement.height + contentOffset.y);
-    setIsNearBottom(distanceFromBottom < 150);
+
+    const nearBottom = distanceFromBottom < 150;
+    setIsNearBottom(nearBottom);
+    setShowScrollToBottom(!nearBottom);
   };
 
   const handleSend = async () => {
     if (!content.trim() && selectedImages.length === 0) return;
+    if (sending) return;
 
-    for (const img of selectedImages) {
-      await sendMessage(receiverId, "", "image", img.uri, img.fileName || undefined);
+    setSending(true);
+
+    try {
+      for (const img of selectedImages) {
+        await sendMessage(receiverId, "", "image", img.uri, img.fileName || undefined);
+      }
+
+      if (content.trim()) {
+        await sendMessage(receiverId, content.trim(), "text");
+      }
+
+      setContent("");
+      setSelectedImages([]);
+      requestAnimationFrame(() => {
+        flatListRef.current?.scrollToEnd({ animated: true });
+      });
+    } catch (err) {
+      console.error("Send message error:", err);
+    } finally {
+      setSending(false);
     }
-
-    if (content.trim()) {
-      await sendMessage(receiverId, content.trim(), "text");
-    }
-
-    setContent("");
-    setSelectedImages([]);
-    requestAnimationFrame(() => {
-      flatListRef.current?.scrollToEnd({ animated: true });
-    });
   };
 
   const handleSelectImages = async () => {
@@ -171,15 +185,17 @@ export default function ChatScreen({ route }: any) {
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* Header */}
       <View style={styles.headerRow}>
         <Text style={styles.headerName}>{receiverName}</Text>
         {receiverRole && (
           <Text style={styles.headerRole}>
-             ({getRoleLabel(receiverRole)})
+            ({getRoleLabel(receiverRole)})
           </Text>
         )}
       </View>
 
+      {/* Messages */}
       <FlatList
         ref={flatListRef}
         data={messages}
@@ -191,13 +207,21 @@ export default function ChatScreen({ route }: any) {
         showsVerticalScrollIndicator={false}
         initialNumToRender={20}
         onContentSizeChange={() => {
-          if (isNearBottom) {
-            flatListRef.current?.scrollToEnd({ animated: false });
-          }
+          if (isNearBottom) flatListRef.current?.scrollToEnd({ animated: false });
         }}
       />
 
-      {/* Xem trước ảnh được chọn */}
+      {/* Scroll to Bottom Button */}
+      {showScrollToBottom && (
+        <TouchableOpacity
+          style={styles.scrollToBottomBtn}
+          onPress={() => flatListRef.current?.scrollToEnd({ animated: true })}
+        >
+          <Ionicons name="chevron-down-circle" size={40} color="#007AFF" />
+        </TouchableOpacity>
+      )}
+
+      {/* Selected Images Preview */}
       {selectedImages.length > 0 && (
         <ScrollView
           horizontal
@@ -220,10 +244,11 @@ export default function ChatScreen({ route }: any) {
         </ScrollView>
       )}
 
+      {/* Input Row */}
       <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 80}
-        style={{ marginBottom: Platform.OS === "ios" ? -40 : 4 }}
+        behavior={Platform.OS === "ios" ? "padding" : "padding"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
+        style={{ marginBottom: Platform.OS === "ios" ? -40 : -50 }}
       >
         <View style={styles.inputRow}>
           <TouchableOpacity onPress={handleSelectImages}>
@@ -241,7 +266,7 @@ export default function ChatScreen({ route }: any) {
             placeholder="Nhập tin nhắn..."
           />
 
-          <TouchableOpacity style={styles.send} onPress={handleSend}>
+          <TouchableOpacity style={styles.send} onPress={handleSend} disabled={sending}>
             <Ionicons name="send" size={20} color="#fff" />
           </TouchableOpacity>
         </View>
@@ -252,93 +277,25 @@ export default function ChatScreen({ route }: any) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#fff" },
-  header: {
-    fontSize: 18,
-    fontWeight: "600",
-    textAlign: "center",
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "#eee",
-  },
-  messageBubble: {
-    marginVertical: 6,
-    padding: 10,
-    borderRadius: 12,
-    maxWidth: "80%",
-  },
+  messageBubble: { marginVertical: 6, padding: 10, borderRadius: 12, maxWidth: "80%" },
   leftBubble: { backgroundColor: "#eee", alignSelf: "flex-start" },
   rightBubble: { backgroundColor: "#D6E4FF", alignSelf: "flex-end" },
   messageText: { fontSize: 16 },
   image: { width: 200, height: 200, borderRadius: 10 },
-  file: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: 6,
-    backgroundColor: "#f1f1f1",
-    borderRadius: 8,
-  },
+  file: { flexDirection: "row", alignItems: "center", padding: 6, backgroundColor: "#f1f1f1", borderRadius: 8 },
   fileName: { marginLeft: 6, color: "#007AFF", maxWidth: 180 },
-  metaInfo: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginTop: 4,
-  },
+  metaInfo: { flexDirection: "row", justifyContent: "space-between", marginTop: 4 },
   time: { fontSize: 12, color: "#777" },
   readLabel: { fontSize: 12, color: "#007AFF", marginLeft: 8 },
-  inputRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: 10,
-    borderTopWidth: 1,
-    borderTopColor: "#ddd",
-    backgroundColor: "#fafafa",
-    marginBottom: Platform.OS === "ios" ? 8 : 4,
-  },
-  input: {
-    flex: 1,
-    backgroundColor: "#fff",
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: "#ccc",
-    marginHorizontal: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
+  inputRow: { flexDirection: "row", alignItems: "center", padding: 10, borderTopWidth: 1, borderTopColor: "#ddd", backgroundColor: "#fafafa", marginBottom: Platform.OS === "ios" ? 8 : 4 },
+  input: { flex: 1, backgroundColor: "#fff", borderRadius: 20, borderWidth: 1, borderColor: "#ccc", marginHorizontal: 8, paddingHorizontal: 12, paddingVertical: 8 },
   send: { backgroundColor: "#007AFF", padding: 10, borderRadius: 20 },
-  previewContainer: {
-    flexDirection: "row",
-    paddingVertical: 8,
-    paddingHorizontal: 10,
-    borderTopWidth: 1,
-    borderTopColor: "#eee",
-    backgroundColor: "#fafafa",
-  },
+  previewContainer: { flexDirection: "row", paddingVertical: 8, paddingHorizontal: 10, borderTopWidth: 1, borderTopColor: "#eee", backgroundColor: "#fafafa" },
   previewItem: { marginRight: 10, position: "relative" },
   previewImage: { width: 70, height: 70, borderRadius: 8 },
-  removeBtn: {
-    position: "absolute",
-    top: -5,
-    right: -5,
-    backgroundColor: "#fff",
-    borderRadius: 20,
-  },
-  headerRow: {
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    gap: 6,
-    textAlign: "center",
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "#eee",
-  },
-  headerName: {
-    fontSize: 18,
-    fontWeight: "600",
-  },
-  headerRole: {
-    fontSize: 14,
-    color: "#777",
-    fontStyle: "italic",
-  },
+  removeBtn: { position: "absolute", top: -5, right: -5, backgroundColor: "#fff", borderRadius: 20 },
+  headerRow: { flexDirection: "row", justifyContent: "center", alignItems: "center", gap: 6, textAlign: "center", paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: "#eee" },
+  headerName: { fontSize: 18, fontWeight: "600" },
+  headerRole: { fontSize: 14, color: "#777", fontStyle: "italic" },
+  scrollToBottomBtn: { position: "absolute", bottom: 90, right: 20, zIndex: 100 },
 });

@@ -45,65 +45,6 @@ export const messageService = {
     return res.json();
   },
 
-  // async sendMessage(
-  //   receiverId: number,
-  //   content: string,
-  //   token: string,
-  //   type: "text" | "image" | "file" = "text",
-  //   fileUri?: string,
-  //   fileName?: string
-  // ): Promise<Message> {
-  //   let fileUrl = content;
-
-  //   if ((type === "image" || type === "file") && fileUri) {
-  //     let uploadExt = fileName?.split(".").pop()?.toLowerCase() || "bin";
-  //     let uploadName = generateFileName(fileName || "upload.bin");
-  //     let finalUri = fileUri;
-
-  //     if (uploadExt === "heic") {
-  //       const result = await HeicConverter.convert({ path: fileUri });
-  //       if (result?.path) {
-  //         finalUri = result.path;
-  //         uploadExt = "jpg";
-  //         uploadName = uploadName.replace(/\.heic$/i, ".jpg");
-  //       }
-  //     }
-
-  //     const uint8 = await uriToUint8Array(finalUri);
-
-  //     const { data, error } = await supabase.storage
-  //       .from("chat-uploads")
-  //       .upload(uploadName, uint8, {
-  //         cacheControl: "3600",
-  //         upsert: false,
-  //       });
-
-  //     if (error) throw error;
-
-  //     const { data: publicUrl } = supabase.storage
-  //       .from("chat-uploads")
-  //       .getPublicUrl(data.path);
-
-  //     fileUrl = publicUrl.publicUrl;
-  //   }
-
-  //   const res = await fetch(`${API_URL}/api/messages`, {
-  //     method: "POST",
-  //     headers: {
-  //       "Content-Type": "application/json",
-  //       Authorization: `Bearer ${token}`,
-  //     },
-  //     body: JSON.stringify({ receiverId, content: fileUrl, type }),
-  //   });
-
-  //   if (!res.ok) {
-  //     const text = await res.text().catch(() => "");
-  //     throw new Error("Failed to send message: " + text);
-  //   }
-
-  //   return res.json();
-  // },
-
   async sendMessage(
     receiverId: number,
     content: string,
@@ -119,7 +60,6 @@ export const messageService = {
       let uploadName = generateFileName(fileName || "upload.bin");
       let finalUri = fileUri;
 
-      // ✅ Chuyển HEIC sang JPEG bằng expo-image-manipulator
       if (uploadExt === "heic") {
         const manipulated = await ImageManipulator.manipulateAsync(
           fileUri,
@@ -131,7 +71,6 @@ export const messageService = {
         uploadName = uploadName.replace(/\.heic$/i, ".jpg");
       }
 
-      // ✅ Chuyển file thành Uint8Array để upload Supabase
       const uint8 = await uriToUint8Array(finalUri);
 
       const { data, error } = await supabase.storage
@@ -150,7 +89,6 @@ export const messageService = {
       fileUrl = publicUrl.publicUrl;
     }
 
-    // ✅ Gửi message qua API
     const res = await fetch(`${API_URL}/api/messages`, {
       method: "POST",
       headers: {
