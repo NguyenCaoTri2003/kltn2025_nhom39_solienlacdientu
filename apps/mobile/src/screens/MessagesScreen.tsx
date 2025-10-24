@@ -4,7 +4,7 @@ import { View, Text, StyleSheet } from "react-native";
 export default function MessageScreen() {
   return (
     <View style={styles.container}>
-      <Text>Hộp thư đến</Text>
+      <Text>Hộp thư đếnnnnnn</Text>
     </View>
   );
 }

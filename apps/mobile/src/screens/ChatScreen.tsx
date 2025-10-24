@@ -1,19 +1,46 @@
-import React, { useState, useRef, useEffect } from "react";
-import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform } from "react-native";
+import React, { useState, useRef, useEffect, useCallback } from "react";
+import {
+  View,
+  Text,
+  FlatList,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  KeyboardAvoidingView,
+  Platform,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useMessages } from "../hooks/useMessages";
-import { RouteProp, useRoute } from "@react-navigation/native";
+import { useRoute, RouteProp } from "@react-navigation/native";
 import { useAuth } from "../context/AuthContext";
-import dayjs from "dayjs"; 
+import { useMessages } from "../hooks/useMessages";
+import { useMessageContext } from "../context/MessageProvider";
+import dayjs from "dayjs";
 
 export default function ChatScreen() {
   const route = useRoute<RouteProp<any>>();
   const { conversationId, receiverId, receiverName } = route.params as any;
-  const { messages, sendMessage } = useMessages(conversationId);
-  const [content, setContent] = useState("");
-  const { user } = useAuth();
+  const { token, user } = useAuth();
   const myId = user?.id;
+  const { setConversations } = useMessageContext();
 
+  const handleMarkRead = useCallback(() => {
+    setConversations((prev: any) =>
+      prev.map((c: any) =>
+        c.id === conversationId ? { ...c, unreadCount: 0 } : c
+      )
+    );
+  }, [conversationId, setConversations]);
+
+  if (!token || !myId) return null;
+
+  const { messages, sendMessage } = useMessages(
+    conversationId,
+    myId!,
+    token,
+    handleMarkRead
+  );
+
+  const [content, setContent] = useState("");
   const flatListRef = useRef<FlatList>(null);
 
   const handleSend = async () => {
@@ -28,7 +55,7 @@ export default function ChatScreen() {
       setTimeout(() => flatListRef.current?.scrollToEnd({ animated: false }), 100);
   }, [messages.length]);
 
-  const formatTime = (timestamp: string) => dayjs(timestamp).format("HH:mm");
+  const formatTime = (t: string) => dayjs(t).format("HH:mm");
 
   return (
     <SafeAreaView style={styles.container}>
@@ -48,8 +75,6 @@ export default function ChatScreen() {
               ]}
             >
               <Text style={styles.messageText}>{item.content}</Text>
-
-              {/* Thời gian + trạng thái */}
               <View style={styles.metaContainer}>
                 <Text style={styles.timeText}>{formatTime(item.created_at)}</Text>
                 {isMine && (

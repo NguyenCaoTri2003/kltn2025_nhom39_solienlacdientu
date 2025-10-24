@@ -12,15 +12,16 @@ export default function MessagesStack() {
       <Stack.Screen
         name="MessageList"
         component={MessageListScreen}
-        options={{ title: "Hộp thư đến", headerShown: false }}
+        options={{ headerShown: false }}
       />
       <Stack.Screen
         name="Chat"
         component={ChatScreen}
-        options={({ route }) => ({
-          title: route.params?.receiverName || "Trò chuyện",
-          headerBackTitleVisible: false,
-        })}
+        options={{ headerShown: false }}
+        // options={({ route }) => ({
+        //   title: route.params?.receiverName || "Trò chuyện",
+        //   headerBackTitleVisible: false,
+        // })}
       />
     </Stack.Navigator>
   );
