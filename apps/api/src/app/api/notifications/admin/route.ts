@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
   
   try {
     // Xác thực quyền admin
-    const user = authenticate(req);
+    const user = await authenticate(req);
     if (user.role !== "admin") {
       throw new Error("Forbidden");
     }

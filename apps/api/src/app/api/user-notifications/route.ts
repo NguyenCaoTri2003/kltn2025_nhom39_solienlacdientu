@@ -9,7 +9,7 @@ export async function GET(req: NextRequest) {
     if (!headerToken) {
       return NextResponse.json({ returnCode: -1, message: "No token", data: null }, { status: 401 });
     }
-    const user = authenticate(req);
+    const user = await authenticate(req);
 
     const { searchParams } = new URL(req.url);
     const pageParam = searchParams.get("page");
@@ -50,7 +50,7 @@ export async function PUT(req: NextRequest) {
     if (!headerToken) {
       return NextResponse.json({ returnCode: -1, message: "No token", data: null }, { status: 401 });
     }
-    const user = authenticate(req);
+    const user = await authenticate(req);
 
     const body = await req.json();
     const { userNotificationId, action } = body;
