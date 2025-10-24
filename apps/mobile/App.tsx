@@ -7,6 +7,7 @@ import AppNavigator from "./src/screens/AppNavigator"; // 👈 thay cho HomeScre
 import { UserProvider } from "./src/context/UserContext";
 import { NotificationProvider } from "./src/context/NotificationContext";
 import { MessageProvider } from "./src/context/MessageProvider";
+import ChatScreen from "./src/screens/ChatScreen";
 
 const Stack = createNativeStackNavigator();
 
@@ -16,10 +17,18 @@ function RootNavigator() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       {user ? (
-        // 👇 Nếu đã đăng nhập, vào app chính (có navbar)
-        <Stack.Screen name="Main" component={AppNavigator} />
+        <>
+          <Stack.Screen name="Main" component={AppNavigator} />
+          <Stack.Screen
+            name="Chat"
+            component={ChatScreen}
+            options={{
+              gestureEnabled: true,
+              presentation: "card",
+            }}
+          />
+        </>
       ) : (
-        // 👇 Nếu chưa đăng nhập, vào màn hình Login
         <Stack.Screen name="Login" component={LoginScreen} />
       )}
     </Stack.Navigator>

@@ -1,28 +1,31 @@
-// src/screens/MessagesStack.tsx
-import React from "react";
+import React, { useCallback } from "react";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import { useFocusEffect, StackActions, useNavigation } from "@react-navigation/native";
 import MessageListScreen from "./MessageListScreen";
 import ChatScreen from "./ChatScreen";
 
 const Stack = createNativeStackNavigator();
 
 export default function MessagesStack() {
+  const navigation = useNavigation();
+
+  useFocusEffect(
+    useCallback(() => {
+      const parentNav = navigation.getParent(); 
+      if (!parentNav) return;
+
+      const unsubscribe = parentNav.addListener("tabPress", (e: any) => {
+        navigation.dispatch(StackActions.popToTop());
+      });
+
+      return unsubscribe;
+    }, [navigation])
+  );
+
   return (
-    <Stack.Navigator>
-      <Stack.Screen
-        name="MessageList"
-        component={MessageListScreen}
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen
-        name="Chat"
-        component={ChatScreen}
-        options={{ headerShown: false }}
-        // options={({ route }) => ({
-        //   title: route.params?.receiverName || "Trò chuyện",
-        //   headerBackTitleVisible: false,
-        // })}
-      />
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="MessageList" component={MessageListScreen} />
+      <Stack.Screen name="Chat" component={ChatScreen} />
     </Stack.Navigator>
   );
 }

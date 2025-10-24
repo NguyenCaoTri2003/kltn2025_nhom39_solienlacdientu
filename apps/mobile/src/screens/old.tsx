@@ -10,7 +10,6 @@ import {
   Platform,
   Image,
   Linking,
-  ScrollView,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as DocumentPicker from "expo-document-picker";
@@ -20,10 +19,9 @@ import dayjs from "dayjs";
 import { useAuth } from "../context/AuthContext";
 import { useMessages } from "../hooks/useMessages";
 import { useMessageContext } from "../context/MessageProvider";
-import { getRoleLabel } from "../utils/roleHelper";
 
 export default function ChatScreen({ route }: any) {
-  const { conversationId, receiverId, receiverName, receiverRole } = route.params;
+  const { conversationId, receiverId, receiverName } = route.params;
   const { token, user } = useAuth();
   const myId = user?.id;
   const { setConversations } = useMessageContext();
@@ -51,38 +49,51 @@ export default function ChatScreen({ route }: any) {
   );
 
   useEffect(() => {
-    if (messages.length > 0 && isNearBottom) {
+    if (messages.length > 0) {
       requestAnimationFrame(() => {
-        flatListRef.current?.scrollToEnd({ animated: true });
+        flatListRef.current?.scrollToEnd({ animated: false });
       });
     }
   }, [messages.length]);
+
+  useEffect(() => {
+    if (isNearBottom && messages.length > 0) {
+      flatListRef.current?.scrollToEnd({ animated: true });
+    }
+  }, [messages]);
 
   const handleScroll = (event: any) => {
     const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
     const distanceFromBottom =
       contentSize.height - (layoutMeasurement.height + contentOffset.y);
-    setIsNearBottom(distanceFromBottom < 150);
+    setIsNearBottom(distanceFromBottom < 100);
   };
 
   const handleSend = async () => {
-    if (!content.trim() && selectedImages.length === 0) return;
-
-    for (const img of selectedImages) {
-      await sendMessage(receiverId, "", "image", img.uri, img.fileName || undefined);
-    }
-
-    if (content.trim()) {
-      await sendMessage(receiverId, content.trim(), "text");
-    }
-
+    if (!content.trim()) return;
+    await sendMessage(receiverId, content.trim(), "text");
     setContent("");
-    setSelectedImages([]);
-    requestAnimationFrame(() => {
-      flatListRef.current?.scrollToEnd({ animated: true });
-    });
   };
 
+  const handleSendImage = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") {
+      alert("Vui lòng cấp quyền truy cập thư viện ảnh để gửi hình ảnh.");
+      return;
+    }
+
+    const res = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 0.8,
+    });
+
+    if (!res.canceled && res.assets?.[0]) {
+      const asset = res.assets[0];
+      await sendMessage(receiverId, "", "image", asset.uri, asset.fileName || undefined);
+    }
+  };
+
+  // Chọn nhiều ảnh
   const handleSelectImages = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== "granted") {
@@ -92,7 +103,7 @@ export default function ChatScreen({ route }: any) {
 
     const res = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsMultipleSelection: true,
+      allowsMultipleSelection: true, // 🔥 Cho chọn nhiều ảnh
       quality: 1,
     });
 
@@ -104,16 +115,13 @@ export default function ChatScreen({ route }: any) {
   const handleSendFile = async () => {
     try {
       const result = await DocumentPicker.getDocumentAsync({
-        type: "*/*",
+        type: "*/*", 
         copyToCacheDirectory: true,
       });
 
-      if (!result.canceled && result.assets?.length > 0) {
+      if (!result.canceled && result.assets && result.assets.length > 0) {
         const file = result.assets[0];
         await sendMessage(receiverId, "", "file", file.uri, file.name);
-        requestAnimationFrame(() => {
-          flatListRef.current?.scrollToEnd({ animated: true });
-        });
       }
     } catch (error) {
       console.error("Lỗi khi chọn file:", error);
@@ -171,19 +179,12 @@ export default function ChatScreen({ route }: any) {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.headerRow}>
-        <Text style={styles.headerName}>{receiverName}</Text>
-        {receiverRole && (
-          <Text style={styles.headerRole}>
-             ({getRoleLabel(receiverRole)})
-          </Text>
-        )}
-      </View>
+      <Text style={styles.header}>{receiverName}</Text>
 
       <FlatList
         ref={flatListRef}
         data={messages}
-        keyExtractor={(item, index) => `${item.id}-${index}`}
+        keyExtractor={(item) => item.id.toString()}
         renderItem={renderMessage}
         contentContainerStyle={{ padding: 16, paddingBottom: 8 }}
         onScroll={handleScroll}
@@ -197,36 +198,13 @@ export default function ChatScreen({ route }: any) {
         }}
       />
 
-      {/* Xem trước ảnh được chọn */}
-      {selectedImages.length > 0 && (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.previewContainer}
-        >
-          {selectedImages.map((img, i) => (
-            <View key={i} style={styles.previewItem}>
-              <Image source={{ uri: img.uri }} style={styles.previewImage} />
-              <TouchableOpacity
-                style={styles.removeBtn}
-                onPress={() =>
-                  setSelectedImages((prev) => prev.filter((_, idx) => idx !== i))
-                }
-              >
-                <Ionicons name="close-circle" size={20} color="#ff4444" />
-              </TouchableOpacity>
-            </View>
-          ))}
-        </ScrollView>
-      )}
-
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 80}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 100 : 80}
         style={{ marginBottom: Platform.OS === "ios" ? -40 : 4 }}
       >
         <View style={styles.inputRow}>
-          <TouchableOpacity onPress={handleSelectImages}>
+          <TouchableOpacity onPress={handleSendImage}>
             <Ionicons name="image-outline" size={24} color="#007AFF" />
           </TouchableOpacity>
 
@@ -305,40 +283,4 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   send: { backgroundColor: "#007AFF", padding: 10, borderRadius: 20 },
-  previewContainer: {
-    flexDirection: "row",
-    paddingVertical: 8,
-    paddingHorizontal: 10,
-    borderTopWidth: 1,
-    borderTopColor: "#eee",
-    backgroundColor: "#fafafa",
-  },
-  previewItem: { marginRight: 10, position: "relative" },
-  previewImage: { width: 70, height: 70, borderRadius: 8 },
-  removeBtn: {
-    position: "absolute",
-    top: -5,
-    right: -5,
-    backgroundColor: "#fff",
-    borderRadius: 20,
-  },
-  headerRow: {
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    gap: 6,
-    textAlign: "center",
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "#eee",
-  },
-  headerName: {
-    fontSize: 18,
-    fontWeight: "600",
-  },
-  headerRole: {
-    fontSize: 14,
-    color: "#777",
-    fontStyle: "italic",
-  },
 });

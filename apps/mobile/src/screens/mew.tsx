@@ -20,10 +20,9 @@ import dayjs from "dayjs";
 import { useAuth } from "../context/AuthContext";
 import { useMessages } from "../hooks/useMessages";
 import { useMessageContext } from "../context/MessageProvider";
-import { getRoleLabel } from "../utils/roleHelper";
 
 export default function ChatScreen({ route }: any) {
-  const { conversationId, receiverId, receiverName, receiverRole } = route.params;
+  const { conversationId, receiverId, receiverName } = route.params;
   const { token, user } = useAuth();
   const myId = user?.id;
   const { setConversations } = useMessageContext();
@@ -51,27 +50,35 @@ export default function ChatScreen({ route }: any) {
   );
 
   useEffect(() => {
-    if (messages.length > 0 && isNearBottom) {
+    if (messages.length > 0) {
       requestAnimationFrame(() => {
-        flatListRef.current?.scrollToEnd({ animated: true });
+        flatListRef.current?.scrollToEnd({ animated: false });
       });
     }
   }, [messages.length]);
+
+  useEffect(() => {
+    if (isNearBottom && messages.length > 0) {
+      flatListRef.current?.scrollToEnd({ animated: true });
+    }
+  }, [messages]);
 
   const handleScroll = (event: any) => {
     const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
     const distanceFromBottom =
       contentSize.height - (layoutMeasurement.height + contentOffset.y);
-    setIsNearBottom(distanceFromBottom < 150);
+    setIsNearBottom(distanceFromBottom < 100);
   };
 
   const handleSend = async () => {
     if (!content.trim() && selectedImages.length === 0) return;
 
+    // Gửi ảnh trước nếu có
     for (const img of selectedImages) {
       await sendMessage(receiverId, "", "image", img.uri, img.fileName || undefined);
     }
 
+    // Gửi text sau
     if (content.trim()) {
       await sendMessage(receiverId, content.trim(), "text");
     }
@@ -83,6 +90,25 @@ export default function ChatScreen({ route }: any) {
     });
   };
 
+  const handleSendImage = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") {
+      alert("Vui lòng cấp quyền truy cập thư viện ảnh để gửi hình ảnh.");
+      return;
+    }
+
+    const res = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 0.8,
+    });
+
+    if (!res.canceled && res.assets?.[0]) {
+      const asset = res.assets[0];
+      await sendMessage(receiverId, "", "image", asset.uri, asset.fileName || undefined);
+    }
+  };
+
+  // Chọn nhiều ảnh
   const handleSelectImages = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== "granted") {
@@ -92,7 +118,7 @@ export default function ChatScreen({ route }: any) {
 
     const res = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsMultipleSelection: true,
+      allowsMultipleSelection: true, // 🔥 Cho chọn nhiều ảnh
       quality: 1,
     });
 
@@ -171,19 +197,12 @@ export default function ChatScreen({ route }: any) {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.headerRow}>
-        <Text style={styles.headerName}>{receiverName}</Text>
-        {receiverRole && (
-          <Text style={styles.headerRole}>
-             ({getRoleLabel(receiverRole)})
-          </Text>
-        )}
-      </View>
+      <Text style={styles.header}>{receiverName}</Text>
 
       <FlatList
         ref={flatListRef}
         data={messages}
-        keyExtractor={(item, index) => `${item.id}-${index}`}
+        keyExtractor={(item) => item.id.toString()}
         renderItem={renderMessage}
         contentContainerStyle={{ padding: 16, paddingBottom: 8 }}
         onScroll={handleScroll}
@@ -197,7 +216,6 @@ export default function ChatScreen({ route }: any) {
         }}
       />
 
-      {/* Xem trước ảnh được chọn */}
       {selectedImages.length > 0 && (
         <ScrollView
           horizontal
@@ -222,7 +240,7 @@ export default function ChatScreen({ route }: any) {
 
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 80}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 100 : 80}
         style={{ marginBottom: Platform.OS === "ios" ? -40 : 4 }}
       >
         <View style={styles.inputRow}>
@@ -321,24 +339,5 @@ const styles = StyleSheet.create({
     right: -5,
     backgroundColor: "#fff",
     borderRadius: 20,
-  },
-  headerRow: {
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    gap: 6,
-    textAlign: "center",
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "#eee",
-  },
-  headerName: {
-    fontSize: 18,
-    fontWeight: "600",
-  },
-  headerRole: {
-    fontSize: 14,
-    color: "#777",
-    fontStyle: "italic",
   },
 });

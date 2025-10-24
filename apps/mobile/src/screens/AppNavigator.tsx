@@ -17,6 +17,8 @@ import { RootStackParamList } from "../types/navigation";
 import GradesScreen from "./GradesScreen";
 import { useNotificationContext } from "../context/NotificationContext";
 import MessagesStack from "./MessagesStack";
+import { useMessageContext } from "../context/MessageProvider";
+import { useUnreadMessages } from "../hooks/useUnreadMessages";
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -64,6 +66,8 @@ export default function AppNavigator() {
   const { user } = useAuth();
   const { unreadCount } = useNotificationContext();
   const isStudent = user?.role === "student";
+  const { unreadTotal } = useMessageContext(); 
+  const { totalUnread } = useUnreadMessages();
 
   return (
     <Tab.Navigator
@@ -108,7 +112,14 @@ export default function AppNavigator() {
       />
       <Tab.Screen name="Schedule" component={ScheduleScreen} options={{ title: "Lịch học" }} />
       <Tab.Screen name="Attendance" component={AttendanceScreen} options={{ title: "Điểm danh" }} />
-      <Tab.Screen name="Messages" component={MessagesStack} options={{ title: "Nhắn tin" }} />
+      <Tab.Screen 
+        name="Messages" 
+        component={MessagesStack} 
+        options={{ 
+          title: "Nhắn tin",
+          tabBarBadge: totalUnread > 0 ? totalUnread : undefined,
+        }} 
+      />
       <Tab.Screen 
         name="Notifications" 
         component={NotificationStack} 

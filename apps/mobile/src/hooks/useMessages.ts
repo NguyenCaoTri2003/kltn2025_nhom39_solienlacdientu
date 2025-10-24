@@ -72,74 +72,94 @@ export function useConversations(token?: string, userId?: number) {
 }
 
 export function useMessages(
-    conversationId: number,
-    userId: number,
-    token?: string,
-    onReadAll?: () => void
+  conversationId: number,
+  userId: number,
+  token?: string,
+  onReadAll?: () => void
 ) {
-    const [messages, setMessages] = useState<Message[]>([]);
-    const [loading, setLoading] = useState(false);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [loading, setLoading] = useState(false);
 
-    const fetchMessages = useCallback(async () => {
-        if (!token) return;
-        setLoading(true);
-        try {
-            const data = await messageService.getMessages(conversationId, token);
-            setMessages(data);
-            await messageService.markAsRead(conversationId, token);
-            onReadAll?.();
-        } finally {
-            setLoading(false);
-        }
-    }, [conversationId, token, onReadAll]);
+  const fetchMessages = useCallback(async () => {
+    if (!token) return;
+    setLoading(true);
+    try {
+      const data = await messageService.getMessages(conversationId, token);
+      setMessages(data);
+      await messageService.markAsRead(conversationId, token);
+      onReadAll?.();
+    } finally {
+      setLoading(false);
+    }
+  }, [conversationId, token, onReadAll]);
 
-    const sendMessage = useCallback(
-        async (receiverId: number, content: string) => {
-            if (!token) return;
-            const newMsg = await messageService.sendMessage(receiverId, content, token);
+  const sendMessage = useCallback(
+    async (
+      receiverId: number,
+      content: string,
+      type: "text" | "image" | "file" = "text",
+      fileUri?: string,
+      fileName?: string
+    ) => {
+      if (!token) return;
+      try {
+        const newMsg = await messageService.sendMessage(
+          receiverId,
+          content,
+          token,
+          type,
+          fileUri,
+          fileName
+        );
+        // setMessages((prev) => [...prev, newMsg]);
+      } catch (err) {
+        console.error("Send message failed:", err);
+      }
+    },
+    [token]
+  );
+
+  useEffect(() => {
+    if (!conversationId || !token || !userId) return;
+
+    const channel = supabase
+      .channel(`messages:conversation-${conversationId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "messages",
+          filter: `conversation_id=eq.${conversationId}`,
         },
-        [token]
-    );
+        async (payload) => {
+          const newMsg = payload.new as Message;
 
-    useEffect(() => {
-        if (!conversationId || !token || !userId) return;
+          setMessages((prev) => {
+            if (prev.some((m) => m.id === newMsg.id)) return prev;
+            return [...prev, newMsg];
+          });
 
-        const channel = supabase
-            .channel(`messages:conversation-${conversationId}-${userId}`)
-            .on(
-                "postgres_changes",
-                {
-                    event: "INSERT",
-                    schema: "public",
-                    table: "messages",
-                    filter: `conversation_id=eq.${conversationId}`,
-                },
-                async (payload) => {
-                    const newMsg = payload.new as Message;
-                    setMessages((prev) => [...prev, newMsg]);
+          if (newMsg.sender_id !== userId) {
+            try {
+              await messageService.markAsRead(conversationId, token);
+              onReadAll?.();
+            } catch (err) {
+              console.warn("Mark as read failed:", err);
+            }
+          }
+        }
+      )
+      .subscribe();
 
-                    // Nếu tin nhắn không phải của mình => đánh dấu đã đọc
-                    if (newMsg.sender_id !== userId) {
-                        try {
-                            await messageService.markAsRead(conversationId, token);
-                            onReadAll?.();
-                        } catch (err) {
-                            console.warn("Mark as read failed:", err);
-                        }
-                    }
-                }
-            )
-            .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [conversationId, token, userId, onReadAll]);
 
-        // ✅ Cleanup phải là hàm đồng bộ
-        return () => {
-            supabase.removeChannel(channel);
-        };
-    }, [conversationId, token, userId, onReadAll]);
+  useEffect(() => {
+    fetchMessages();
+  }, [fetchMessages]);
 
-    useEffect(() => {
-        fetchMessages();
-    }, [fetchMessages]);
-
-    return { messages, loading, sendMessage };
+  return { messages, loading, sendMessage };
 }

@@ -12,6 +12,7 @@ import { useMessageContext } from "../context/MessageProvider";
 import { useNavigation } from "@react-navigation/native";
 import { useAuth } from "../context/AuthContext";
 import dayjs from "dayjs";
+import { getRoleLabel } from "../utils/roleHelper";
 
 export default function MessageListScreen() {
   const { conversations, loading, refresh } = useMessageContext();
@@ -47,11 +48,15 @@ export default function MessageListScreen() {
                   conversationId: item.id,
                   receiverId: partner?.id,
                   receiverName: partner?.full_name,
+                  receiverRole: partner?.role,
                 })
               }
             >
               <View style={{ flex: 1 }}>
-                <Text style={styles.name}>{partner?.full_name}</Text>
+                <Text style={styles.name}>
+                  {partner?.full_name}{" "}
+                  <Text style={styles.role}>({getRoleLabel(partner?.role)})</Text>
+                </Text>
                 <Text style={styles.lastMsg} numberOfLines={1}>
                   {item.lastMessage?.content || "Chưa có tin nhắn"}
                 </Text>
@@ -86,6 +91,11 @@ const styles = StyleSheet.create({
     borderBottomColor: "#eee",
   },
   name: { fontSize: 16, fontWeight: "500" },
+  role: {
+    fontSize: 14,
+    color: "#666",
+    fontWeight: "400",
+  },
   lastMsg: { color: "#888", marginTop: 4 },
   unreadBadge: {
     backgroundColor: "#f00",
