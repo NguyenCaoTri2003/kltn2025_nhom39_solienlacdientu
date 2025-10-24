@@ -98,6 +98,28 @@ export class NotificationsUseCase {
     await this.repo.markAsDeleted(id);
   }
 
+  /**
+   * Tạo user notifications cho nhiều users với cùng 1 notification
+   */
+  async createUserNotifications(notificationId: number, userIds: number[]): Promise<void> {
+    if (!userIds || userIds.length === 0) return;
+    
+    // Tạo user notification records cho tất cả users
+    for (const userId of userIds) {
+      try {
+        await this.repo.createUserNotification(userId, notificationId);
+        
+        // Broadcast realtime cho từng user
+        const notification = await this.getById(notificationId);
+        if (notification) {
+          NotificationBroadcaster.broadcastToUser(userId, notification);
+        }
+      } catch (err) {
+        console.warn(`Failed to create user notification for user ${userId}:`, err);
+      }
+    }
+  }
+
   private toPositiveInt(v: any): number | undefined {
     const n = Number(v);
     return Number.isFinite(n) && n > 0 ? Math.floor(n) : undefined;
