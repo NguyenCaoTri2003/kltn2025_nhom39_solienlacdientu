@@ -54,12 +54,12 @@ function normalizeDate(value: unknown): string | undefined {
 
 function getCell(row: Record<string, unknown>, ...candidates: string[]): unknown {
   for (const key of candidates) {
-    // --- 1️⃣ Khớp chính xác trước ---
+    // --- Khớp chính xác trước ---
     if (row[key] !== undefined && row[key] !== null && String(row[key]).trim() !== "") {
       return row[key];
     }
 
-    // --- 2️⃣ Thử với Excel duplicate-key suffixes (e.g., "_1", "_2") ---
+    // --- Thử với Excel duplicate-key suffixes (e.g., "_1", "_2") ---
     const alt1 = `${key}_1`;
     const alt2 = `${key}_2`;
     if (row[alt1] !== undefined && row[alt1] !== null && String(row[alt1]).trim() !== "") {
@@ -69,7 +69,7 @@ function getCell(row: Record<string, unknown>, ...candidates: string[]): unknown
       return row[alt2];
     }
 
-    // --- 3️⃣ Thử tìm gần giống (fuzzy match) ---
+    // --- tìm gần giống (fuzzy match) ---
     const foundKey = Object.keys(row).find(
       (k) =>
         k.replace(/\s+/g, " ").toLowerCase().includes(key.toLowerCase().trim()) &&

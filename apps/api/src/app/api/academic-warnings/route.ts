@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { authenticate } from "@packages/utils/auth";
 import { AcademicWarningUseCase } from "@packages/core/usecases/AcademicWarningUseCase";
 import { notificationsUseCase } from "@packages/core/usecases/NotificationsUseCase";
+import { translateWarningLevel } from "@packages/utils/translations";
 
 const uc = new AcademicWarningUseCase();
 
@@ -21,7 +22,8 @@ export async function POST(req: NextRequest) {
 
     // tạo notification cho sinh viên
     try {
-      const content = `Cảnh cáo học vụ (${String(level).toUpperCase()}): ${String(reason)}`;
+      const viLevel = translateWarningLevel(String(level).toUpperCase());
+      const content = `Cảnh cáo học vụ (${viLevel}): ${String(reason)}`;
       await notificationsUseCase.create({
         user_id: Number(studentId),
         content,
