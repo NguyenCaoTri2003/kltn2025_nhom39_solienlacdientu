@@ -10,7 +10,7 @@ export async function GET(req: NextRequest) {
     if (!headerToken) {
       return NextResponse.json({ returnCode: -1, message: "No token", data: null }, { status: 401 });
     }
-    const user = authenticate(req);
+    const user = await authenticate(req);
 
     const { searchParams } = new URL(req.url);
     const pageParam = searchParams.get("page");
@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
     if (!headerToken) {
       return NextResponse.json({ returnCode: -1, message: "No token", data: null }, { status: 401 });
     }
-    const user = authenticate(req);
+    const user = await authenticate(req);
     if (user.role !== "admin") {
       return NextResponse.json({ returnCode: -1, message: "Forbidden", data: null }, { status: 403 });
     }

@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
       };
       user = authenticate(mockReq as any);
     } else {
-      user = authenticate(req);
+      user = await authenticate(req);
     }
     
     // Tạo SSE stream
