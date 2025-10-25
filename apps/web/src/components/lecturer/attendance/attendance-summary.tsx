@@ -260,7 +260,7 @@ export default function AttendanceSummary() {
   };
 
   const openAttendance = async (type: "theory" | "practice", groupId?: number) => {
-    // await fetchTodayAttendance(type, groupId);
+    await fetchTodayAttendance(type, groupId);
     setAttendanceOpen(true);
   };
 
@@ -274,7 +274,7 @@ export default function AttendanceSummary() {
   });
 
   const enrollmentMap = enrollments.reduce((map, e) => {
-    map[e.students.id] = e.id; // student_id -> enrollment_id
+    map[e.students.id] = e.id; 
     return map;
   }, {} as Record<number, number>);
 
@@ -370,6 +370,8 @@ export default function AttendanceSummary() {
               type: r.type,
               practice_group_id: r.practice_group_id ?? null,
             };
+
+            console.log("Creating attendance with r:", r.student);
 
             const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/attendance`, {
               method: "POST",

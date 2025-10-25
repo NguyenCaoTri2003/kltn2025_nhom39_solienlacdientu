@@ -43,7 +43,6 @@ export class EnrollmentRepository {
         throw error;
       }
 
-      console.log("Query result:", data);
       return data ?? [];
     } catch (err) {
       console.error("Repository error:", err);
@@ -53,7 +52,6 @@ export class EnrollmentRepository {
 
   async getStudentsByPracticeGroup(groupId: number) {
     try {
-      console.log("Getting students for practice group:", groupId);
 
       const { data, error } = await supabase
         .from("practice_enrollment")
@@ -70,7 +68,6 @@ export class EnrollmentRepository {
         throw error;
       }
 
-      console.log("Practice group query result:", data);
       return data ?? [];
     } catch (err) {
       console.error("Practice group repository error:", err);
