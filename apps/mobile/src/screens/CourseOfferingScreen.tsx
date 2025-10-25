@@ -49,6 +49,8 @@ export default function CourseOfferingScreen() {
     ? activeChild?.academic_year
     : userData?.student?.academic_year;
 
+  console.log(">> studentYear:", studentYear);
+
   const {
     semesters,
     semester,
