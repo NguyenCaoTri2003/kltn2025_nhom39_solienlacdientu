@@ -57,8 +57,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ returnCode: -1, message: "No token", data: null }, { status: 401 });
     }
     const user = await authenticate(req);
-    if (user.role !== "admin") {
-      return NextResponse.json({ returnCode: -1, message: "Forbidden", data: null }, { status: 403 });
+    // if (user.role !== "admin") {
+    //   return NextResponse.json({ returnCode: -1, message: "Forbidden", data: null }, { status: 403 });
+    // }
+
+    if (!["admin", "lecturer"].includes(user.role)) {
+      return NextResponse.json(
+        { returnCode: -1, message: "Forbidden", data: null },
+        { status: 403 }
+      );
     }
 
     const body = await req.json().catch(() => ({}));
@@ -73,6 +80,7 @@ export async function POST(req: NextRequest) {
     }
     const payload = {
       user_id: body?.user_id ?? null,
+      title: typeof body?.title === "string" ? body.title : null,
       content: typeof body?.content === "string" ? body.content : null,
       type: requestedType,
       category: body?.category ?? null,

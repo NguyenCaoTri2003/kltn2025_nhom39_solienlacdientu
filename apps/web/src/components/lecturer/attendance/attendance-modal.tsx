@@ -11,18 +11,18 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Student } from "@packages/core/entities/Student";
-import { X } from "lucide-react";
+import { AlertTriangle, X } from "lucide-react";
 import { format } from "date-fns";
 
 interface AttendanceModalProps {
   open: boolean;
   onClose: () => void;
   students: { id: number; studentCode: string; fullName: string }[];
-  type: string; // 'theory' hoặc 'practice'
+  type: string;
   enrollmentMap?: Record<number, number>;
   practiceGroupMap?: Record<number, number>;
   onSubmit: (records: any[]) => Promise<void>;
-  attendanceToday?: Record<number, any>; 
+  attendanceToday?: Record<number, any>;
   loadingAttendance?: boolean;
 }
 
@@ -56,7 +56,7 @@ export default function AttendanceModal({
 
       setRecords(
         sorted.map((s) => {
-          const existing = attendanceToday?.[s.id]; 
+          const existing = attendanceToday?.[s.id];
           return {
             id: existing?.id || null,
             student: s,
@@ -85,8 +85,6 @@ export default function AttendanceModal({
         const enrollment_id = enrollmentMap?.[r.student.id];
         const practice_group_id = practiceGroupMap?.[r.student.id];
 
-        console.log("Mapping for student:", r.student.id, { enrollment_id, practice_group_id });
-
         return {
           id: r.id || undefined,
           type,
@@ -97,8 +95,6 @@ export default function AttendanceModal({
           practice_group_id: type === "practice" ? practice_group_id : null,
         };
       });
-
-      console.log("Final data sent to API:", JSON.stringify(data, null, 2));
       await onSubmit(data);
       onClose();
     } finally {
@@ -116,8 +112,9 @@ export default function AttendanceModal({
         <DialogHeader>
           <DialogTitle>Điểm danh ({records.length} sinh viên)</DialogTitle>
           {hasExisting && (
-            <p className="text-sm text-blue-600 mt-1">
-              ⚠️ Một số sinh viên đã được điểm danh hôm nay. Lưu lại sẽ ghi đè dữ liệu cũ.
+            <p className="text-sm text-yellow-600 mt-1 flex items-center gap-1">
+              <AlertTriangle className="w-4 h-4" />
+              Một số sinh viên đã được điểm danh hôm nay. Lưu lại sẽ ghi đè dữ liệu cũ.
             </p>
           )}
         </DialogHeader>
@@ -173,8 +170,8 @@ export default function AttendanceModal({
                   </p>
 
                   {r.id && (
-                    <p className="text-xs text-green-600 mt-1">
-                      ✅ Sinh viên này đã được điểm danh hôm nay (sẽ ghi đè nếu lưu lại)
+                    <p className="text-xs text-yellow-600 mt-1">
+                      Sinh viên này đã được điểm danh hôm nay (sẽ ghi đè nếu lưu lại)
                     </p>
                   )}
 
@@ -189,10 +186,10 @@ export default function AttendanceModal({
                         {st === "present"
                           ? "Có mặt"
                           : st === "absent"
-                          ? "Vắng"
-                          : st === "excused"
-                          ? "Vắng (Có phép)"
-                          : "Trễ"}
+                            ? "Vắng"
+                            : st === "excused"
+                              ? "Vắng (Có phép)"
+                              : "Trễ"}
                       </Button>
                     ))}
                   </div>

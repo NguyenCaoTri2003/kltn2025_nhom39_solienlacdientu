@@ -30,12 +30,14 @@ export class NotificationsUseCase {
    */
   async create(payload: { 
     user_id?: number | string | null; 
+    title?: string | null;
     content?: string | null; 
     type?: NotificationType | null;
     category?: NotificationCategory | null;
   }): Promise<NotificationRow> {
     // Validate và parse input
     const user_id = payload.user_id != null ? this.toPositiveInt(payload.user_id) ?? null : null;
+    const title = typeof payload.title === "string" ? payload.title : null;
     const content = typeof payload.content === "string" ? payload.content : null;
     const type = (payload.type ?? null) as NotificationType | null;
     const category = (payload.category ?? null) as NotificationCategory | null;
@@ -43,6 +45,7 @@ export class NotificationsUseCase {
     // Tạo notification record
     const notification = await this.repo.create({ 
       user_id, 
+      title,
       content, 
       type, 
       category
@@ -93,6 +96,28 @@ export class NotificationsUseCase {
     const id = this.toPositiveInt(userNotificationId);
     if (!id) return;
     await this.repo.markAsDeleted(id);
+  }
+
+  /**
+   * Tạo user notifications cho nhiều users với cùng 1 notification
+   */
+  async createUserNotifications(notificationId: number, userIds: number[]): Promise<void> {
+    if (!userIds || userIds.length === 0) return;
+    
+    // Tạo user notification records cho tất cả users
+    for (const userId of userIds) {
+      try {
+        await this.repo.createUserNotification(userId, notificationId);
+        
+        // Broadcast realtime cho từng user
+        const notification = await this.getById(notificationId);
+        if (notification) {
+          NotificationBroadcaster.broadcastToUser(userId, notification);
+        }
+      } catch (err) {
+        console.warn(`Failed to create user notification for user ${userId}:`, err);
+      }
+    }
   }
 
   private toPositiveInt(v: any): number | undefined {

@@ -178,4 +178,34 @@ export class StudentRepository {
 
   
 
+  async getStudentParents(studentId: number): Promise<Array<{ parent_id: number; full_name: string; email: string }>> {
+    const { data, error } = await supabase
+      .from("student_parent")
+      .select(`
+        parent_id,
+        parents:parent_id (
+          id,
+          users (
+            id,
+            full_name,
+            email
+          )
+        )
+      `)
+      .eq("student_id", studentId);
+    if (error) throw error;
+    type Row = {
+      parent_id?: number | null;
+      parents?: { id?: number | null; users?: { id?: number | null; full_name?: string | null; email?: string | null } | null } | null;
+    };
+    const rows = (data ?? []) as Row[];
+    return rows
+      .map((row) => ({
+        parent_id: (row?.parents?.id ?? row?.parent_id) as number,
+        full_name: row?.parents?.users?.full_name ?? "",
+        email: row?.parents?.users?.email ?? "",
+      }))
+      .filter((x) => Number.isFinite(x.parent_id)) as Array<{ parent_id: number; full_name: string; email: string }>;
+  }
+
 }

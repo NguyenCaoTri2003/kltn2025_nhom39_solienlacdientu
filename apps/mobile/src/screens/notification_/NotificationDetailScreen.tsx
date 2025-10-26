@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -6,12 +6,14 @@ import {
   StyleSheet,
   TouchableOpacity,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Bell, MessageSquare, University, AlertCircle, Clock, User } from 'lucide-react-native';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/vi';
+import { notificationService } from '../../services/notificationService';
 
 dayjs.extend(relativeTime);
 dayjs.locale('vi');
@@ -25,15 +27,13 @@ interface NotificationDetailScreenProps {
   };
 }
 
-/**
- * Màn hình chi tiết thông báo
- * Hiển thị đầy đủ thông tin của thông báo
- */
 const NotificationDetailScreen: React.FC<NotificationDetailScreenProps> = ({ navigation, route }) => {
   const { notification } = route.params;
+  const [isDeleting, setIsDeleting] = useState(false);
   
   // Lấy thông tin notification (ưu tiên từ nested object)
   const notificationData = notification.notifications || notification;
+  const title = notificationData.title || notification.title || null;
   const content = notificationData.content || notification.content || 'Không có nội dung';
   const type = notificationData.type || notification.type || 'system';
   const category = notificationData.category || notification.category || 'GENERAL';
@@ -96,7 +96,7 @@ const NotificationDetailScreen: React.FC<NotificationDetailScreenProps> = ({ nav
   const getTypeLabel = (type: string) => {
     switch (type) {
       case 'university':
-        return 'Trường đại học';
+        return 'Trường Đại học';
       case 'lecturer':
         return 'Giảng viên';
       case 'system':
@@ -108,13 +108,13 @@ const NotificationDetailScreen: React.FC<NotificationDetailScreenProps> = ({ nav
   const getWarningLevelColor = (level: string) => {
     switch (level) {
       case 'FIRST':
-        return '#F59E0B'; // Amber
+        return '#F59E0B'; 
       case 'SECOND':
-        return '#EF4444'; // Red
+        return '#EF4444'; 
       case 'FINAL':
-        return '#DC2626'; // Dark red
+        return '#DC2626'; 
       default:
-        return '#6B7280'; // Gray
+        return '#6B7280'; 
     }
   };
 
@@ -128,6 +128,37 @@ const NotificationDetailScreen: React.FC<NotificationDetailScreenProps> = ({ nav
         return 'Cảnh báo cuối cùng';
       default:
         return 'Thông báo';
+    }
+  };
+
+  const handleDeleteNotification = async () => {
+    try {
+      setIsDeleting(true);
+      
+      const userNotificationId = notification.id;
+      
+      if (!userNotificationId) {
+        Alert.alert('Lỗi', 'Không thể xác định thông báo cần xóa');
+        return;
+      }
+
+      await notificationService.deleteNotification(userNotificationId);
+      
+      Alert.alert(
+        'Thành công',
+        'Thông báo đã được xóa',
+        [
+          {
+            text: 'OK',
+            onPress: () => navigation.goBack()
+          }
+        ]
+      );
+    } catch (error) {
+      console.error('Error deleting notification:', error);
+      Alert.alert('Lỗi', 'Không thể xóa thông báo. Vui lòng thử lại.');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -161,13 +192,18 @@ const NotificationDetailScreen: React.FC<NotificationDetailScreenProps> = ({ nav
           </View>
         )}
 
-        {/* Nội dung */}
+ 
         <View style={styles.contentSection}>
-          <Text style={styles.contentTitle}>Nội dung thông báo</Text>
+          {title && (
+            <>
+              <Text style={styles.titleText}>{title}</Text>
+            </>
+          )}
+          <Text style={styles.contentTitle}>Nội dung chi tiết</Text>
           <Text style={styles.contentText}>{content}</Text>
         </View>
 
-        {/*  Thông tin  */}
+
         <View style={styles.infoSection}>
           <Text style={styles.sectionTitle}>Thông tin chi tiết</Text>
           
@@ -196,24 +232,27 @@ const NotificationDetailScreen: React.FC<NotificationDetailScreenProps> = ({ nav
           )}
         </View>
 
-        {/* Actions */}
+
         <View style={styles.actionsSection}>
           <TouchableOpacity 
-            style={styles.actionButton}
+            style={[styles.actionButton, isDeleting && styles.actionButtonDisabled]}
             onPress={() => {
               Alert.alert(
                 'Xác nhận',
                 'Bạn có chắc chắn muốn xóa thông báo này?',
                 [
                   { text: 'Hủy', style: 'cancel' },
-                  { text: 'Xóa', style: 'destructive', onPress: () => {
-                    navigation.goBack();
-                  }}
+                  { text: 'Xóa', style: 'destructive', onPress: handleDeleteNotification }
                 ]
               );
             }}
+            disabled={isDeleting}
           >
-            <Text style={styles.actionButtonText}>Xóa thông báo</Text>
+            {isDeleting ? (
+              <ActivityIndicator size="small" color="#FFFFFF" />
+            ) : (
+              <Text style={styles.actionButtonText}>Xóa thông báo</Text>
+            )}
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -302,6 +341,21 @@ const styles = StyleSheet.create({
     color: '#111827',
     marginBottom: 12,
   },
+  titleText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#b71c1c',
+    backgroundColor: '#fdecea', // nền đỏ nhạt
+    borderWidth: 1,
+    borderColor: '#f5c6cb',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    textAlign: 'center',
+    marginBottom: 16,
+    lineHeight: 22,
+  },
+  
   contentText: {
     fontSize: 14,
     color: '#374151',
@@ -354,6 +408,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     borderRadius: 8,
     alignItems: 'center',
+  },
+  actionButtonDisabled: {
+    backgroundColor: '#9CA3AF',
   },
   actionButtonText: {
     color: '#FFFFFF',

@@ -6,6 +6,7 @@ export type NotificationType = "university" | "lecturer" | "system";
 export interface NotificationRow {
   id: number;
   user_id: number | null;
+  title: string | null;
   content: string | null;
   type: NotificationType | null;
   category: NotificationCategory | null;
@@ -38,12 +39,14 @@ export interface ListResult {
 export class NotificationsRepository {
   async create(payload: { 
     user_id?: number | null; 
+    title?: string | null;
     content?: string | null; 
     type?: NotificationType | null;
     category?: NotificationCategory | null;
   }): Promise<NotificationRow> {
     const insertData = {
       user_id: payload.user_id ?? null,
+      title: payload.title ?? null,
       content: payload.content ?? null,
       type: payload.type ?? null,
       category: payload.category ?? null,
@@ -51,7 +54,7 @@ export class NotificationsRepository {
     const { data, error } = await supabase
       .from("notifications")
       .insert(insertData)
-      .select("id, user_id, content, type, category, created_at")
+      .select("id, user_id, title, content, type, category, created_at")
       .single();
     if (error) throw error;
     return data as NotificationRow;
@@ -60,7 +63,7 @@ export class NotificationsRepository {
   async getById(id: number): Promise<NotificationRow | null> {
     const { data, error } = await supabase
       .from("notifications")
-      .select("id, user_id, content, type, category, created_at")
+      .select("id, user_id, title, content, type, category, created_at")
       .eq("id", id)
       .single();
     if (error) {
@@ -81,7 +84,7 @@ export class NotificationsRepository {
 
     let query = supabase
       .from("notifications")
-      .select("id, user_id, content, type, category, created_at", { count: "exact" })
+      .select("id, user_id, title, content, type, category, created_at", { count: "exact" })
       .order("created_at", { ascending: false });
 
     if (params.userId != null) {
@@ -131,7 +134,7 @@ export class NotificationsRepository {
       .from("user_notifications")
       .select(`
         id, user_id, notification_id, is_read, is_deleted, created_at,
-        notifications!inner(id, user_id, content, type, category, target_student_id, created_at)
+        notifications!inner(id, user_id, title, content, type, category, target_student_id, created_at)
       `, { count: "exact" })
       .eq("user_id", userId)
       .eq("is_deleted", false)

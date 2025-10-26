@@ -9,22 +9,9 @@ export type Semester = {
   end_date: string | null;
 };
 
-// export async function fetchSemesters(): Promise<Semester[]> {
-//   const token = await getAuthToken();
-
-//   const res = await fetch(`${API_URL}/api/semesters`, {
-//     headers: { Authorization: `Bearer ${token}` },
-//   });
-
-//   const json = await res.json();
-//   if (json.returnCode !== 0) throw new Error(json.message);
-//   return json.data;
-// }
-
 export async function fetchSemesters(studentYear?: number): Promise<Semester[]> {
   const token = await getAuthToken();
 
-  // Nếu có studentYear → thêm query param ?fromYear=studentYear
   const url = studentYear
     ? `${API_URL}/api/semesters?fromYear=${studentYear}`
     : `${API_URL}/api/semesters`;

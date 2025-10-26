@@ -2,15 +2,15 @@ import { NextRequest, NextResponse } from "next/server";
 import { AttendanceRepository } from "@packages/data/repositories/AttendanceRepository";
 import { AttendanceUseCase } from "@packages/core/usecases/AttendanceUseCase";
 import { authenticate } from "@packages/utils/auth";
+import { ParentRepository } from "@packages/data/repositories/ParentRepository";
 
 const repo = new AttendanceRepository();
 const usecase = new AttendanceUseCase(repo);
+const parentRepo = new ParentRepository();
 
 export async function GET(req: NextRequest) {
   try {
-    console.log("==> [API] /api/attendance called");
-
-    const user = await authenticate(req); // nếu bạn chưa cần auth có thể comment dòng này
+    const user = await authenticate(req);
     const { searchParams } = new URL(req.url);
 
     const studentId = searchParams.get("student_id")
@@ -22,14 +22,55 @@ export async function GET(req: NextRequest) {
     const offeringId = searchParams.get("offering_id")
       ? Number(searchParams.get("offering_id"))
       : undefined;
-    const startDate = searchParams.get("start_date") ?? undefined;
-    const endDate = searchParams.get("end_date") ?? undefined;
-    const date = searchParams.get("date") ?? undefined;
+    const startDate = searchParams.get("start_date") ?? "";
+    const endDate = searchParams.get("end_date") ?? "";
+    const date = searchParams.get("date") ?? "";
 
-    // ✅ Lấy điểm danh của sinh viên cụ thể
-    if (studentId) {
+    if (!["student", "parent", "admin", "lecturer"].includes(user.role)) {
+      return NextResponse.json(
+        { returnCode: 1, message: "Forbidden" },
+        { status: 403 }
+      );
+    }
+
+    let allowedStudentId: number | undefined = undefined;
+
+    if (user.role === "student") {
+      if (studentId && studentId !== user.id) {
+        return NextResponse.json(
+          { returnCode: 1, message: "Forbidden: Bạn chỉ có thể xem điểm danh của chính mình" },
+          { status: 403 }
+        );
+      }
+      allowedStudentId = user.id;
+    }
+
+    if (user.role === "parent") {
+      if (!studentId) {
+        return NextResponse.json(
+          { returnCode: 1, message: "Thiếu student_id" },
+          { status: 400 }
+        );
+      }
+
+      const isChild = await parentRepo.isParentOf(user.id, studentId);
+      if (!isChild) {
+        return NextResponse.json(
+          { returnCode: 1, message: "Bạn không có quyền xem điểm danh của sinh viên này" },
+          { status: 403 }
+        );
+      }
+
+      allowedStudentId = studentId;
+    }
+
+    if (user.role === "admin") {
+      allowedStudentId = studentId;
+    }
+
+    if (allowedStudentId) {
       const result = await usecase.getStudentAttendance(
-        studentId,
+        allowedStudentId,
         user,
         startDate,
         endDate,
@@ -43,8 +84,7 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    // ✅ Lấy điểm danh của lớp học phần
-    if (lecturerId && offeringId) {
+    if (user.role === "lecturer" && lecturerId && offeringId) {
       const result = await usecase.getOfferingAttendance(
         lecturerId,
         offeringId,
@@ -58,7 +98,6 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    // ❌ Thiếu tham số
     return NextResponse.json(
       { returnCode: 1, message: "Missing required params", data: null },
       { status: 400 }
@@ -75,57 +114,6 @@ export async function GET(req: NextRequest) {
     );
   }
 }
-
-// export async function POST(req: NextRequest) {
-//   try {
-//     const user = await authenticate(req);
-//     if (user.role !== "lecturer") {
-//       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-//     }
-
-//     const body = await req.json();
-
-//     const offeringId = body.offeringId ?? body.offering_id;
-//     const enrollment_id = body.enrollmentId ?? body.enrollment_id;
-//     const practice_group_id = body.practiceGroupId ?? body.practice_group_id ?? null;
-//     const attendance_date = body.attendanceDate ?? body.attendance_date;
-//     const type = body.type;
-//     const status = body.status;
-//     const note = body.note ?? null;
-
-//     if (!offeringId || !attendance_date || !type || !status) {
-//       return NextResponse.json(
-//         { error: "Missing required fields" },
-//         { status: 400 }
-//       );
-//     }
-
-//     try {
-//       const result = await usecase.createAttendance(user.id, offeringId, {
-//         enrollment_id,
-//         practice_group_id,
-//         attendance_date,
-//         type,
-//         status,
-//         note,
-//       });
-//       return NextResponse.json(result, { status: 201 });
-//     } catch (err: any) {
-//       console.error("Error in createAttendance:", err); 
-//       return NextResponse.json(
-//         { error: err.message },
-//         { status: 500 }
-//       );
-//     }
-
-//   } catch (e: any) {
-//     console.error("Unexpected error in POST /api/attendance:", e);
-//     return NextResponse.json(
-//       { error: e.message },
-//       { status: e.message === "Forbidden" ? 403 : 500 }
-//     );
-//   }
-// }
 
 export async function POST(req: NextRequest) {
   try {

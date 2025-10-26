@@ -15,7 +15,7 @@ export interface UseNotificationsReturn {
 }
 
 export function useNotifications(): UseNotificationsReturn {
-  const { incrementUnreadCount } = useNotificationContext();
+  const { incrementUnreadCount, showToast } = useNotificationContext();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -43,7 +43,7 @@ export function useNotifications(): UseNotificationsReturn {
           setCurrentPage(page + 1);
         }
 
-        // Check if there are more notifications
+
         const totalPages = response.meta?.totalPages || 0;
         setHasMore(page < totalPages);
       } else {
@@ -58,7 +58,7 @@ export function useNotifications(): UseNotificationsReturn {
     }
   }, [currentPage]);
 
-  // Delete notification
+
   const deleteNotification = useCallback(async (id: number) => {
     try {
       await notificationService.deleteNotification(id);
@@ -70,20 +70,27 @@ export function useNotifications(): UseNotificationsReturn {
     }
   }, []);
 
-  // Connect to realtime notifications
+
   const connectRealtime = useCallback(async () => {
     try {
       await notificationService.connectRealtime();
       setIsConnected(true);
 
-      // Add listener for new notifications
       const handleRealtimeNotification = (event: RealtimeNotificationEvent) => {
         if (event.type === 'notification' && event.data) {
           setNotifications(prev => {
-            // Check if notification already exists to avoid duplicates
             const exists = prev.some(n => n.id === event.data!.id);
             if (!exists) {
-              incrementUnreadCount(); // Increment unread count
+              incrementUnreadCount(); 
+              
+              // Hiển thị toast ngay khi có thông báo mới từ realtime
+              showToast({
+                id: event.data!.id,
+                title: event.data!.title || undefined,
+                content: event.data!.content || 'Bạn có thông báo mới',
+                type: event.data!.type,
+              });
+              
               return [event.data!, ...prev];
             }
             return prev;
@@ -101,18 +108,15 @@ export function useNotifications(): UseNotificationsReturn {
     }
   }, []);
 
-  // Disconnect from realtime notifications
   const disconnectRealtime = useCallback(() => {
     notificationService.disconnect();
     setIsConnected(false);
   }, []);
 
-  // Load initial notifications
   useEffect(() => {
     loadNotifications(true);
   }, []);
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => {
       disconnectRealtime();

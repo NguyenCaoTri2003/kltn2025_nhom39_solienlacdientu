@@ -7,6 +7,7 @@ export type NotificationCategory = "ACADEMIC" | "SYSTEM" | "FINANCE" | "GENERAL"
 export interface Notification {
   id: number; 
   user_id: number | null; 
+  title: string | null;
   content: string | null; 
   type: NotificationType | null; 
   category: NotificationCategory | null;

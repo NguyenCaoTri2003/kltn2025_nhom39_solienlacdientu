@@ -36,21 +36,10 @@ export default function NotificationScreen() {
     disconnectRealtime,
   } = useNotifications();
 
-  // Toast state
-  const [toastVisible, setToastVisible] = useState(false);
-  const [toastNotification, setToastNotification] = useState<any>(null);
-
   useEffect(() => {
     connectRealtime();
   }, [connectRealtime]);
 
-  useEffect(() => {
-    if (notifications.length > 0) {
-      const latestNotification = notifications[0];
-      setToastNotification(latestNotification);
-      setToastVisible(true);
-    }
-  }, [notifications.length]);
 
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => {
@@ -138,7 +127,7 @@ export default function NotificationScreen() {
             </Text>
           </View>
           <Text style={styles.notificationText} numberOfLines={2}>
-            {item.notifications?.content || item.content || 'Không có nội dung'}
+            {item.notifications?.title || item.title || item.notifications?.content || item.content || 'Không có nội dung'}
           </Text>
         </View>
         <TouchableOpacity
@@ -213,25 +202,13 @@ export default function NotificationScreen() {
       )}
 
       {/* Trạng thái kết nối*/}
-      <View style={styles.connectionStatus}>
+      {/* <View style={styles.connectionStatus}>
         <View style={[styles.statusDot, { backgroundColor: isConnected ? '#10B981' : '#EF4444' }]} />
         <Text style={styles.statusText}>
           {isConnected ? 'Đã kết nối' : 'Mất kết nối'}
         </Text>
-      </View>
+      </View> */}
 
-      {/* Toast thông báo */}
-      <NotificationToast
-        visible={toastVisible}
-        notification={toastNotification}
-        onClose={() => setToastVisible(false)}
-        onPress={() => {
-          setToastVisible(false);
-          if (toastNotification) {
-            (navigation as any).navigate('NotificationDetail', { notification: toastNotification });
-          }
-        }}
-      />
     </SafeAreaView>
   );
 }
@@ -274,7 +251,6 @@ const styles = StyleSheet.create({
   },
   notificationHeaderRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 4,
   },
@@ -287,6 +263,7 @@ const styles = StyleSheet.create({
   notificationTime: {
     fontSize: 12,
     color: '#6B7280',
+    marginLeft: 8,
   },
   notificationText: {
     fontSize: 14,
