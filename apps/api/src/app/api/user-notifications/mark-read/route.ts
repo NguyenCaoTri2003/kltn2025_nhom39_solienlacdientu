@@ -6,17 +6,17 @@ export async function POST(req: NextRequest) {
   try {
     const user = await authenticate(req);
     const body = await req.json();
-    const { userNotificationId } = body;
+    const { notificationId } = body;
 
-    if (!userNotificationId) {
+    if (!notificationId) {
       return NextResponse.json(
-        { returnCode: -1, message: "Missing userNotificationId", data: null },
+        { returnCode: -1, message: "Missing notificationId", data: null },
         { status: 400 }
       );
     }
 
     // Đánh dấu notification đã đọc
-    await notificationsUseCase.markAsRead(Number(userNotificationId));
+    await notificationsUseCase.markAsRead(Number(notificationId));
 
     return NextResponse.json({
       returnCode: 0,
@@ -33,9 +33,5 @@ export async function POST(req: NextRequest) {
 }
 
 export async function OPTIONS() {
-  const res = NextResponse.json({}, { status: 200 });
-  res.headers.set("Access-Control-Allow-Origin", "*");
-  res.headers.set("Access-Control-Allow-Methods", "POST,OPTIONS");
-  res.headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
-  return res;
+  return NextResponse.json({}, { status: 200 });
 }

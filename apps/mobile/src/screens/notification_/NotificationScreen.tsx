@@ -41,11 +41,11 @@ export default function NotificationScreen() {
 
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => {
-      // Refresh unread count from server when screen is focused
       refreshUnreadCount();
+      loadNotifications(true);
     });
     return unsubscribe;
-  }, [navigation, refreshUnreadCount]);
+  }, [navigation, refreshUnreadCount, loadNotifications]);
 
   const handleRefresh = () => {
     loadNotifications(true);
@@ -119,20 +119,20 @@ export default function NotificationScreen() {
       >
         <View style={styles.notificationHeader}>
           <View style={styles.notificationIconContainer}>
-            {getNotificationIcon(item.notifications?.type || item.type)}
+            {getNotificationIcon(item.type)}
           </View>
           <View style={styles.notificationContent}>
             <View style={styles.notificationHeaderRow}>
               <Text style={styles.notificationType}>
-                {getNotificationTypeLabel(item.notifications?.type || item.type)}
+                {getNotificationTypeLabel(item.type)}
               </Text>
               <Text style={styles.notificationTime}>
-                {formatDate(item.notifications?.created_at || item.created_at)}
+                {formatDate(item.created_at)}
               </Text>
               {!isRead && <View style={styles.unreadDot} />}
             </View>
             <Text style={textStyle} numberOfLines={2}>
-              {item.notifications?.title || item.title || item.notifications?.content || item.content || 'Không có nội dung'}
+              {item.title || item.content || 'Không có nội dung'}
             </Text>
           </View>
           <TouchableOpacity

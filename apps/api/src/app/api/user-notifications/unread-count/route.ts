@@ -7,7 +7,7 @@ export async function GET(req: NextRequest) {
     const user = await authenticate(req);
 
     const { count, error } = await supabase
-      .from("user_notifications")
+      .from("notifications")
       .select("id", { count: "exact", head: true })
       .eq("user_id", user.id)
       .eq("is_read", false)
@@ -23,9 +23,5 @@ export async function GET(req: NextRequest) {
 }
 
 export async function OPTIONS() {
-  const res = NextResponse.json({}, { status: 200 });
-  res.headers.set("Access-Control-Allow-Origin", "*");
-  res.headers.set("Access-Control-Allow-Methods", "GET,OPTIONS");
-  res.headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
-  return res;
+  return NextResponse.json({}, { status: 200 });
 }

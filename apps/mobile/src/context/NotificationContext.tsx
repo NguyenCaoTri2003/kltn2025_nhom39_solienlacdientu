@@ -20,7 +20,8 @@ interface NotificationContextType {
   showToast: (notification: Notification) => void;
   hideToast: () => void;
   isConnected: boolean;
-  markAsRead: (userNotificationId: number) => Promise<void>;
+  markAsRead: (notificationId: number) => Promise<void>;
+  markAsDeleted: (notificationId: number) => Promise<void>;
 }
 
 const NotificationContext = createContext<NotificationContextType>({
@@ -35,6 +36,7 @@ const NotificationContext = createContext<NotificationContextType>({
   hideToast: () => {},
   isConnected: false,
   markAsRead: async () => {},
+  markAsDeleted: async () => {},
 });
 
 export const NotificationProvider = ({ children }: { children: React.ReactNode }) => {
@@ -66,12 +68,22 @@ export const NotificationProvider = ({ children }: { children: React.ReactNode }
     }
   };
 
-  const markAsRead = async (userNotificationId: number) => {
+  const markAsRead = async (notificationId: number) => {
     try {
-      await notificationService.markAsRead(userNotificationId);
+      await notificationService.markAsRead(notificationId);
       await refreshUnreadCount();
     } catch (error) {
       console.error('Error marking notification as read:', error);
+      throw error;
+    }
+  };
+
+  const markAsDeleted = async (notificationId: number) => {
+    try {
+      await notificationService.markAsDeleted(notificationId);
+      await refreshUnreadCount();
+    } catch (error) {
+      console.error('Error marking notification as deleted:', error);
       throw error;
     }
   };
@@ -165,6 +177,7 @@ export const NotificationProvider = ({ children }: { children: React.ReactNode }
       hideToast,
       isConnected,
       markAsRead,
+      markAsDeleted,
     }}>
       {children}
     </NotificationContext.Provider>

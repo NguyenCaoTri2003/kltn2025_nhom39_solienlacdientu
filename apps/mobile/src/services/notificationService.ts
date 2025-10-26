@@ -10,6 +10,10 @@ export interface Notification {
   title: string | null;
   content: string | null;
   type: 'university' | 'lecturer' | 'system' | null;
+  category?: string | null;
+  target_student_id?: number | null;
+  is_read?: boolean;
+  is_deleted?: boolean;
   created_at?: string;
 }
 
@@ -113,7 +117,7 @@ class NotificationService {
   }
 
   // Đánh dấu notification đã đọc
-  async markAsRead(userNotificationId: number): Promise<void> {
+  async markAsRead(notificationId: number): Promise<void> {
     try {
       const token = await getAuthToken();
       const response = await fetch(`${API_BASE_URL}/api/user-notifications/mark-read`, {
@@ -123,7 +127,7 @@ class NotificationService {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          userNotificationId: userNotificationId,
+          notificationId: notificationId,
         }),
       });
 
@@ -137,6 +141,35 @@ class NotificationService {
       }
     } catch (error) {
       console.error('Error marking notification as read:', error);
+      throw error;
+    }
+  }
+
+  async markAsDeleted(notificationId: number): Promise<void> {
+    try {
+      const token = await getAuthToken();
+      const response = await fetch(`${API_BASE_URL}/api/user-notifications`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          notificationId: notificationId,
+          action: 'markAsDeleted',
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      if (data.returnCode !== 0) {
+        throw new Error(data.message || 'Failed to mark as deleted');
+      }
+    } catch (error) {
+      console.error('Error marking notification as deleted:', error);
       throw error;
     }
   }
@@ -155,39 +188,25 @@ class NotificationService {
           {
             event: "INSERT",
             schema: "public",
-            table: "user_notifications",
+            table: "notifications",
           },
           (payload) => {
-            console.log('🎉 New user notification received via realtime:', payload);
+            console.log('New notification received via realtime:', payload);
             
-            const userNotification = payload.new;
+            const notification = payload.new;
             
             // Chỉ xử lý notification của user hiện tại
-            if (userNotification.user_id === userId) {
-              console.log(' Processing notification for current user');
+            if (notification.user_id === userId) {
+              console.log('Processing notification for current user');
+              console.log('Notification details:', notification);
               
-              // Lấy thông tin notification chi tiết từ Supabase
-              supabase
-                .from('notifications')
-                .select('*')
-                .eq('id', userNotification.notification_id)
-                .single()
-                .then(({ data: notification, error }) => {
-                  if (error) {
-                    console.error('Error fetching notification details:', error);
-                    return;
-                  }
-
-                  if (notification) {
-                    console.log('📨 Notification details fetched:', notification);
-                    const event: RealtimeNotificationEvent = {
-                      type: 'notification',
-                      data: notification,
-                      timestamp: new Date().toISOString()
-                    };
-                    this.notifyListeners(event);
-                  }
-                });
+              const event: RealtimeNotificationEvent = {
+                type: 'notification',
+                data: notification as Notification,
+                timestamp: new Date().toISOString()
+              };
+              console.log('Sending event to listeners:', event);
+              this.notifyListeners(event);
             } else {
               console.log('Skipping notification for different user');
             }

@@ -17,7 +17,7 @@ export interface UseNotificationsReturn {
 }
 
 export function useNotifications(): UseNotificationsReturn {
-  const { incrementUnreadCount, showToast, isConnected: globalIsConnected, markAsRead: globalMarkAsRead, refreshUnreadCount } = useNotificationContext();
+  const { incrementUnreadCount, showToast, isConnected: globalIsConnected, markAsRead: globalMarkAsRead, markAsDeleted: globalMarkAsDeleted, refreshUnreadCount } = useNotificationContext();
   const { user } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(false);
@@ -63,14 +63,16 @@ export function useNotifications(): UseNotificationsReturn {
 
   const deleteNotification = useCallback(async (id: number) => {
     try {
-      await notificationService.deleteNotification(id);
+      // Sử dụng markAsDeleted thay vì xóa thật
+      await globalMarkAsDeleted(id);
       setNotifications(prev => prev.filter(n => n.id !== id));
+      await refreshUnreadCount(); // Refresh unread count sau khi xóa
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to delete notification';
       setError(errorMessage);
       console.error('Error deleting notification:', err);
     }
-  }, []);
+  }, [globalMarkAsDeleted, refreshUnreadCount]);
 
 
   const connectRealtime = useCallback(async () => {
@@ -81,12 +83,12 @@ export function useNotifications(): UseNotificationsReturn {
     console.log('Realtime disconnection is managed globally');
   }, []);
 
-  const markAsRead = useCallback(async (userNotificationId: number) => {
+  const markAsRead = useCallback(async (notificationId: number) => {
     try {
-      await globalMarkAsRead(userNotificationId);
+      await globalMarkAsRead(notificationId);
       setNotifications(prev => 
         prev.map(notification => 
-          notification.id === userNotificationId 
+          notification.id === notificationId 
             ? { ...notification, is_read: true }
             : notification
         )
