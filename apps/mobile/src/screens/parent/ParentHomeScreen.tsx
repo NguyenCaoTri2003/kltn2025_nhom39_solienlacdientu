@@ -6,6 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
   Image,
+  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
@@ -25,7 +26,7 @@ import { useNotificationContext } from "../../context/NotificationContext";
 export default function ParentHomeScreen() {
   const { user } = useAuth();
   const navigation = useNavigation();
-  const { userData } = useUser();
+  const { userData, loading  } = useUser();
   const { unreadCount } = useNotificationContext();
 
   const hours = new Date().getHours();
@@ -86,7 +87,12 @@ export default function ParentHomeScreen() {
         <View style={styles.childCard}>
           <Text style={styles.childTitle}>Con của bạn:</Text>
 
-          {userData?.children && userData.children.length > 0 ? (
+          {loading ? (
+            <View style={styles.loadingWrapper}>
+              <ActivityIndicator size="small" color="#1E3A8A" />
+              <Text style={styles.loadingText}>Đang tải danh sách con...</Text>
+            </View>
+          ) : userData?.children && userData.children.length > 0 ? (
             userData.children.map((child, index) => (
               <View key={index} style={styles.childItem}>
                 <Text style={styles.childInfo}>
@@ -295,5 +301,15 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "500",
     color: "#1E3A8A",
+  },
+  loadingWrapper: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginTop: 6,
+  },
+  loadingText: {
+    fontSize: 15,
+    color: "#6B7280",
   },
 });
