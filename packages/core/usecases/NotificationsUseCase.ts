@@ -1,4 +1,4 @@
-import { NotificationsRepository, type ListParams, type ListResult, type NotificationRow, type NotificationType, type UserNotificationRow } from "@packages/data/repositories/NotificationsRepository";
+import { NotificationsRepository, type ListParams, type ListResult, type NotificationRow, type NotificationType } from "@packages/data/repositories/NotificationsRepository";
 import { NotificationCategory } from "@packages/core/entities/Notifications";
 import { NotificationBroadcaster } from "./helpers/NotificationBroadcaster";
 
@@ -54,15 +54,8 @@ export class NotificationsUseCase {
       target_student_id
     });
     
-    // Nếu có user_id, tạo user notification và broadcast
+    // Nếu có user_id, broadcast realtime
     if (user_id) {
-      // Tạo user notification record (async, không block)
-      NotificationBroadcaster.createUserNotificationRecord(
-        this.repo, 
-        user_id, 
-        notification.id
-      );
-      
       // Broadcast realtime (async, không block)
       NotificationBroadcaster.broadcastToUser(user_id, notification);
     }

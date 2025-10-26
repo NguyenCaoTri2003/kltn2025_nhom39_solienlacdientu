@@ -16,14 +16,15 @@ export interface NotificationRow {
   created_at?: string;
 }
 
-export interface UserNotificationRow {
-  id: number;
-  user_id: number;
-  notification_id: number;
-  is_read: boolean;
-  is_deleted: boolean;
-  created_at: string;
-}
+// DEPRECATED: Không còn sử dụng bảng user_notifications
+// export interface UserNotificationRow {
+//   id: number;
+//   user_id: number;
+//   notification_id: number;
+//   is_read: boolean;
+//   is_deleted: boolean;
+//   created_at: string;
+// }
 
 export interface ListParams {
   userId?: number;

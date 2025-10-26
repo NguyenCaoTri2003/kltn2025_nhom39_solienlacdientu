@@ -15,17 +15,18 @@ export class NotificationBroadcaster {
     }
   }
 
-  /** Tạo user notification record trong database*/
-  static async createUserNotificationRecord(
-    repo: any, 
-    userId: number, 
-    notificationId: number
-  ): Promise<void> {
-    try {
-      await repo.createUserNotification(userId, notificationId);
-    } catch (error) {
-      console.warn(`Failed to create user notification for user ${userId}:`, error);
-      // Không throw error để không làm gián đoạn flow chính
-    }
-  }
+  // DEPRECATED: Không còn cần tạo user notification record riêng
+  // /** Tạo user notification record trong database*/
+  // static async createUserNotificationRecord(
+  //   repo: any, 
+  //   userId: number, 
+  //   notificationId: number
+  // ): Promise<void> {
+  //   try {
+  //     await repo.createUserNotification(userId, notificationId);
+  //   } catch (error) {
+  //     console.warn(`Failed to create user notification for user ${userId}:`, error);
+  //     // Không throw error để không làm gián đoạn flow chính
+  //   }
+  // }
 }
