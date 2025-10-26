@@ -1,6 +1,5 @@
 import { NotificationsRepository, type ListParams, type ListResult, type NotificationRow, type NotificationType } from "@packages/data/repositories/NotificationsRepository";
 import { NotificationCategory } from "@packages/core/entities/Notifications";
-import { NotificationBroadcaster } from "./helpers/NotificationBroadcaster";
 
 export class NotificationsUseCase {
   private repo: NotificationsRepository;
@@ -56,8 +55,8 @@ export class NotificationsUseCase {
     
     // Nếu có user_id, broadcast realtime
     if (user_id) {
-      // Broadcast realtime (async, không block)
-      NotificationBroadcaster.broadcastToUser(user_id, notification);
+      // Broadcast realtime (async, không block) - Đã chuyển sang Supabase Realtime
+      // NotificationBroadcaster.broadcastToUser(user_id, notification);
     }
     
     return notification;
