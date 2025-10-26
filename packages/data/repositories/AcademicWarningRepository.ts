@@ -169,4 +169,29 @@ export class AcademicWarningRepository {
       warnings,
     } as const;
   }
+
+  /**
+   * Đánh dấu student đã được cảnh cáo cho semester cụ thể
+   * Sử dụng để cập nhật trạng thái is_warned trong bảng overview
+   */
+  async markStudentAsWarned(studentId: number, semesterId: number, level: string): Promise<void> {
+    // Có thể cần tạo bảng riêng để track trạng thái này
+    // Hoặc sử dụng existing academic_warnings table để check
+    console.log(`Marking student ${studentId} as warned for semester ${semesterId} with level ${level}`);
+  }
+
+  /**
+   * Kiểm tra xem student đã được cảnh cáo cho semester chưa
+   */
+  async isStudentWarned(studentId: number, semesterId: number): Promise<boolean> {
+    const { data, error } = await supabase
+      .from("academic_warnings")
+      .select("id")
+      .eq("student_id", studentId)
+      .eq("semester_id", semesterId)
+      .limit(1);
+
+    if (error) throw error;
+    return (data && data.length > 0);
+  }
 }

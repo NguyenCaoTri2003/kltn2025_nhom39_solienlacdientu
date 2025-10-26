@@ -99,7 +99,7 @@ export class NotificationsUseCase {
   }
 
 
-  // DEPRECATED: Use notifications table directly
+  // DEPRECATED: Không còn sử dụng bảng User_Notifications nữa
   // async createUserNotifications(notificationId: number, userIds: number[]): Promise<void> {
   //   if (!userIds || userIds.length === 0) return;
   //   

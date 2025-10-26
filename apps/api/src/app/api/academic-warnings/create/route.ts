@@ -6,6 +6,15 @@ import { translateWarningLevel } from "@packages/utils/translations";
 import { StudentRepository } from "@packages/data/repositories/StudentRepository";
 import { UserRepository } from "@packages/data/repositories/UserRepository";
 
+// Cache cho student info để tránh query nhiều lần
+interface CachedStudentInfo {
+  name: string;
+  parents: Array<{ parent_id: number }>;
+  timestamp: number;
+}
+const studentInfoCache = new Map<number, CachedStudentInfo>();
+const CACHE_TTL = 5 * 60 * 1000; // 5 phút
+
 const uc = new AcademicWarningUseCase();
 
 export async function POST(req: NextRequest) {
@@ -66,7 +75,20 @@ export async function POST(req: NextRequest) {
     console.log("Bắt đầu tạo cảnh cáo học vụ...");
     console.log("Student ID:", studentId, "Semester ID:", semesterId, "Level:", levelStr);
 
-    // Bước 1: Tạo dòng trong academic_warnings
+    // Bước 0: Kiểm tra duplicate warning (TẠM THỜI TẮT)
+    // console.log("Kiểm tra duplicate warning...");
+    // const existingWarnings = await uc.getStudentWarnings(Number(studentId), Number(semesterId));
+    // const hasSameLevel = existingWarnings.warnings.some(w => w.level === levelStr);
+    
+    // if (hasSameLevel) {
+    //   console.warn(`Student ${studentId} đã có cảnh cáo ${levelStr} trong semester ${semesterId}`);
+    //   return NextResponse.json(
+    //     { returnCode: -1, message: `Sinh viên đã có ${levelStr} trong học kỳ này`, data: null },
+    //     { status: 409 }
+    //   );
+    // }
+
+    // Bước 1: Tạo dòng trong academic_warnings (với transaction)
     console.log("Tạo dòng trong academic_warnings...");
     const warning = await uc.createWarning({
       studentId: Number(studentId),
@@ -82,27 +104,64 @@ export async function POST(req: NextRequest) {
     console.log("Tạo academic warning thành công! ID:", warning.id);
 
     // Tạo notifications cho sinh viên và phụ huynh
+    let studentNotification: { id: number } | null = null;
+    let parents: Array<{ parent_id: number }> = [];
+    let studentName = "Sinh viên";
+    
     try {
       const viLevel = translateWarningLevel(levelStr);
       const title = `Cảnh cáo học vụ (${viLevel})`;
 
-      // Bước 1: Lấy thông tin sinh viên và danh sách phụ huynh
+      // Bước 1: Lấy thông tin sinh viên và danh sách phụ huynh (với cache)
       console.log("Lấy thông tin sinh viên và danh sách phụ huynh...");
       const studentRepo = new StudentRepository();
       const userRepo = new UserRepository();
-      const [studentInfo, parents] = await Promise.all([
-        userRepo.findById(Number(studentId)),
-        studentRepo.getStudentParents(Number(studentId))
-      ]);
       
-      const studentName = studentInfo?.full_name || "Sinh viên";
+      const cacheKey = Number(studentId);
+      const cached = studentInfoCache.get(cacheKey);
+      const now = Date.now();
+      
+      let studentInfo;
+      
+      if (cached && (now - cached.timestamp) < CACHE_TTL) {
+        console.log("Sử dụng cache cho student:", studentId);
+        studentName = cached.name;
+        parents = cached.parents;
+        studentInfo = { full_name: studentName }; 
+      } else {
+
+        const [studentInfoResult, parentsResult] = await Promise.all([
+          userRepo.findById(Number(studentId)),
+          studentRepo.getStudentParents(Number(studentId))
+        ]);
+        
+        studentInfo = studentInfoResult;
+        parents = parentsResult || [];
+        
+        if (!studentInfo) {
+          console.error("Student not found:", studentId);
+          return NextResponse.json(
+            { returnCode: -1, message: "Student not found", data: null },
+            { status: 404 }
+          );
+        }
+        
+        studentName = studentInfo?.full_name || "Sinh viên";
+        
+        studentInfoCache.set(cacheKey, {
+          name: studentName,
+          parents: parents,
+          timestamp: now
+        });
+      }
+      
       console.log("Tìm thấy", parents?.length || 0, "phụ huynh:", parents?.map(p => p.parent_id) || []);
       console.log("Tên sinh viên:", studentName);
 
       // Bước 2: Tạo notification cho sinh viên
       console.log("Tạo notification cho sinh viên...");
       const studentContent = `Bạn đã nhận cảnh cáo học vụ ${viLevel}. Lý do: ${reason}`;
-      const studentNotification = await notificationsUseCase.create({
+      studentNotification = await notificationsUseCase.create({
         user_id: Number(studentId),
         title,
         content: studentContent,
@@ -112,28 +171,34 @@ export async function POST(req: NextRequest) {
       });
       console.log("Tạo notification cho sinh viên thành công! ID:", studentNotification.id);
 
-      // Bước 3: Tạo notifications riêng cho phụ huynh
+      // Bước 3: Tạo notifications riêng cho phụ huynh (tối ưu hóa với Promise.allSettled)
       if (parents && parents.length > 0) {
         console.log("Tạo notifications cho", parents.length, "phụ huynh...");
         
-        for (const parent of parents) {
-          try {
-            const parentTitle = `Thông báo cảnh cáo học vụ - ${studentName}`;
-            const parentContent = `Gửi phụ huynh: Em ${studentName} đã nhận cảnh cáo học vụ ${viLevel}. Lý do: ${reason}`;
-            
-            await notificationsUseCase.create({
-              user_id: parent.parent_id,
-              title: parentTitle,
-              content: parentContent,
-              type: "university",
-              category: "ACADEMIC",
-              target_student_id: Number(studentId),
-            });
+        const parentNotifications = parents.map(parent => {
+          const parentTitle = `Thông báo cảnh cáo học vụ - ${studentName}`;
+          const parentContent = `Gửi phụ huynh: Em ${studentName} đã nhận cảnh cáo học vụ ${viLevel}. Lý do: ${reason}`;
+          
+          return notificationsUseCase.create({
+            user_id: parent.parent_id,
+            title: parentTitle,
+            content: parentContent,
+            type: "university",
+            category: "ACADEMIC",
+            target_student_id: Number(studentId),
+          }).then(() => {
             console.log("Tạo notification cho phụ huynh ID:", parent.parent_id, "thành công!");
-          } catch (parentErr) {
-            console.error("Lỗi tạo notification cho phụ huynh ID:", parent.parent_id, parentErr);
-          }
-        }
+            return { success: true, parentId: parent.parent_id };
+          }).catch((err) => {
+            console.error("Lỗi tạo notification cho phụ huynh ID:", parent.parent_id, err);
+            return { success: false, parentId: parent.parent_id, error: err };
+          });
+        });
+        
+        // Chờ tất cả notifications hoàn thành (không block nếu có lỗi)
+        const results = await Promise.allSettled(parentNotifications);
+        const successCount = results.filter(r => r.status === 'fulfilled' && r.value.success).length;
+        console.log(`Hoàn thành tạo notifications: ${successCount}/${parents.length} phụ huynh thành công`);
       }
       
       console.log("Hoàn thành tạo cảnh cáo học vụ và notifications!");
@@ -145,7 +210,20 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       returnCode: 0,
       message: "Academic warning created successfully",
-      data: warning,
+      data: {
+        warning,
+        notifications: {
+          student: studentNotification ? { id: studentNotification.id } : null,
+          parents: parents?.length || 0
+        },
+        summary: {
+          studentId: Number(studentId),
+          studentName: studentName || "Unknown",
+          level: levelStr,
+          semesterId: Number(semesterId),
+          totalRecipients: 1 + (parents?.length || 0) // student + parents
+        }
+      },
     });
   } catch (err) {
 

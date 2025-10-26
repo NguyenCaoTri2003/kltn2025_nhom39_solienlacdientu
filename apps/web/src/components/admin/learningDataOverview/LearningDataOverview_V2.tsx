@@ -31,6 +31,7 @@ type V2Row = {
   previous_warnings_count: number;
   proposed_warning_level: "FIRST" | "SECOND" | "FINAL" | null;
   violation_reasons: string[];
+  is_warned?: boolean; // New field to track warning status
 };
 
 type Meta = { total: number; page: number; pageSize: number };
@@ -71,6 +72,7 @@ export default function LearningDataOverview_V2() {
   const [openModal, setOpenModal] = useState(false);
   const [selectedForCreate, setSelectedForCreate] = useState<string | null>(null);
   const [selectedSemesterIdForCreate, setSelectedSemesterIdForCreate] = useState<number | null>(null);
+  const [selectedStudentDataForCreate, setSelectedStudentDataForCreate] = useState<V2Row | null>(null);
 
   // Lookup datasets
   const [semestersData, setSemestersData] = useState<Array<{ id: number; name: string; academic_year: string | null }>>([]);
@@ -189,6 +191,47 @@ export default function LearningDataOverview_V2() {
   const openWarningHistory = (userId: string) => {
     setSelectedStudentId(userId);
     setWarningOpen(true);
+  };
+
+  const handleMarkAsWarned = async (studentId: string, studentName: string, semesterId: number | null) => {
+    if (!semesterId) {
+      alert("Không thể xác định semester để đánh dấu cảnh cáo");
+      return;
+    }
+
+    try {
+      const token = getToken();
+      if (!token) {
+        alert("Vui lòng đăng nhập lại");
+        return;
+      }
+
+      const response = await fetch(`${API_BASE}/api/academic-warnings/mark-warned`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          studentId: Number(studentId),
+          semesterId: Number(semesterId),
+          level: "FIRST", // Default level, có thể cải thiện sau
+        }),
+      });
+
+      const result = await response.json();
+      
+      if (result.returnCode === 0) {
+        alert(`Đã đánh dấu ${studentName} là đã cảnh cáo`);
+        // Refresh data để cập nhật UI
+        await fetchData();
+      } else {
+        alert(`Lỗi: ${result.message}`);
+      }
+    } catch (error) {
+      console.error("Error marking as warned:", error);
+      alert("Có lỗi xảy ra khi đánh dấu cảnh cáo");
+    }
   };
 
   const proposedLevelNumber = (lvl: V2Row["proposed_warning_level"]): number | undefined => {
@@ -335,10 +378,15 @@ export default function LearningDataOverview_V2() {
                       isBusy={false}
                       proposedLabel={r.proposed_warning_level ? `Cảnh cáo ${proposedLevelNumber(r.proposed_warning_level)}` : undefined}
                       proposedLevel={proposedLevelNumber(r.proposed_warning_level)}
+                      isWarned={r.is_warned || false}
                       onCreateWarning={(id) => {
                         setSelectedForCreate(id);
                         setSelectedSemesterIdForCreate(r.semester_id != null ? Number(r.semester_id) : null);
+                        setSelectedStudentDataForCreate(r);
                         setOpenModal(true);
+                      }}
+                      onMarkAsWarned={(id, name) => {
+                        handleMarkAsWarned(id, name, r.semester_id ?? null);
                       }}
                       onViewWarningHistory={(id) => openWarningHistory(id)}
                     />
@@ -380,11 +428,26 @@ export default function LearningDataOverview_V2() {
       {/* Create Warning Modal */}
       <CreateWarningModal
         open={openModal}
-        onClose={() => setOpenModal(false)}
+        onClose={() => {
+          setOpenModal(false);
+          setSelectedForCreate(null);
+          setSelectedSemesterIdForCreate(null);
+          setSelectedStudentDataForCreate(null);
+        }}
         studentId={selectedForCreate ? Number(selectedForCreate) : null}
         semesterId={selectedSemesterIdForCreate}
         apiBase={API_BASE}
         defaultLevel={(rows.find((x) => String(x.user_id ?? x.student_id) === String(selectedForCreate))?.proposed_warning_level) ?? "FIRST"}
+        studentData={selectedStudentDataForCreate ? {
+          avg_score_4: selectedStudentDataForCreate.avg_score_4,
+          cum_avg_score_4: selectedStudentDataForCreate.cum_avg_score_4,
+          total_credit_failed: selectedStudentDataForCreate.total_credit_failed,
+          total_credit_failed_cumulative: selectedStudentDataForCreate.total_credit_failed_cumulative,
+          academic_status: null, // Có thể thêm field này vào V2Row nếu cần
+        } : undefined}
+        onCreated={() => {
+          fetchData();
+        }}
       />
     </div>
   );
