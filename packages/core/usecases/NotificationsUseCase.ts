@@ -73,17 +73,9 @@ export class NotificationsUseCase {
     await this.repo.delete(nid);
   }
 
- 
-  async getUserNotifications(userId: number | string, params: { page?: number; pageSize?: number } = {}): Promise<ListResult> {
-    const uid = this.toPositiveInt(userId);
-    if (!uid) throw new Error("Invalid user ID");
-    
-    const p: ListParams = {
-      page: this.toPositiveInt(params.page) ?? 1,
-      pageSize: Math.min(this.toPositiveInt(params.pageSize) ?? 20, 100),
-    };
-    
-    return this.repo.getUserNotifications(uid, p);
+
+  async createUserNotification(userId: number, notificationId: number): Promise<UserNotificationRow> {
+    return await this.repo.createUserNotification(userId, notificationId);
   }
 
   async markAsRead(userNotificationId: number | string): Promise<void> {
@@ -98,9 +90,19 @@ export class NotificationsUseCase {
     await this.repo.markAsDeleted(id);
   }
 
-  /**
-   * Tạo user notifications cho nhiều users với cùng 1 notification
-   */
+  async getUserNotifications(userId: number | string, params: { page?: number; pageSize?: number } = {}): Promise<ListResult> {
+    const uid = this.toPositiveInt(userId);
+    if (!uid) throw new Error("Invalid user ID");
+    
+    const p: ListParams = {
+      page: this.toPositiveInt(params.page) ?? 1,
+      pageSize: Math.min(this.toPositiveInt(params.pageSize) ?? 20, 100),
+    };
+    
+    return this.repo.getUserNotifications(uid, p);
+  }
+
+
   async createUserNotifications(notificationId: number, userIds: number[]): Promise<void> {
     if (!userIds || userIds.length === 0) return;
     

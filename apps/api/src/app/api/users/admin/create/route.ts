@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 🧩 Validate cơ bản cho user
+    //  Validate cơ bản cho user
     if (!isValidFullName(user.full_name)) {
       return NextResponse.json(
         { error: "Họ tên không hợp lệ (1–128 ký tự)." },
@@ -70,7 +70,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Dân tộc không hợp lệ." }, { status: 400 });
     }
 
-    // ⚙️ Kiểm tra logic theo role
+    // Kiểm tra logic theo role
     if (user.role === "parent") {
       if (!parent) {
         return NextResponse.json(
@@ -155,7 +155,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // ✅ Nếu qua hết kiểm tra → gọi repository
+    //  Nếu qua hết kiểm tra → gọi repository
     const result = await userRepo.createUserWithRole({
       user,
       student,
@@ -169,7 +169,7 @@ export async function POST(req: NextRequest) {
       ? (result as { id: number; role: string }[])
       : [{ id: (result as any).id, role: (result as any).role }];
 
-    // 🪵 Ghi log tạo user
+    // Ghi log tạo user
     try {
       await logUserChange({
         user_id: createdUsers[0]?.id ?? null,
@@ -206,7 +206,7 @@ export async function POST(req: NextRequest) {
         field: err?.field,
       },
       { status }
-    );
+    ); 
   }
 }
 

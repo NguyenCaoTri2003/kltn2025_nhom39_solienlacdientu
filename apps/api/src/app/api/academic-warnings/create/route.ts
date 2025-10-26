@@ -86,19 +86,7 @@ export async function POST(req: NextRequest) {
       const viLevel = translateWarningLevel(levelStr);
       const title = `Cảnh cáo học vụ (${viLevel})`;
 
-      // Bước 2: Tạo notification cho sinh viên
-      console.log("Tạo notification cho sinh viên...");
-      const studentContent = `Bạn đã nhận cảnh cáo học vụ ${viLevel}. Lý do: ${reason}`;
-      const notification = await notificationsUseCase.create({
-        user_id: Number(studentId), // Gán cho sinh viên
-        title,
-        content: studentContent,
-        type: "university",
-        category: "ACADEMIC",
-      });
-      console.log("Tạo notification thành công! ID:", notification.id, "cho user:", studentId);
-
-      // Bước 3: Lấy thông tin sinh viên và danh sách phụ huynh
+      // Bước 1: Lấy thông tin sinh viên và danh sách phụ huynh
       console.log("Lấy thông tin sinh viên và danh sách phụ huynh...");
       const studentRepo = new StudentRepository();
       const userRepo = new UserRepository();
@@ -111,32 +99,35 @@ export async function POST(req: NextRequest) {
       console.log("Tìm thấy", parents?.length || 0, "phụ huynh:", parents?.map(p => p.parent_id) || []);
       console.log("Tên sinh viên:", studentName);
 
-      // Bước 4: Tạo notifications riêng cho phụ huynh với format khác
-      if (parents && parents.length > 0) {
-        const parentContent = `Gửi phụ huynh: Em ${studentName} đã nhận cảnh cáo học vụ ${viLevel}. Lý do: ${reason}`;
-        const parentTitle = `Thông báo cảnh cáo học vụ - ${studentName}`;
-        
-        console.log("Tạo notifications riêng cho", parents.length, "phụ huynh...");
-        
-        for (const parent of parents) {
-          try {
-            await notificationsUseCase.create({
-              user_id: parent.parent_id,
-              title: parentTitle,
-              content: parentContent,
-              type: "university",
-              category: "ACADEMIC",
-            });
-            console.log("Tạo notification cho phụ huynh ID:", parent.parent_id, "thành công!");
-          } catch (parentErr) {
-            console.error("Lỗi tạo notification cho phụ huynh ID:", parent.parent_id, parentErr);
-          }
-        }
-        console.log("Tạo notifications cho phụ huynh thành công!");
-      } else {
-        console.log("Không có phụ huynh nào để tạo notification");
-      }
+      // Bước 2: Tạo 1 notification chính (không gán user_id)
+      console.log("Tạo notification chính...");
+      const content = `Cảnh cáo học vụ ${viLevel} cho sinh viên ${studentName}. Lý do: ${reason}`;
+      const notification = await notificationsUseCase.create({
+        user_id: null, // Không gán cho user cụ thể
+        title,
+        content,
+        type: "university",
+        category: "ACADEMIC",
+      });
+      console.log("Tạo notification chính thành công! ID:", notification.id);
 
+      // Bước 3: Tạo user_notifications cho sinh viên và phụ huynh
+      const userIds = [Number(studentId)]; // Thêm student
+      if (parents && parents.length > 0) {
+        userIds.push(...parents.map(p => p.parent_id)); // Thêm parents
+      }
+      
+      console.log("Tạo user_notifications cho", userIds.length, "users:", userIds);
+      
+      for (const userId of userIds) {
+        try {
+          await notificationsUseCase.createUserNotification(userId, notification.id);
+          console.log("Tạo user_notification cho user ID:", userId, "thành công!");
+        } catch (userNotifyErr) {
+          console.error("Lỗi tạo user_notification cho user ID:", userId, userNotifyErr);
+        }
+      }
+      
       console.log("Hoàn thành tạo cảnh cáo học vụ và notifications!");
 
     } catch (notifyErr) {

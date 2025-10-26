@@ -36,9 +36,6 @@ export default function NotificationScreen() {
     disconnectRealtime,
   } = useNotifications();
 
-  useEffect(() => {
-    connectRealtime();
-  }, [connectRealtime]);
 
 
   useEffect(() => {

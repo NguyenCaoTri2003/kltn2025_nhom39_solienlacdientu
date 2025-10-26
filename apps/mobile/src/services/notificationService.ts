@@ -1,13 +1,8 @@
 import { getAuthToken } from '../utils/auth';
 import { API_URL } from '../constants/config';
+import { supabase } from '../lib/supabaseClient';
 
 const API_BASE_URL = API_URL || 'http://localhost:3000';
-
-// Polyfill EventSource cho React Native
-if (typeof global !== 'undefined' && !global.EventSource) {
-  // Cho React Native, chúng ta sẽ sử dụng phương pháp polling thay vì EventSource
-  console.log('EventSource not available, using polling for notifications');
-}
 
 export interface Notification {
   id: number;
@@ -39,10 +34,8 @@ export interface RealtimeNotificationEvent {
 }
 
 class NotificationService {
-  private eventSource: any = null;
   private listeners: ((event: RealtimeNotificationEvent) => void)[] = [];
-  private pollingInterval: NodeJS.Timeout | null = null;
-  private lastNotificationId: number | null = null;
+  private channels: Map<string, any> = new Map();
 
   // Lấy notifications với phân trang
   async getNotifications(page: number = 1, pageSize: number = 20): Promise<NotificationResponse> {
@@ -95,57 +88,131 @@ class NotificationService {
     }
   }
 
-  async connectRealtime(): Promise<void> {
+  // Lấy số lượng notifications chưa đọc
+  async getUnreadCount(): Promise<number> {
     try {
       const token = await getAuthToken();
+      const response = await fetch(`${API_BASE_URL}/api/user-notifications/unread-count`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
 
-      this.disconnect();
-
-
-      console.log('Starting polling for notifications...');
-      
-
-      const initialResponse = await this.getNotifications(1, 1);
-      if (initialResponse.returnCode === 0 && initialResponse.data.length > 0) {
-        this.lastNotificationId = initialResponse.data[0].id;
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
 
+      const data = await response.json();
+      return data.count || 0;
+    } catch (error) {
+      console.error('Error fetching unread count:', error);
+      return 0;
+    }
+  }
 
-      this.pollingInterval = setInterval(async () => {
-        try {
-          const response = await this.getNotifications(1, 5); 
-          if (response.returnCode === 0 && response.data.length > 0) {
-            const newNotifications = response.data.filter(
-              (notification) => 
-                this.lastNotificationId === null || 
-                notification.id > this.lastNotificationId
-            );
+  // Đánh dấu notification đã đọc
+  async markAsRead(userNotificationId: number): Promise<void> {
+    try {
+      const token = await getAuthToken();
+      const response = await fetch(`${API_BASE_URL}/api/user-notifications/mark-read`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userNotificationId: userNotificationId,
+        }),
+      });
 
-            if (newNotifications.length > 0) {
-              this.lastNotificationId = Math.max(...newNotifications.map(n => n.id));
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
 
-              newNotifications.forEach(notification => {
-                const event: RealtimeNotificationEvent = {
-                  type: 'notification',
-                  data: notification,
-                  timestamp: new Date().toISOString()
-                };
-                this.notifyListeners(event);
-              });
+      const data = await response.json();
+      if (data.returnCode !== 0) {
+        throw new Error(data.message || 'Failed to mark as read');
+      }
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+      throw error;
+    }
+  }
+
+  async connectRealtime(userId: number): Promise<void> {
+    try {
+      this.disconnect();
+
+      console.log('🔌 Connecting to Supabase realtime notifications for user:', userId);
+
+      const channelName = `notifications:user-${userId}`;
+      const channel = supabase
+        .channel(channelName)
+        .on(
+          "postgres_changes",
+          {
+            event: "INSERT",
+            schema: "public",
+            table: "user_notifications",
+          },
+          (payload) => {
+            console.log('🎉 New user notification received via realtime:', payload);
+            
+            const userNotification = payload.new;
+            
+            // Chỉ xử lý notification của user hiện tại
+            if (userNotification.user_id === userId) {
+              console.log(' Processing notification for current user');
+              
+              // Lấy thông tin notification chi tiết từ Supabase
+              supabase
+                .from('notifications')
+                .select('*')
+                .eq('id', userNotification.notification_id)
+                .single()
+                .then(({ data: notification, error }) => {
+                  if (error) {
+                    console.error('Error fetching notification details:', error);
+                    return;
+                  }
+
+                  if (notification) {
+                    console.log('📨 Notification details fetched:', notification);
+                    const event: RealtimeNotificationEvent = {
+                      type: 'notification',
+                      data: notification,
+                      timestamp: new Date().toISOString()
+                    };
+                    this.notifyListeners(event);
+                  }
+                });
+            } else {
+              console.log('Skipping notification for different user');
             }
           }
-        } catch (error) {
-          console.error('Error polling notifications:', error);
-        }
-      }, 10000); 
+        )
+        .subscribe((status) => {
+          console.log('Notification channel status:', status);
+          if (status === 'SUBSCRIBED') {
+            console.log('Successfully connected to Supabase realtime notifications');
+            const connectedEvent: RealtimeNotificationEvent = {
+              type: 'connected',
+              message: 'Connected to Supabase realtime notifications',
+              timestamp: new Date().toISOString()
+            };
+            this.notifyListeners(connectedEvent);
+          } else if (status === 'CHANNEL_ERROR') {
+            console.error('Channel error - check RLS policies');
+          } else if (status === 'TIMED_OUT') {
+            console.error('Channel timed out');
+          } else if (status === 'CLOSED') {
+            console.log('Channel closed');
+          }
+        });
 
-      // Gửi event connected
-      const connectedEvent: RealtimeNotificationEvent = {
-        type: 'connected',
-        message: 'Connected to notifications polling',
-        timestamp: new Date().toISOString()
-      };
-      this.notifyListeners(connectedEvent);
+      this.channels.set(channelName, channel);
 
     } catch (error) {
       console.error('Error connecting to realtime notifications:', error);
@@ -155,14 +222,12 @@ class NotificationService {
 
 
   disconnect(): void {
-    if (this.eventSource) {
-      this.eventSource.close();
-      this.eventSource = null;
-    }
-    if (this.pollingInterval) {
-      clearInterval(this.pollingInterval);
-      this.pollingInterval = null;
-    }
+    // Disconnect tất cả channels
+    this.channels.forEach((channel, channelName) => {
+      supabase.removeChannel(channel);
+      console.log(`Disconnected channel: ${channelName}`);
+    });
+    this.channels.clear();
   }
 
   addListener(listener: (event: RealtimeNotificationEvent) => void): void {
@@ -184,8 +249,9 @@ class NotificationService {
   }
 
   isConnected(): boolean {
-    return this.pollingInterval !== null;
+    return this.channels.size > 0;
   }
 }
 
 export const notificationService = new NotificationService();
+

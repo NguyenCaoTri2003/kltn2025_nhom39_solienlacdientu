@@ -6,7 +6,6 @@ export type NotificationType = "university" | "lecturer" | "system";
 export interface NotificationRow {
   id: number;
   user_id: number | null;
-  title: string | null;
   content: string | null;
   type: NotificationType | null;
   category: NotificationCategory | null;
@@ -67,7 +66,7 @@ export class NotificationsRepository {
       .eq("id", id)
       .single();
     if (error) {
-      // supabase returns error when not found as well; normalize to null
+
       if ((error as any).code === "PGRST116" || String(error.message || "").toLowerCase().includes("not found")) {
         return null;
       }
@@ -84,7 +83,7 @@ export class NotificationsRepository {
 
     let query = supabase
       .from("notifications")
-      .select("id, user_id, title, content, type, category, created_at", { count: "exact" })
+      .select("id, user_id, content, type, category, created_at", { count: "exact" })
       .order("created_at", { ascending: false });
 
     if (params.userId != null) {
@@ -108,7 +107,6 @@ export class NotificationsRepository {
     if (error) throw error;
   }
 
-  // User Notifications methods
   async createUserNotification(userId: number, notificationId: number): Promise<UserNotificationRow> {
     const { data, error } = await supabase
       .from("user_notifications")
@@ -134,7 +132,7 @@ export class NotificationsRepository {
       .from("user_notifications")
       .select(`
         id, user_id, notification_id, is_read, is_deleted, created_at,
-        notifications!inner(id, user_id, title, content, type, category, target_student_id, created_at)
+        notifications!inner(id, user_id, content, type, category, target_student_id, created_at)
       `, { count: "exact" })
       .eq("user_id", userId)
       .eq("is_deleted", false)
