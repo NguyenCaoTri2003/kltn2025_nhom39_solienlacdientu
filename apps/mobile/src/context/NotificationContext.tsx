@@ -14,6 +14,7 @@ interface NotificationContextType {
   incrementUnreadCount: () => void;
   decrementUnreadCount: () => void;
   resetUnreadCount: () => void;
+  refreshUnreadCount: () => Promise<void>;
   toastVisible: boolean;
   toastNotification: Notification | null;
   showToast: (notification: Notification) => void;
@@ -27,6 +28,7 @@ const NotificationContext = createContext<NotificationContextType>({
   incrementUnreadCount: () => {},
   decrementUnreadCount: () => {},
   resetUnreadCount: () => {},
+  refreshUnreadCount: async () => {},
   toastVisible: false,
   toastNotification: null,
   showToast: () => {},
@@ -54,10 +56,20 @@ export const NotificationProvider = ({ children }: { children: React.ReactNode }
     setUnreadCount(0);
   };
 
+  const refreshUnreadCount = async () => {
+    try {
+      const count = await notificationService.getUnreadCount();
+      setUnreadCount(count);
+      console.log('Refreshed unread count:', count);
+    } catch (error) {
+      console.error('Error refreshing unread count:', error);
+    }
+  };
+
   const markAsRead = async (userNotificationId: number) => {
     try {
       await notificationService.markAsRead(userNotificationId);
-      decrementUnreadCount();
+      await refreshUnreadCount();
     } catch (error) {
       console.error('Error marking notification as read:', error);
       throw error;
@@ -102,7 +114,8 @@ export const NotificationProvider = ({ children }: { children: React.ReactNode }
     const handleRealtimeNotification = (event: RealtimeNotificationEvent) => {
       if (event.type === 'notification' && event.data) {
         console.log('📨 Global notification received:', event.data);
-        incrementUnreadCount();
+        // Refresh unread count from server instead of incrementing
+        refreshUnreadCount();
         showToast({
           id: event.data.id,
           title: event.data.title || undefined,
@@ -137,7 +150,7 @@ export const NotificationProvider = ({ children }: { children: React.ReactNode }
       notificationService.disconnect();
       setIsConnected(false);
     };
-  }, [user?.id, incrementUnreadCount, showToast]);
+  }, [user?.id, refreshUnreadCount, showToast]);
 
   return (
     <NotificationContext.Provider value={{
@@ -145,6 +158,7 @@ export const NotificationProvider = ({ children }: { children: React.ReactNode }
       incrementUnreadCount,
       decrementUnreadCount,
       resetUnreadCount,
+      refreshUnreadCount,
       toastVisible,
       toastNotification,
       showToast,

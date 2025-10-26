@@ -13,10 +13,11 @@ export interface UseNotificationsReturn {
   deleteNotification: (id: number) => Promise<void>;
   connectRealtime: () => Promise<void>;
   disconnectRealtime: () => void;
+  markAsRead: (userNotificationId: number) => Promise<void>;
 }
 
 export function useNotifications(): UseNotificationsReturn {
-  const { incrementUnreadCount, showToast, isConnected: globalIsConnected } = useNotificationContext();
+  const { incrementUnreadCount, showToast, isConnected: globalIsConnected, markAsRead: globalMarkAsRead, refreshUnreadCount } = useNotificationContext();
   const { user } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(false);
@@ -80,6 +81,24 @@ export function useNotifications(): UseNotificationsReturn {
     console.log('Realtime disconnection is managed globally');
   }, []);
 
+  const markAsRead = useCallback(async (userNotificationId: number) => {
+    try {
+      await globalMarkAsRead(userNotificationId);
+      setNotifications(prev => 
+        prev.map(notification => 
+          notification.id === userNotificationId 
+            ? { ...notification, is_read: true }
+            : notification
+        )
+      );
+  
+      await refreshUnreadCount();
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+      throw error;
+    }
+  }, [globalMarkAsRead, refreshUnreadCount]);
+
   useEffect(() => {
     loadNotifications(true);
   }, [loadNotifications]);
@@ -116,5 +135,6 @@ export function useNotifications(): UseNotificationsReturn {
     deleteNotification,
     connectRealtime,
     disconnectRealtime,
+    markAsRead,
   };
 }

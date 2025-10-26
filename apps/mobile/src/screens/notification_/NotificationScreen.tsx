@@ -23,7 +23,7 @@ import { useNotificationContext } from '../../context/NotificationContext';
  */
 export default function NotificationScreen() {
   const navigation = useNavigation();
-  const { resetUnreadCount } = useNotificationContext();
+  const { resetUnreadCount, refreshUnreadCount } = useNotificationContext();
   const {
     notifications,
     loading,
@@ -34,16 +34,18 @@ export default function NotificationScreen() {
     deleteNotification,
     connectRealtime,
     disconnectRealtime,
+    markAsRead,
   } = useNotifications();
 
 
 
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => {
-      resetUnreadCount();
+      // Refresh unread count from server when screen is focused
+      refreshUnreadCount();
     });
     return unsubscribe;
-  }, [navigation, resetUnreadCount]);
+  }, [navigation, refreshUnreadCount]);
 
   const handleRefresh = () => {
     loadNotifications(true);
@@ -105,40 +107,47 @@ export default function NotificationScreen() {
     }
   };
 
-  const renderNotification = ({ item }: { item: any }) => (
-    <TouchableOpacity 
-      style={styles.notificationCard}
-      onPress={() => (navigation as any).navigate('NotificationDetail', { notification: item })}
-    >
-      <View style={styles.notificationHeader}>
-        <View style={styles.notificationIconContainer}>
-          {getNotificationIcon(item.notifications?.type || item.type)}
-        </View>
-        <View style={styles.notificationContent}>
-          <View style={styles.notificationHeaderRow}>
-            <Text style={styles.notificationType}>
-              {getNotificationTypeLabel(item.notifications?.type || item.type)}
-            </Text>
-            <Text style={styles.notificationTime}>
-              {formatDate(item.notifications?.created_at || item.created_at)}
+  const renderNotification = ({ item }: { item: any }) => {
+    const isRead = item.is_read;
+    const cardStyle = isRead ? styles.notificationCard : [styles.notificationCard, styles.unreadCard];
+    const textStyle = isRead ? styles.notificationText : [styles.notificationText, styles.unreadText];
+    
+    return (
+      <TouchableOpacity 
+        style={cardStyle}
+        onPress={() => (navigation as any).navigate('NotificationDetail', { notification: item })}
+      >
+        <View style={styles.notificationHeader}>
+          <View style={styles.notificationIconContainer}>
+            {getNotificationIcon(item.notifications?.type || item.type)}
+          </View>
+          <View style={styles.notificationContent}>
+            <View style={styles.notificationHeaderRow}>
+              <Text style={styles.notificationType}>
+                {getNotificationTypeLabel(item.notifications?.type || item.type)}
+              </Text>
+              <Text style={styles.notificationTime}>
+                {formatDate(item.notifications?.created_at || item.created_at)}
+              </Text>
+              {!isRead && <View style={styles.unreadDot} />}
+            </View>
+            <Text style={textStyle} numberOfLines={2}>
+              {item.notifications?.title || item.title || item.notifications?.content || item.content || 'Không có nội dung'}
             </Text>
           </View>
-          <Text style={styles.notificationText} numberOfLines={2}>
-            {item.notifications?.title || item.title || item.notifications?.content || item.content || 'Không có nội dung'}
-          </Text>
+          <TouchableOpacity
+            style={styles.deleteButton}
+            onPress={(e) => {
+              e.stopPropagation();
+              handleDeleteNotification(item.id);
+            }}
+          >
+            <Trash2 size={16} color="#EF4444" />
+          </TouchableOpacity>
         </View>
-        <TouchableOpacity
-          style={styles.deleteButton}
-          onPress={(e) => {
-            e.stopPropagation();
-            handleDeleteNotification(item.id);
-          }}
-        >
-          <Trash2 size={16} color="#EF4444" />
-        </TouchableOpacity>
-      </View>
-    </TouchableOpacity>
-  );
+      </TouchableOpacity>
+    );
+  };
 
   const renderEmptyState = () => (
     <View style={styles.emptyState}>
@@ -181,7 +190,7 @@ export default function NotificationScreen() {
         <FlatList
           data={notifications}
           renderItem={renderNotification}
-          keyExtractor={(item) => item.id.toString()}
+          keyExtractor={(item, index) => `${item.id}-${index}`}
           contentContainerStyle={styles.listContainer}
           refreshControl={
             <RefreshControl
@@ -230,6 +239,11 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
+  unreadCard: {
+    backgroundColor: '#F0F9FF',
+    borderLeftWidth: 4,
+    borderLeftColor: '#005BAC',
+  },
   notificationHeader: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -266,6 +280,17 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#374151',
     lineHeight: 20,
+  },
+  unreadText: {
+    fontWeight: '600',
+    color: '#1F2937',
+  },
+  unreadDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#005BAC',
+    marginLeft: 8,
   },
   deleteButton: {
     padding: 8,
