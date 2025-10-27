@@ -95,9 +95,13 @@ export default function GlobalNotificationToast({
   };
 
   const handlePress = () => {
-    onClose();
-    // Navigate to notification detail
-    (navigation as any).navigate('NotificationDetail', { notification });
+    try {
+      onClose();
+      
+      (navigation as any).navigate('Notifications');
+    } catch (error) {
+      console.error('Error navigating to notifications:', error);
+    }
   };
 
   return (

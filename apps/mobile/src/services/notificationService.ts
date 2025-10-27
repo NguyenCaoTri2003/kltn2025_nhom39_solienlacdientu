@@ -212,8 +212,12 @@ class NotificationService {
             }
           }
         )
-        .subscribe((status) => {
+        .subscribe((status, error) => {
           console.log('Notification channel status:', status);
+          if (error) {
+            console.error('Channel subscription error:', error);
+          }
+          
           if (status === 'SUBSCRIBED') {
             console.log('Successfully connected to Supabase realtime notifications');
             const connectedEvent: RealtimeNotificationEvent = {
@@ -223,7 +227,7 @@ class NotificationService {
             };
             this.notifyListeners(connectedEvent);
           } else if (status === 'CHANNEL_ERROR') {
-            console.error('Channel error - check RLS policies');
+            console.error('Channel error - check RLS policies and channel name');
           } else if (status === 'TIMED_OUT') {
             console.error('Channel timed out');
           } else if (status === 'CLOSED') {
@@ -243,8 +247,12 @@ class NotificationService {
   disconnect(): void {
     // Disconnect tất cả channels
     this.channels.forEach((channel, channelName) => {
-      supabase.removeChannel(channel);
-      console.log(`Disconnected channel: ${channelName}`);
+      try {
+        supabase.removeChannel(channel);
+        console.log(`Disconnected channel: ${channelName}`);
+      } catch (error) {
+        console.error(`Error disconnecting channel ${channelName}:`, error);
+      }
     });
     this.channels.clear();
   }

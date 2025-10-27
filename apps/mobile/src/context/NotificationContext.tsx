@@ -158,9 +158,13 @@ export const NotificationProvider = ({ children }: { children: React.ReactNode }
     return () => {
       console.log('🔌 Disconnecting global notification realtime');
 
-      notificationService.removeListener(handleRealtimeNotification);
-      notificationService.disconnect();
-      setIsConnected(false);
+      try {
+        notificationService.removeListener(handleRealtimeNotification);
+        notificationService.disconnect();
+        setIsConnected(false);
+      } catch (error) {
+        console.error('Error disconnecting notification realtime:', error);
+      }
     };
   }, [user?.id, refreshUnreadCount, showToast]);
 

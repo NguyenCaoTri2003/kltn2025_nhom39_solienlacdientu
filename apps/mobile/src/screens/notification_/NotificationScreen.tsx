@@ -47,6 +47,7 @@ export default function NotificationScreen() {
     return unsubscribe;
   }, [navigation, refreshUnreadCount, loadNotifications]);
 
+
   const handleRefresh = () => {
     loadNotifications(true);
   };
@@ -115,7 +116,10 @@ export default function NotificationScreen() {
     return (
       <TouchableOpacity 
         style={cardStyle}
-        onPress={() => (navigation as any).navigate('NotificationDetail', { notification: item })}
+        onPress={() => (navigation as any).navigate('NotificationDetail', { 
+          notification: item,
+          onNotificationDeleted: () => loadNotifications(true)
+        })}
       >
         <View style={styles.notificationHeader}>
           <View style={styles.notificationIconContainer}>
