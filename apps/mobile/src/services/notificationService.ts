@@ -174,13 +174,68 @@ class NotificationService {
     }
   }
 
+  async markAllAsRead(): Promise<void> {
+    try {
+      const token = await getAuthToken();
+      const response = await fetch(`${API_BASE_URL}/api/user-notifications`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'markAllAsRead',
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      if (data.returnCode !== 0) {
+        throw new Error(data.message || 'Failed to mark all as read');
+      }
+    } catch (error) {
+      console.error('Error marking all notifications as read:', error);
+      throw error;
+    }
+  }
+
+  async deleteAll(): Promise<void> {
+    try {
+      const token = await getAuthToken();
+      const response = await fetch(`${API_BASE_URL}/api/user-notifications`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'deleteAll',
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      if (data.returnCode !== 0) {
+        throw new Error(data.message || 'Failed to delete all notifications');
+      }
+    } catch (error) {
+      console.error('Error deleting all notifications:', error);
+      throw error;
+    }
+  }
+
   async connectRealtime(userId: number): Promise<void> {
     try {
       this.disconnect();
 
-      console.log('🔌 Connecting to Supabase realtime notifications for user:', userId);
 
-      const channelName = `notifications:user-${userId}`;
+      const channelName = `notifications_user_${userId}`;
       const channel = supabase
         .channel(channelName)
         .on(
@@ -189,37 +244,30 @@ class NotificationService {
             event: "INSERT",
             schema: "public",
             table: "notifications",
+            filter: `user_id=eq.${userId}`,
           },
           (payload) => {
-            console.log('New notification received via realtime:', payload);
             
             const notification = payload.new;
             
             // Chỉ xử lý notification của user hiện tại
             if (notification.user_id === userId) {
-              console.log('Processing notification for current user');
-              console.log('Notification details:', notification);
               
               const event: RealtimeNotificationEvent = {
                 type: 'notification',
                 data: notification as Notification,
                 timestamp: new Date().toISOString()
               };
-              console.log('Sending event to listeners:', event);
               this.notifyListeners(event);
-            } else {
-              console.log('Skipping notification for different user');
             }
           }
         )
         .subscribe((status, error) => {
-          console.log('Notification channel status:', status);
           if (error) {
             console.error('Channel subscription error:', error);
           }
           
           if (status === 'SUBSCRIBED') {
-            console.log('Successfully connected to Supabase realtime notifications');
             const connectedEvent: RealtimeNotificationEvent = {
               type: 'connected',
               message: 'Connected to Supabase realtime notifications',
@@ -231,7 +279,6 @@ class NotificationService {
           } else if (status === 'TIMED_OUT') {
             console.error('Channel timed out');
           } else if (status === 'CLOSED') {
-            console.log('Channel closed');
           }
         });
 
@@ -249,7 +296,6 @@ class NotificationService {
     this.channels.forEach((channel, channelName) => {
       try {
         supabase.removeChannel(channel);
-        console.log(`Disconnected channel: ${channelName}`);
       } catch (error) {
         console.error(`Error disconnecting channel ${channelName}:`, error);
       }

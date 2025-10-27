@@ -98,6 +98,18 @@ export class NotificationsUseCase {
     return this.repo.getUserNotifications(uid, p);
   }
 
+  async markAllAsRead(userId: number | string): Promise<void> {
+    const uid = this.toPositiveInt(userId);
+    if (!uid) throw new Error("Invalid user ID");
+    await this.repo.markAllAsRead(uid);
+  }
+
+  async deleteAll(userId: number | string): Promise<void> {
+    const uid = this.toPositiveInt(userId);
+    if (!uid) throw new Error("Invalid user ID");
+    await this.repo.deleteAll(uid);
+  }
+
 
   // DEPRECATED: Không còn sử dụng bảng User_Notifications nữa
   // async createUserNotifications(notificationId: number, userIds: number[]): Promise<void> {
