@@ -11,15 +11,19 @@ export interface Notification {
   content: string | null; 
   type: NotificationType | null; 
   category: NotificationCategory | null;
+  target_student_id?: number | null;
+  is_read?: boolean;
+  is_deleted?: boolean;
   created_at?: string; 
 }
 
-export interface UserNotification {
-  id: number;
-  user_id: number;
-  notification_id: number;
-  is_read: boolean;
-  is_deleted: boolean;
-  created_at: string;
-  notification?: Notification;
-}
+// DEPRECATED: Không còn sử dụng bảng user_notifications
+// export interface UserNotification {
+//   id: number;
+//   user_id: number;
+//   notification_id: number;
+//   is_read: boolean;
+//   is_deleted: boolean;
+//   created_at: string;
+//   notification?: Notification;
+// }

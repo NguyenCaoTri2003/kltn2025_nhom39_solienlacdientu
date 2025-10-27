@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { authenticate } from "@packages/utils/auth";
 import { AcademicWarningUseCase } from "@packages/core/usecases/AcademicWarningUseCase";
+import { UserRepository } from "@packages/data/repositories/UserRepository";
 
 const uc = new AcademicWarningUseCase();
 
@@ -60,8 +61,14 @@ export async function GET(
       }
     }
 
+    // Lấy thông tin student để hiển thị full_name
+    const userRepo = new UserRepository();
+    const studentInfo = await userRepo.findById(studentId);
+
     const data = {
       student_id: result.student_id,
+      student_code: studentInfo?.student?.student_code || null,
+      full_name: studentInfo?.full_name || null,
       semester_id: result.semester_id,
       total_warning: warnings.length, // reflect filtered count if filters applied
       warnings,

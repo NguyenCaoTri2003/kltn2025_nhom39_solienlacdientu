@@ -28,5 +28,13 @@ export class AcademicWarningUseCase {
 	async getStudentWarnings(studentId: number, semesterId?: number) {
 		return this.repo.getWarningsForStudent(studentId, semesterId);
 	}
+
+	async markStudentAsWarned(studentId: number, semesterId: number, level: string) {
+		return this.repo.markStudentAsWarned(studentId, semesterId, level);
+	}
+
+	async isStudentWarned(studentId: number, semesterId: number) {
+		return this.repo.isStudentWarned(studentId, semesterId);
+	}
 }
 

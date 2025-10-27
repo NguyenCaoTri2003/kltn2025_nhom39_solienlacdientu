@@ -10,17 +10,21 @@ export interface NotificationRow {
   content: string | null;
   type: NotificationType | null;
   category: NotificationCategory | null;
+  target_student_id: number | null;
+  is_read: boolean;
+  is_deleted: boolean;
   created_at?: string;
 }
 
-export interface UserNotificationRow {
-  id: number;
-  user_id: number;
-  notification_id: number;
-  is_read: boolean;
-  is_deleted: boolean;
-  created_at: string;
-}
+// DEPRECATED: Không còn sử dụng bảng user_notifications
+// export interface UserNotificationRow {
+//   id: number;
+//   user_id: number;
+//   notification_id: number;
+//   is_read: boolean;
+//   is_deleted: boolean;
+//   created_at: string;
+// }
 
 export interface ListParams {
   userId?: number;
@@ -37,12 +41,13 @@ export interface ListResult {
 }
 
 export class NotificationsRepository {
-  async create(payload: { 
-    user_id?: number | null; 
+  async create(payload: {
+    user_id?: number | null;
     title?: string | null;
-    content?: string | null; 
+    content?: string | null;
     type?: NotificationType | null;
     category?: NotificationCategory | null;
+    target_student_id?: number | null;
   }): Promise<NotificationRow> {
     const insertData = {
       user_id: payload.user_id ?? null,
@@ -50,11 +55,12 @@ export class NotificationsRepository {
       content: payload.content ?? null,
       type: payload.type ?? null,
       category: payload.category ?? null,
+      target_student_id: payload.target_student_id ?? null,
     } as const;
     const { data, error } = await supabase
       .from("notifications")
       .insert(insertData)
-      .select("id, user_id, title, content, type, category, created_at")
+      .select("id, user_id, title, content, type, category, target_student_id, is_read, is_deleted, created_at")
       .single();
     if (error) throw error;
     return data as NotificationRow;
@@ -63,11 +69,11 @@ export class NotificationsRepository {
   async getById(id: number): Promise<NotificationRow | null> {
     const { data, error } = await supabase
       .from("notifications")
-      .select("id, user_id, title, content, type, category, created_at")
+      .select("id, user_id, title, content, type, category, target_student_id, is_read, is_deleted, created_at")
       .eq("id", id)
       .single();
     if (error) {
-      // supabase returns error when not found as well; normalize to null
+
       if ((error as any).code === "PGRST116" || String(error.message || "").toLowerCase().includes("not found")) {
         return null;
       }
@@ -84,7 +90,7 @@ export class NotificationsRepository {
 
     let query = supabase
       .from("notifications")
-      .select("id, user_id, title, content, type, category, created_at", { count: "exact" })
+      .select("id, user_id, content, type, category, created_at", { count: "exact" })
       .order("created_at", { ascending: false });
 
     if (params.userId != null) {
@@ -108,21 +114,21 @@ export class NotificationsRepository {
     if (error) throw error;
   }
 
-  // User Notifications methods
-  async createUserNotification(userId: number, notificationId: number): Promise<UserNotificationRow> {
-    const { data, error } = await supabase
-      .from("user_notifications")
-      .insert({
-        user_id: userId,
-        notification_id: notificationId,
-        is_read: false,
-        is_deleted: false,
-      })
-      .select("id, user_id, notification_id, is_read, is_deleted, created_at")
-      .single();
-    if (error) throw error;
-    return data as UserNotificationRow;
-  }
+  // DEPRECATED: Use notifications table directly
+  // async createUserNotification(userId: number, notificationId: number): Promise<UserNotificationRow> {
+  //   const { data, error } = await supabase
+  //     .from("user_notifications")
+  //     .insert({
+  //       user_id: userId,
+  //       notification_id: notificationId,
+  //       is_read: false,
+  //       is_deleted: false,
+  //     })
+  //     .select("id, user_id, notification_id, is_read, is_deleted, created_at")
+  //     .single();
+  //   if (error) throw error;
+  //   return data as UserNotificationRow;
+  // }
 
   async getUserNotifications(userId: number, params: ListParams = {}): Promise<ListResult> {
     const page = Math.max(1, Math.floor(params.page ?? 1));
@@ -131,10 +137,10 @@ export class NotificationsRepository {
     const to = from + pageSize - 1;
 
     const { data, count, error } = await supabase
-      .from("user_notifications")
+      .from("notifications")
       .select(`
-        id, user_id, notification_id, is_read, is_deleted, created_at,
-        notifications!inner(id, user_id, title, content, type, category, target_student_id, created_at)
+        id, user_id, title, content, type, category, target_student_id, 
+        is_read, is_deleted, created_at
       `, { count: "exact" })
       .eq("user_id", userId)
       .eq("is_deleted", false)
@@ -152,19 +158,19 @@ export class NotificationsRepository {
     };
   }
 
-  async markAsRead(userNotificationId: number): Promise<void> {
+  async markAsRead(notificationId: number): Promise<void> {
     const { error } = await supabase
-      .from("user_notifications")
+      .from("notifications")
       .update({ is_read: true })
-      .eq("id", userNotificationId);
+      .eq("id", notificationId);
     if (error) throw error;
   }
 
-  async markAsDeleted(userNotificationId: number): Promise<void> {
+  async markAsDeleted(notificationId: number): Promise<void> {
     const { error } = await supabase
-      .from("user_notifications")
+      .from("notifications")
       .update({ is_deleted: true })
-      .eq("id", userNotificationId);
+      .eq("id", notificationId);
     if (error) throw error;
   }
 

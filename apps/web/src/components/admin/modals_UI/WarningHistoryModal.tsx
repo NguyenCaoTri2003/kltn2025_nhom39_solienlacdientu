@@ -1,7 +1,7 @@
 "use client";
 import React from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { DataTable } from "@/components/ui/data-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -20,6 +20,8 @@ interface WarningHistoryModalProps {
 
 type WarningHistoryData = {
   student_id: number;
+  student_code: string | null;
+  full_name: string | null;
   semester_id: number | null;
   total_warning: number;
   warnings: Array<{
@@ -107,16 +109,25 @@ export function WarningHistoryModal({ open, onClose, studentId, semesterId, apiB
         });
         const json = await res.json();
         if (!alive) return;
+        
+        console.log("Semester API response:", json); // Debug log
+        
         if (json?.returnCode === 0 && Array.isArray(json.data)) {
           type Sem = { id: number | string; name?: string };
           const arr: Sem[] = json.data as Sem[];
           const found = arr.find((s) => Number(s.id) === Number(sid));
-          setSemesterName(found?.name ?? null);
+          console.log("Found semester:", found, "for ID:", sid); // Debug log
+          setSemesterName(found?.name ?? `Học kỳ ${sid}`);
         } else {
-          setSemesterName(null);
+          // Fallback: nếu không lấy được từ API thì dùng ID
+          setSemesterName(`Học kỳ ${sid}`);
         }
-      } catch {
-        if (alive) setSemesterName(null);
+      } catch (error) {
+        console.error("Error fetching semester:", error);
+        if (alive) {
+          // Fallback: nếu có lỗi thì dùng ID
+          setSemesterName(`Học kỳ ${sid}`);
+        }
       }
     };
     resolveSemesterName();
@@ -139,11 +150,16 @@ export function WarningHistoryModal({ open, onClose, studentId, semesterId, apiB
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl bg-card border-border text-card-foreground">
+      <DialogContent className="max-w-4xl max-h-[90vh] bg-card border-border text-card-foreground">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-lg font-semibold">
             <AlertTriangle className="w-5 h-5 text-yellow-500" />
             Lịch sử cảnh cáo học tập
+            {data && (
+              <span className="text-sm font-normal text-muted-foreground ml-2">
+                - {data.full_name || data.student_code || `SV ${data.student_id}`}
+              </span>
+            )}
           </DialogTitle>
         </DialogHeader>
 
@@ -154,56 +170,64 @@ export function WarningHistoryModal({ open, onClose, studentId, semesterId, apiB
             <div className="text-sm text-red-600">{error}</div>
           ) : data ? (
             <>
-              <div className="text-sm">
-                <p>
-                  <b>Mã sinh viên:</b> {data.student_id}
-                </p>
-                <p>
-                  <b>Học kỳ:</b> {semesterName ?? (data.semester_id ?? "-")}
-                </p>
-                <p>
-                  <b>Tổng số cảnh cáo:</b>{" "}
-                  <span className="font-medium text-red-600">{data.total_warning}</span>
-                </p>
+              <div className="text-sm space-y-2">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p><b>Mã sinh viên:</b> {data.student_code || data.student_id}</p>
+                    <p><b>Họ tên:</b> {data.full_name || "Chưa có thông tin"}</p>
+                  </div>
+                  <div>
+                    <p><b>Học kỳ:</b> {semesterName || (data.semester_id ? `Học kỳ ${data.semester_id}` : "Tất cả")}</p>
+                    <p><b>Tổng số cảnh cáo:</b> <span className="font-medium text-red-600">{data.total_warning}</span></p>
+                  </div>
+                </div>
               </div>
 
               <Separator />
 
-              <div className="max-h-80 overflow-y-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>#</TableHead>
-                      <TableHead>Mức độ</TableHead>
-                      <TableHead>Lý do</TableHead>
-                      <TableHead>Thời gian</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {data.warnings.map((w, i) => (
-                      <TableRow key={w.id}>
-                        <TableCell>{i + 1}</TableCell>
-                        <TableCell>
-                          <Badge className={getLevelColor(w.level)}>{translateWarningLevel(w.level)}</Badge>
-                        </TableCell>
-                        <TableCell className="max-w-[240px] whitespace-normal break-words">{w.reason}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                            <CalendarDays className="w-4 h-4" />
+              <div className="border rounded-xl shadow-sm bg-white">
+                <DataTable
+                  headers={[
+                    "#",
+                    "Mức độ",
+                    "Học kỳ", 
+                    "Lý do",
+                    "Thời gian"
+                  ]}
+                  maxHeight="400px"
+                >
+                  {data.warnings.map((w, i) => (
+                    <tr key={w.id} className="hover:bg-gray-50">
+                      <td className="px-4 py-3 border-b text-center font-medium">{i + 1}</td>
+                      <td className="px-4 py-3 border-b">
+                        <Badge className={getLevelColor(w.level)}>{translateWarningLevel(w.level)}</Badge>
+                      </td>
+                      <td className="px-4 py-3 border-b text-sm text-muted-foreground">
+                        {w.semester_id ? `HK ${w.semester_id}` : "-"}
+                      </td>
+                      <td className="px-4 py-3 border-b text-sm">
+                        <div className="max-w-[300px] break-words" title={w.reason}>
+                          {w.reason}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 border-b">
+                        <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                          <CalendarDays className="w-4 h-4 flex-shrink-0" />
+                          <span className="whitespace-nowrap">
                             {format(new Date(w.warned_at), "dd/MM/yyyy HH:mm", { locale: vi })}
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                          </span>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </DataTable>
               </div>
 
-              <div className="flex justify-end pt-2">
+              {/* <div className="flex justify-end pt-2">
                 <Button variant="outline" onClick={onClose}>
                   Đóng
                 </Button>
-              </div>
+              </div> */}
             </>
           ) : (
             <div className="text-sm text-muted-foreground">Không có dữ liệu cảnh cáo.</div>

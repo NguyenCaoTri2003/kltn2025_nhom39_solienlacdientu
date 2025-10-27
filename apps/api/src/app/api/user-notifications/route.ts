@@ -21,26 +21,17 @@ export async function GET(req: NextRequest) {
     const { items, total, totalPages, page: pg, pageSize: ps } = await notificationsUseCase.getUserNotifications(user.id, { page, pageSize });
     const duration = Date.now() - start;
     
-    const res = NextResponse.json({ 
+    return NextResponse.json({ 
       returnCode: 0, 
       message: "OK", 
       data: items, 
       meta: { total, totalPages, page: pg, pageSize: ps, executionTime: `${duration}ms` } 
     }, { status: 200 });
-    
-    res.headers.set("Access-Control-Allow-Origin", "*");
-    res.headers.set("Access-Control-Allow-Methods", "GET,PUT,DELETE,OPTIONS");
-    res.headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
-    return res;
   } catch (e: unknown) {
     const message = e instanceof Error ? e.message : "System error";
     const isUnauthorized = message === "No token" || message === "Invalid token" || message === "Token expired";
     const status = isUnauthorized ? 401 : 500;
-    const res = NextResponse.json({ returnCode: -1, message, data: null }, { status });
-    res.headers.set("Access-Control-Allow-Origin", "*");
-    res.headers.set("Access-Control-Allow-Methods", "GET,PUT,DELETE,OPTIONS");
-    res.headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
-    return res;
+    return NextResponse.json({ returnCode: -1, message, data: null }, { status });
   }
 }
 
@@ -53,41 +44,29 @@ export async function PUT(req: NextRequest) {
     const user = await authenticate(req);
 
     const body = await req.json();
-    const { userNotificationId, action } = body;
+    const { notificationId, action } = body;
 
-    if (!userNotificationId || !action) {
-      return NextResponse.json({ returnCode: -1, message: "Missing userNotificationId or action", data: null }, { status: 400 });
+    if (!notificationId || !action) {
+      return NextResponse.json({ returnCode: -1, message: "Missing notificationId or action", data: null }, { status: 400 });
     }
 
     if (action === "markAsRead") {
-      await notificationsUseCase.markAsRead(userNotificationId);
+      await notificationsUseCase.markAsRead(notificationId);
     } else if (action === "markAsDeleted") {
-      await notificationsUseCase.markAsDeleted(userNotificationId);
+      await notificationsUseCase.markAsDeleted(notificationId);
     } else {
       return NextResponse.json({ returnCode: -1, message: "Invalid action", data: null }, { status: 400 });
     }
 
-    const res = NextResponse.json({ returnCode: 0, message: "Updated", data: null }, { status: 200 });
-    res.headers.set("Access-Control-Allow-Origin", "*");
-    res.headers.set("Access-Control-Allow-Methods", "GET,PUT,DELETE,OPTIONS");
-    res.headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
-    return res;
+    return NextResponse.json({ returnCode: 0, message: "Updated", data: null }, { status: 200 });
   } catch (e: unknown) {
     const message = e instanceof Error ? e.message : "System error";
     const isUnauthorized = message === "No token" || message === "Invalid token" || message === "Token expired";
     const status = isUnauthorized ? 401 : 500;
-    const res = NextResponse.json({ returnCode: -1, message, data: null }, { status });
-    res.headers.set("Access-Control-Allow-Origin", "*");
-    res.headers.set("Access-Control-Allow-Methods", "GET,PUT,DELETE,OPTIONS");
-    res.headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
-    return res;
+    return NextResponse.json({ returnCode: -1, message, data: null }, { status });
   }
 }
 
 export async function OPTIONS() {
-  const res = NextResponse.json({}, { status: 200 });
-  res.headers.set("Access-Control-Allow-Origin", "*");
-  res.headers.set("Access-Control-Allow-Methods", "GET,PUT,DELETE,OPTIONS");
-  res.headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
-  return res;
+  return NextResponse.json({}, { status: 200 });
 }
