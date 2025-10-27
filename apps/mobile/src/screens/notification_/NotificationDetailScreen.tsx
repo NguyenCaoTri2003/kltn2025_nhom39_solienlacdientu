@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -14,6 +14,8 @@ import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/vi';
 import { notificationService } from '../../services/notificationService';
+import { useNotificationContext } from '../../context/NotificationContext';
+import { useNotifications } from '../../hooks/useNotifications';
 
 dayjs.extend(relativeTime);
 dayjs.locale('vi');
@@ -30,6 +32,7 @@ interface NotificationDetailScreenProps {
 const NotificationDetailScreen: React.FC<NotificationDetailScreenProps> = ({ navigation, route }) => {
   const { notification } = route.params;
   const [isDeleting, setIsDeleting] = useState(false);
+  const { markAsRead } = useNotifications();
   
   // Lấy thông tin notification (ưu tiên từ nested object)
   const notificationData = notification.notifications || notification;
@@ -39,6 +42,18 @@ const NotificationDetailScreen: React.FC<NotificationDetailScreenProps> = ({ nav
   const category = notificationData.category || notification.category || 'GENERAL';
   const createdAt = notificationData.created_at || notification.created_at;
   const warningLevel = notificationData.warning_level || notification.warning_level;
+  
+  // Lấy notificationId để mark as read
+  const notificationId = notification.id; // ID của notifications record
+
+  // Mark as read khi vào screen
+  useEffect(() => {
+    if (notificationId && !notification.is_read) {
+      markAsRead(notificationId).catch(error => {
+        console.error('Error marking notification as read:', error);
+      });
+    }
+  }, [notificationId, notification.is_read, markAsRead]);
 
   // Tính thời gian
   const createdDate = dayjs(createdAt);

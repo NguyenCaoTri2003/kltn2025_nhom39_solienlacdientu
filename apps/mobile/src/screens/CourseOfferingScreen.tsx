@@ -177,7 +177,7 @@ export default function CourseOfferingScreen() {
                   onPress={() =>
                     navigation.navigate("CourseOfferingDetail", {
                       id: item.id,
-                      studentId: userData?.student?.id,
+                      studentId: studentId,
                     })
                   }
                 >
@@ -192,9 +192,9 @@ export default function CourseOfferingScreen() {
                   {theory && (
                     <Text style={styles.subText}>
                       {DAY_NAMES[theory.day_of_week]} — Tiết{" "}
-                      {theory.start_period} →{" "}
+                      {theory.start_period} -{" "}
                       {theory.start_period + theory.period_count - 1} | Phòng{" "}
-                      {theory.building}-{theory.classroom}
+                      {theory.classroom}
                     </Text>
                   )}
 
@@ -213,9 +213,9 @@ export default function CourseOfferingScreen() {
                       {practice && (
                         <Text style={styles.subText}>
                           {DAY_NAMES[practice.day_of_week]} — Tiết{" "}
-                          {practice.start_period} →{" "}
+                          {practice.start_period} -{" "}
                           {practice.start_period + practice.period_count - 1} |
-                          Phòng {practice.building}-{practice.classroom}
+                          Phòng {practice.classroom}
                         </Text>
                       )}
                     </>

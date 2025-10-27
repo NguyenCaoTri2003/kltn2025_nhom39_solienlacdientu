@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { notificationService, Notification, RealtimeNotificationEvent } from '../services/notificationService';
 import { useNotificationContext } from '../context/NotificationContext';
+import { useAuth } from '../context/AuthContext';
 
 export interface UseNotificationsReturn {
   notifications: Notification[];
@@ -12,15 +13,16 @@ export interface UseNotificationsReturn {
   deleteNotification: (id: number) => Promise<void>;
   connectRealtime: () => Promise<void>;
   disconnectRealtime: () => void;
+  markAsRead: (userNotificationId: number) => Promise<void>;
 }
 
 export function useNotifications(): UseNotificationsReturn {
-  const { incrementUnreadCount, showToast } = useNotificationContext();
+  const { incrementUnreadCount, showToast, isConnected: globalIsConnected, markAsRead: globalMarkAsRead, markAsDeleted: globalMarkAsDeleted, refreshUnreadCount } = useNotificationContext();
+  const { user } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(true);
-  const [isConnected, setIsConnected] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
 
   // Load notifications
@@ -61,77 +63,80 @@ export function useNotifications(): UseNotificationsReturn {
 
   const deleteNotification = useCallback(async (id: number) => {
     try {
-      await notificationService.deleteNotification(id);
+      // Sử dụng markAsDeleted thay vì xóa thật
+      await globalMarkAsDeleted(id);
       setNotifications(prev => prev.filter(n => n.id !== id));
+      await refreshUnreadCount(); // Refresh unread count sau khi xóa
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to delete notification';
       setError(errorMessage);
       console.error('Error deleting notification:', err);
     }
-  }, []);
+  }, [globalMarkAsDeleted, refreshUnreadCount]);
 
 
   const connectRealtime = useCallback(async () => {
-    try {
-      await notificationService.connectRealtime();
-      setIsConnected(true);
-
-      const handleRealtimeNotification = (event: RealtimeNotificationEvent) => {
-        if (event.type === 'notification' && event.data) {
-          setNotifications(prev => {
-            const exists = prev.some(n => n.id === event.data!.id);
-            if (!exists) {
-              incrementUnreadCount(); 
-              
-              // Hiển thị toast ngay khi có thông báo mới từ realtime
-              showToast({
-                id: event.data!.id,
-                title: event.data!.title || undefined,
-                content: event.data!.content || 'Bạn có thông báo mới',
-                type: event.data!.type,
-              });
-              
-              return [event.data!, ...prev];
-            }
-            return prev;
-          });
-        } else if (event.type === 'connected') {
-          console.log('Connected to realtime notifications');
-        }
-      };
-
-      notificationService.addListener(handleRealtimeNotification);
-    } catch (err) {
-      console.error('Error connecting to realtime notifications:', err);
-      setError('Failed to connect to realtime notifications');
-      setIsConnected(false);
-    }
+    console.log('Realtime connection is managed globally');
   }, []);
 
   const disconnectRealtime = useCallback(() => {
-    notificationService.disconnect();
-    setIsConnected(false);
+    console.log('Realtime disconnection is managed globally');
   }, []);
+
+  const markAsRead = useCallback(async (notificationId: number) => {
+    try {
+      await globalMarkAsRead(notificationId);
+      setNotifications(prev => 
+        prev.map(notification => 
+          notification.id === notificationId 
+            ? { ...notification, is_read: true }
+            : notification
+        )
+      );
+  
+      await refreshUnreadCount();
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+      throw error;
+    }
+  }, [globalMarkAsRead, refreshUnreadCount]);
 
   useEffect(() => {
     loadNotifications(true);
-  }, []);
+  }, [loadNotifications]);
 
   useEffect(() => {
-    return () => {
-      disconnectRealtime();
+    if (!globalIsConnected) return;
+
+    const handleRealtimeNotification = (event: RealtimeNotificationEvent) => {
+      if (event.type === 'notification' && event.data) {
+        setNotifications(prev => {
+          const exists = prev.some(n => n.id === event.data!.id);
+          if (!exists) {
+            return [event.data!, ...prev];
+          }
+          return prev;
+        });
+      }
     };
-  }, [disconnectRealtime]);
+
+    notificationService.addListener(handleRealtimeNotification);
+
+    return () => {
+      notificationService.removeListener(handleRealtimeNotification);
+    };
+  }, [globalIsConnected]);
 
   return {
     notifications,
     loading,
     error,
     hasMore,
-    isConnected,
+    isConnected: globalIsConnected,
     loadNotifications,
     deleteNotification,
     connectRealtime,
     disconnectRealtime,
+    markAsRead,
   };
 }

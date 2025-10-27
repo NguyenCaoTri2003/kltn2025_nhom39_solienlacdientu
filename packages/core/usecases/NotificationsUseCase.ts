@@ -1,6 +1,5 @@
-import { NotificationsRepository, type ListParams, type ListResult, type NotificationRow, type NotificationType, type UserNotificationRow } from "@packages/data/repositories/NotificationsRepository";
+import { NotificationsRepository, type ListParams, type ListResult, type NotificationRow, type NotificationType } from "@packages/data/repositories/NotificationsRepository";
 import { NotificationCategory } from "@packages/core/entities/Notifications";
-import { NotificationBroadcaster } from "./helpers/NotificationBroadcaster";
 
 export class NotificationsUseCase {
   private repo: NotificationsRepository;
@@ -34,6 +33,7 @@ export class NotificationsUseCase {
     content?: string | null; 
     type?: NotificationType | null;
     category?: NotificationCategory | null;
+    target_student_id?: number | string | null;
   }): Promise<NotificationRow> {
     // Validate và parse input
     const user_id = payload.user_id != null ? this.toPositiveInt(payload.user_id) ?? null : null;
@@ -41,6 +41,7 @@ export class NotificationsUseCase {
     const content = typeof payload.content === "string" ? payload.content : null;
     const type = (payload.type ?? null) as NotificationType | null;
     const category = (payload.category ?? null) as NotificationCategory | null;
+    const target_student_id = payload.target_student_id != null ? this.toPositiveInt(payload.target_student_id) ?? null : null;
     
     // Tạo notification record
     const notification = await this.repo.create({ 
@@ -48,20 +49,14 @@ export class NotificationsUseCase {
       title,
       content, 
       type, 
-      category
+      category,
+      target_student_id
     });
     
-    // Nếu có user_id, tạo user notification và broadcast
+    // Nếu có user_id, broadcast realtime
     if (user_id) {
-      // Tạo user notification record (async, không block)
-      NotificationBroadcaster.createUserNotificationRecord(
-        this.repo, 
-        user_id, 
-        notification.id
-      );
-      
-      // Broadcast realtime (async, không block)
-      NotificationBroadcaster.broadcastToUser(user_id, notification);
+      // Broadcast realtime (async, không block) - Đã chuyển sang Supabase Realtime
+      // NotificationBroadcaster.broadcastToUser(user_id, notification);
     }
     
     return notification;
@@ -73,7 +68,24 @@ export class NotificationsUseCase {
     await this.repo.delete(nid);
   }
 
- 
+
+  // Không sử dụng bảng User_Notifications nữa (tất cả dùng bảng Notifications)
+  // async createUserNotification(userId: number, notificationId: number): Promise<UserNotificationRow> {
+  //   return await this.repo.createUserNotification(userId, notificationId);
+  // }
+
+  async markAsRead(notificationId: number | string): Promise<void> {
+    const id = this.toPositiveInt(notificationId);
+    if (!id) return;
+    await this.repo.markAsRead(id);
+  }
+
+  async markAsDeleted(notificationId: number | string): Promise<void> {
+    const id = this.toPositiveInt(notificationId);
+    if (!id) return;
+    await this.repo.markAsDeleted(id);
+  }
+
   async getUserNotifications(userId: number | string, params: { page?: number; pageSize?: number } = {}): Promise<ListResult> {
     const uid = this.toPositiveInt(userId);
     if (!uid) throw new Error("Invalid user ID");
@@ -86,39 +98,26 @@ export class NotificationsUseCase {
     return this.repo.getUserNotifications(uid, p);
   }
 
-  async markAsRead(userNotificationId: number | string): Promise<void> {
-    const id = this.toPositiveInt(userNotificationId);
-    if (!id) return;
-    await this.repo.markAsRead(id);
-  }
 
-  async markAsDeleted(userNotificationId: number | string): Promise<void> {
-    const id = this.toPositiveInt(userNotificationId);
-    if (!id) return;
-    await this.repo.markAsDeleted(id);
-  }
-
-  /**
-   * Tạo user notifications cho nhiều users với cùng 1 notification
-   */
-  async createUserNotifications(notificationId: number, userIds: number[]): Promise<void> {
-    if (!userIds || userIds.length === 0) return;
-    
-    // Tạo user notification records cho tất cả users
-    for (const userId of userIds) {
-      try {
-        await this.repo.createUserNotification(userId, notificationId);
-        
-        // Broadcast realtime cho từng user
-        const notification = await this.getById(notificationId);
-        if (notification) {
-          NotificationBroadcaster.broadcastToUser(userId, notification);
-        }
-      } catch (err) {
-        console.warn(`Failed to create user notification for user ${userId}:`, err);
-      }
-    }
-  }
+  // DEPRECATED: Không còn sử dụng bảng User_Notifications nữa
+  // async createUserNotifications(notificationId: number, userIds: number[]): Promise<void> {
+  //   if (!userIds || userIds.length === 0) return;
+  //   
+  //   // Tạo user notification records cho tất cả users
+  //   for (const userId of userIds) {
+  //     try {
+  //       await this.repo.createUserNotification(userId, notificationId);
+  //       
+  //       // Broadcast realtime cho từng user
+  //       const notification = await this.getById(notificationId);
+  //       if (notification) {
+  //         NotificationBroadcaster.broadcastToUser(userId, notification);
+  //       }
+  //     } catch (err) {
+  //       console.warn(`Failed to create user notification for user ${userId}:`, err);
+  //     }
+  //   }
+  // }
 
   private toPositiveInt(v: any): number | undefined {
     const n = Number(v);

@@ -25,7 +25,7 @@ import { useNotificationContext } from "../../context/NotificationContext";
 export default function StudentHomeScreen() {
   const { user } = useAuth();
   const navigation = useNavigation();
-  const {userData} = useUser();
+  const { userData, loading } = useUser();
   const { unreadCount } = useNotificationContext();
 
   const hours = new Date().getHours();
@@ -49,7 +49,7 @@ export default function StudentHomeScreen() {
             <Text style={styles.name}>{user?.full_name || "Sinh viên"}</Text>
           </View>
 
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.notifyBtn}
             onPress={() => navigation.navigate("Notifications" as never)}
           >
@@ -76,9 +76,15 @@ export default function StudentHomeScreen() {
           />
           <View>
             <Text style={styles.profileName}>{user?.full_name || "User"}</Text>
-            <Text style={styles.profileCode}>
-              Mã SV: {userData?.student?.student_code || "Chưa có mã sinh viên"}
-            </Text>
+            {loading ? (
+              <Text style={[styles.profileCode, { color: "#9CA3AF" }]}>
+                Đang tải mã sinh viên...
+              </Text>
+            ) : (
+              <Text style={styles.profileCode}>
+                Mã SV: {userData?.student?.student_code || "Chưa có mã sinh viên"}
+              </Text>
+            )}
           </View>
         </View>
 
@@ -86,10 +92,10 @@ export default function StudentHomeScreen() {
         <Text style={styles.sectionTitle}>Tính năng nổi bật</Text>
 
         <View style={styles.featureGrid}>
-          <FeatureButton 
-            icon={<Calendar color="#2563EB" 
-            size={28} />} 
-            label="Lịch học" 
+          <FeatureButton
+            icon={<Calendar color="#2563EB"
+              size={28} />}
+            label="Lịch học"
             onPress={() => navigation.navigate("Schedule" as never)}
           />
           <FeatureButton

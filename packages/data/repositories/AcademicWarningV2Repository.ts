@@ -31,6 +31,8 @@ export type AcademicWarningV2Row = {
   proposed_warning_level: "FIRST" | "SECOND" | "FINAL" | null;
   expulsion_candidate: boolean; // boolean, never null
   warnings_count_total?: number; // optional: total warnings regardless of level
+  // New field to track if warning has been issued
+  is_warned: boolean; // boolean, never null - true if warning has been issued for this student/semester
 };
 
 export type AcademicWarningV2Result = {
