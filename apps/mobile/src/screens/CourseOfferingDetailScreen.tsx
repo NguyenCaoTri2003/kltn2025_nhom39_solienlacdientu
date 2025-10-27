@@ -17,6 +17,8 @@ import { getStatusLabel } from "../utils/getStatusLabel";
 import { useUser } from "../context/UserContext";
 import { useAuth } from "../context/AuthContext";
 import { conversationService } from "../services/conversationService";
+import { useAppointment } from "../hooks/useAppointment";
+import AppointmentCreateModal from "../components/AppointmentCreateModal";
 
 export default function CourseOfferingDetailScreen() {
   const route = useRoute();
@@ -42,6 +44,11 @@ export default function CourseOfferingDetailScreen() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const { token } = useAuth();
+
+  const [modalVisible, setModalVisible] = useState(false);
+  const { createAppointment, loading: creating } = useAppointment(token || undefined);
+
+  console.log("Offering detail data:", data);
 
   const studentId =
     userData?.role === "student"
@@ -151,7 +158,7 @@ export default function CourseOfferingDetailScreen() {
             )}
             <Text style={styles.infoItem}>
               Thời gian học:{" "}
-              {new Date(data.semester.start_date).toLocaleDateString("vi-VN")} →{" "}
+              {new Date(data.semester.start_date).toLocaleDateString("vi-VN")} -{" "}
               {new Date(data.semester.end_date).toLocaleDateString("vi-VN")}
             </Text>
           </View>
@@ -159,7 +166,7 @@ export default function CourseOfferingDetailScreen() {
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Ionicons name="school-outline" size={22} color="#007AFF" />
-              <Text style={styles.sectionTitle}>Giảng viên lý thuyết</Text>
+              <Text style={[styles.sectionTitle, { color: "#007AFF" }]}>Giảng viên lý thuyết</Text>
             </View>
 
             <View style={styles.card}>
@@ -167,14 +174,29 @@ export default function CourseOfferingDetailScreen() {
               <Text style={styles.email}>{data.lecturer.email}</Text>
 
               {new Date(data.semester.end_date) >= new Date() && (
-                <TouchableOpacity style={styles.button} onPress={() => handleChat(data.lecturer.id, data.lecturer.full_name)}>
-                  <Ionicons
-                    name="chatbubble-ellipses-outline"
-                    size={16}
-                    color="#fff"
-                  />
-                  <Text style={styles.buttonText}> Nhắn tin</Text>
-                </TouchableOpacity>
+                <View style={{ flexDirection: "row", gap: 10 }}>
+                  <TouchableOpacity
+                    style={styles.button}
+                    onPress={() => handleChat(data.lecturer.id, data.lecturer.full_name)}
+                  >
+                    <Ionicons
+                      name="chatbubble-ellipses-outline"
+                      size={16}
+                      color="#fff"
+                    />
+                    <Text style={styles.buttonText}> Nhắn tin</Text>
+                  </TouchableOpacity>
+
+                  {userData?.role === "parent" && (
+                    <TouchableOpacity
+                      style={styles.button}
+                      onPress={() => setModalVisible(true)}
+                    >
+                      <Ionicons name="calendar-outline" size={16} color="#fff" />
+                      <Text style={styles.buttonText}> Đặt lịch hẹn</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
               )}
 
               <Text style={styles.sectionSubtitle}>Lịch học lý thuyết</Text>
@@ -184,7 +206,7 @@ export default function CourseOfferingDetailScreen() {
                     <Ionicons name="calendar-outline" size={14} color="#6B7280" />{" "}
                     {dayNames[s.day_of_week]} - {s.building}
                     {s.classroom ? `.${s.classroom}` : ""} - Tiết{" "}
-                    {s.start_period} →{" "}
+                    {s.start_period} -{" "}
                     {s.start_period + s.period_count - 1}
                   </Text>
                 ))
@@ -223,20 +245,35 @@ export default function CourseOfferingDetailScreen() {
                 </View>
 
                 {new Date(data.semester.end_date) >= new Date() && (
-                  <TouchableOpacity
-                    style={[
-                      styles.button,
-                      { backgroundColor: "#10B981" },
-                    ]}
-                    onPress={() => handleChat(data.lecturer.id, data.lecturer.full_name)}
-                  >
-                    <Ionicons
-                      name="chatbubble-ellipses-outline"
-                      size={16}
-                      color="#fff"
-                    />
-                    <Text style={styles.buttonText}> Nhắn tin</Text>
-                  </TouchableOpacity>
+                  <View style={{ flexDirection: "row", gap: 10 }}>
+                    <TouchableOpacity
+                      style={[
+                        styles.button,
+                        { backgroundColor: "#10B981" },
+                      ]}
+                      onPress={() => handleChat(data.practice_group.lecturer.id, data.practice_group.lecturer.full_name)}
+                    >
+                      <Ionicons
+                        name="chatbubble-ellipses-outline"
+                        size={16}
+                        color="#fff"
+                      />
+                      <Text style={styles.buttonText}> Nhắn tin</Text>
+                    </TouchableOpacity>
+
+                    {userData?.role === "parent" && (
+                      <TouchableOpacity
+                        style={[
+                          styles.button,
+                          { backgroundColor: "#10B981" },
+                        ]}
+                        onPress={() => setModalVisible(true)}
+                      >
+                        <Ionicons name="calendar-outline" size={16} color="#fff" />
+                        <Text style={styles.buttonText}> Đặt lịch hẹn</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
                 )}
 
                 <Text style={styles.sectionSubtitle}>Lịch học thực hành</Text>
@@ -250,7 +287,7 @@ export default function CourseOfferingDetailScreen() {
                       />{" "}
                       {dayNames[s.day_of_week]} - {s.building}
                       {s.classroom ? `.${s.classroom}` : ""} - Tiết{" "}
-                      {s.start_period} →{" "}
+                      {s.start_period} -{" "}
                       {s.start_period + s.period_count - 1}
                     </Text>
                   ))
@@ -262,6 +299,25 @@ export default function CourseOfferingDetailScreen() {
           )}
         </ScrollView>
       )}
+      <AppointmentCreateModal
+        visible={modalVisible}
+        onClose={() => setModalVisible(false)}
+        onSubmit={async (form) => {
+          try {
+            await createAppointment({
+              ...form,
+              studentId,
+              lecturerId: data.lecturer.id,
+            });
+            alert("Đã gửi yêu cầu đặt lịch thành công!");
+            setModalVisible(false);
+            navigation.navigate("Appointments");
+          } catch (e: any) {
+            alert(e.message);
+            console.log(e);
+          }
+        }}
+      />
     </SafeAreaView>
   );
 }
