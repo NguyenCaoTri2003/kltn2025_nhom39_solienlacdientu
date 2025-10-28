@@ -102,7 +102,17 @@ export default function ChangePassword() {
   return (
     <div className="min-h-screen bg-background">
       <NavbarClient
-        userRole={user?.role === "admin" ? "admin" : user?.role === "lecturer" ? "teacher" : null}
+        userRole={
+          user?.role === "admin"
+            ? "admin"
+            : user?.role === "lecturer"
+            ? "lecturer"
+            : user?.role === "student"
+            ? "student"
+            : user?.role === "parent"
+            ? "parent"
+            : null
+        }
         userName={user?.full_name || ""}
       />
 
