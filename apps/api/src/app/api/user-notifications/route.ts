@@ -86,6 +86,47 @@ export async function POST(req: NextRequest) {
       await notificationsUseCase.markAllAsRead(user.id);
     } else if (action === "deleteAll") {
       await notificationsUseCase.deleteAll(user.id);
+    } else if (action === "create") {
+      // Chỉ admin mới được tạo notification
+      if (user.role !== "admin") {
+        return NextResponse.json(
+          { returnCode: -1, message: "Forbidden", data: null },
+          { status: 403 }
+        );
+      }
+
+      const { 
+        user_id, 
+        title, 
+        content, 
+        type = "university", 
+        category = "GENERAL",
+        target_student_id 
+      } = body;
+
+      // Validate required fields
+      if (!title || !content) {
+        return NextResponse.json(
+          { returnCode: -1, message: "Title and content are required", data: null },
+          { status: 400 }
+        );
+      }
+
+      // Create notification
+      const notification = await notificationsUseCase.create({
+        user_id: user_id || null,
+        title,
+        content,
+        type,
+        category,
+        target_student_id: target_student_id || null
+      });
+
+      return NextResponse.json({
+        returnCode: 0,
+        message: "Notification created successfully",
+        data: notification
+      }, { status: 201 });
     } else {
       return NextResponse.json({ returnCode: -1, message: "Invalid action", data: null }, { status: 400 });
     }

@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { notificationService } from '../../services/notificationService';
 import { useNotificationManager } from "@/hooks/useNotificationManager";
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 
 interface Notification {
   id: number;
@@ -37,6 +37,7 @@ interface Notification {
 export default function NotificationList() {
   const [userId, setUserId] = useState<number | null>(null);
   const router = useRouter();
+  const pathname = usePathname();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(true);
@@ -171,7 +172,9 @@ export default function NotificationList() {
     if (!notification.is_read) {
       handleMarkAsRead(notification.id);
     }
-    router.push(`/portal/notifications/${notification.id}`);
+    const currentPath = pathname || (typeof window !== 'undefined' ? window.location.pathname : '');
+    const base = currentPath.startsWith('/lecturer') ? '/lecturer' : currentPath.startsWith('/admin') ? '/admin' : '/portal';
+    router.push(`${base}/notifications/${notification.id}`);
   };
 
 

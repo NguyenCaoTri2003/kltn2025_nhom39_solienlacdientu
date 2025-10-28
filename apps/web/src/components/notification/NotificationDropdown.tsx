@@ -220,7 +220,7 @@ export default function NotificationDropdown({ userRole }: NotificationDropdownP
               displayItems.map(item => (
                 <a
                   key={item.id}
-                  href={`/portal/notifications/${item.id}`}
+                  href={`${notificationsPath}/${item.id}`}
                   className={`block px-3 py-2 border-b border-border hover:bg-accent ${!item.is_read ? "bg-accent/40" : ""}`}
                   onClick={() => setOpen(false)}
                 >

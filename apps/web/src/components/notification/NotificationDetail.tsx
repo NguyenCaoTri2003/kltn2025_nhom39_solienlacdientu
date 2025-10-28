@@ -14,7 +14,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { notificationService } from '../../services/notificationService';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 
 interface Notification {
   id: number;
@@ -36,11 +36,20 @@ interface NotificationDetailProps {
 
 export default function NotificationDetail({ notificationId }: NotificationDetailProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const [notification, setNotification] = useState<Notification | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+
+  const getNotificationsPath = () => {
+    const currentPath = pathname || (typeof window !== 'undefined' ? window.location.pathname : '');
+    
+    if (currentPath.startsWith("/lecturer")) return "/lecturer/notifications";
+    if (currentPath.startsWith("/admin")) return "/admin/notifications";
+    return "/portal/notifications"; 
+  };
 
   useEffect(() => {
     const fetchNotification = async () => {
@@ -84,10 +93,10 @@ export default function NotificationDetail({ notificationId }: NotificationDetai
       setIsDeleting(true);
       await notificationService.deleteNotification(notification.id);
       try { localStorage.setItem('notifications:version', String(Date.now())) } catch {}
-      router.push('/portal/notifications');
+      router.push(getNotificationsPath());
     } catch (error) {
       console.error('Error deleting notification:', error);
-      // Show error message to user
+
       setError('Không thể xóa thông báo. Vui lòng thử lại.');
     } finally {
       setIsDeleting(false);
@@ -202,7 +211,7 @@ export default function NotificationDetail({ notificationId }: NotificationDetai
       <div className="text-center py-8">
         <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
         <p className="text-red-600 mb-4">{error || 'Không tìm thấy thông báo'}</p>
-        <Button onClick={() => router.push('/portal/notifications')} variant="outline">
+        <Button onClick={() => router.push(getNotificationsPath())} variant="outline">
           Quay lại danh sách
         </Button>
       </div>
@@ -216,7 +225,7 @@ export default function NotificationDetail({ notificationId }: NotificationDetai
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => router.push('/portal/notifications')}
+          onClick={() => router.push(getNotificationsPath())}
         >
           <ArrowLeft className="w-4 h-4 mr-2" />
           Quay lại
