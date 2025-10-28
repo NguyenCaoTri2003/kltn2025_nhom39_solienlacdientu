@@ -29,6 +29,7 @@ export default function NotificationScreen() {
   const {
     notifications,
     loading,
+    loadingMore,
     error,
     hasMore,
     isConnected,
@@ -57,7 +58,7 @@ export default function NotificationScreen() {
   };
 
   const handleLoadMore = () => {
-    if (!loading && hasMore) {
+    if (!loading && !loadingMore && hasMore) {
       loadNotifications(false);
     }
   };
@@ -228,7 +229,7 @@ export default function NotificationScreen() {
   );
 
   const renderFooter = () => {
-    if (!loading) return null;
+    if (!loadingMore || notifications.length === 0) return null;
     return (
       <View style={styles.footerLoader}>
         <ActivityIndicator size="small" color="#005BAC" />

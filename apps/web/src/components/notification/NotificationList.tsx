@@ -413,8 +413,8 @@ export default function NotificationList() {
       )}
 
       {/* Xoá  */}
-      <Dialog open={showDeleteAllDialog} onOpenChange={setShowDeleteAllDialog}>
-        <DialogContent>
+      <Dialog open={showDeleteAllDialog} onOpenChange={setShowDeleteAllDialog} className="z-50 w-3">
+        <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Xóa tất cả thông báo</DialogTitle>
             <DialogDescription>
