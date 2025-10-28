@@ -17,13 +17,3 @@ export interface Notification {
   created_at?: string; 
 }
 
-// DEPRECATED: Không còn sử dụng bảng user_notifications
-// export interface UserNotification {
-//   id: number;
-//   user_id: number;
-//   notification_id: number;
-//   is_read: boolean;
-//   is_deleted: boolean;
-//   created_at: string;
-//   notification?: Notification;
-// }

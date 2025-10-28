@@ -5,6 +5,7 @@ import { useState, useMemo } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
+import NotificationDropdown from "@/components/notification/NotificationDropdown";
 import {
   Home,
   Users,
@@ -17,6 +18,7 @@ import {
   X,
   KeyRound,
   Book,
+  BellIcon,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -61,6 +63,7 @@ export default function NavbarClient({ userRole, userName, avatarUrl, userId }: 
     { icon: Users, label: "Lớp học", href: "/lecturer/classes" },
     { icon: Calendar, label: "Lịch hẹn", href: "/lecturer/appointments" },
     { icon: MessageSquare, label: "Nhắn tin", href: "/lecturer/communications" },
+    { icon: BellIcon, label: "Thông báo", href: "/lecturer/notifications" },
   ];
 
   const studentNavItems = [
@@ -69,6 +72,7 @@ export default function NavbarClient({ userRole, userName, avatarUrl, userId }: 
     { icon: User, label: "Điểm danh", href: "/portal/attendances" },
     { icon: BarChart3, label: "Kết quả học tập", href: "/portal/grades" },
     { icon: MessageSquare, label: "Nhắn tin", href: "/portal/communications" },
+    { icon: BellIcon, label: "Thông báo", href: "/portal/notifications" },
   ];
 
   const parentNavItems = [
@@ -155,6 +159,7 @@ export default function NavbarClient({ userRole, userName, avatarUrl, userId }: 
             {/* User info */}
             <div className="flex items-center space-x-4">
               <ThemeToggle />
+              <NotificationDropdown />
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button className="cursor-pointer relative w-9 h-9 rounded-full overflow-hidden flex items-center justify-center text-white font-semibold border border-border">
@@ -318,6 +323,7 @@ export default function NavbarClient({ userRole, userName, avatarUrl, userId }: 
             </button>
             <div className="flex items-center gap-2">
               <ThemeToggle />
+              <NotificationDropdown />
               <Button variant="ghost" size="sm" onClick={() => setIsMobileMenuOpen(o => !o)}>
                 {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
               </Button>
@@ -414,6 +420,7 @@ export default function NavbarClient({ userRole, userName, avatarUrl, userId }: 
           {/* User info + actions */}
           <div className="flex items-center space-x-4">
             <ThemeToggle />
+            <NotificationDropdown />
 
             {/* Avatar Dropdown */}
             <DropdownMenu>
