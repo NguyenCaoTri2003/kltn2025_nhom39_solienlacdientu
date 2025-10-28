@@ -43,9 +43,6 @@ export default function NavbarClient({ userRole, userName, avatarUrl, userId }: 
   const pathname = usePathname();
   const unreadCount = useUnreadMessageCount();
 
-  let roleBasePath = "/";
-  const profilePath = (subPath: "info" | "change-password") => `${roleBasePath}/profile/${subPath}`;
-
   const handleLogout = () => {
     document.cookie = "token=; path=/; max-age=0";
     document.cookie = "user=; path=/; max-age=0";
@@ -103,7 +100,8 @@ export default function NavbarClient({ userRole, userName, avatarUrl, userId }: 
     return null;
   }
 
-  roleBasePath = userRole === 'admin' ? '/admin' : userRole === 'lecturer' ? '/lecturer' : '/portal';
+  const roleBasePath = userRole === 'admin' ? '/admin' : userRole === 'lecturer' ? '/lecturer' : '/portal';
+  const profilePath = (subPath: "info" | "change-password") => `${roleBasePath}/profile/${subPath}`;
   const navItems = userRole === 'admin' ? adminNavItems : userRole === 'lecturer' ? teacherNavItems : userRole === 'student' ? studentNavItems : parentNavItems;
 
   if (userRole === 'student' || userRole === 'parent') {
@@ -159,7 +157,7 @@ export default function NavbarClient({ userRole, userName, avatarUrl, userId }: 
             {/* User info */}
             <div className="flex items-center space-x-4">
               <ThemeToggle />
-              <NotificationDropdown />
+              <NotificationDropdown userRole={userRole} />
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button className="cursor-pointer relative w-9 h-9 rounded-full overflow-hidden flex items-center justify-center text-white font-semibold border border-border">
@@ -323,7 +321,7 @@ export default function NavbarClient({ userRole, userName, avatarUrl, userId }: 
             </button>
             <div className="flex items-center gap-2">
               <ThemeToggle />
-              <NotificationDropdown />
+              <NotificationDropdown userRole={userRole} />
               <Button variant="ghost" size="sm" onClick={() => setIsMobileMenuOpen(o => !o)}>
                 {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
               </Button>

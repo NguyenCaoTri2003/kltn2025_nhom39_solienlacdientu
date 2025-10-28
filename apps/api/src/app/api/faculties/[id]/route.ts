@@ -26,10 +26,11 @@ import { getFacultyById } from "../../../../../../../packages/core/usecases/Facu
 
 export async function GET(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const id = Number(params.id);
+    const resolvedParams = await params;
+    const id = Number(resolvedParams.id);
     const faculty = await getFacultyById(id);
 
     if (!faculty) {

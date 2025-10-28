@@ -1,31 +1,45 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { supabase } from "@packages/data/supabaseClient";
 
 export function useUnreadMessageCount() {
   const [unreadCount, setUnreadCount] = useState(0);
-  const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
-  const currentUser = typeof window !== "undefined" ? JSON.parse(localStorage.getItem("user") || "null") : null;
-  const userId = currentUser?.id;
-
-  console.log("useUnreadMessageCount - userId:", userId);
+  const [userId, setUserId] = useState<number | null>(null);
+  const [token, setToken] = useState<string | null>(null);
+  const initializedRef = useRef(false);
 
   useEffect(() => {
-    if (!userId) return;
+    if (typeof window === "undefined") return;
+    
+    const currentUser = JSON.parse(localStorage.getItem("user") || "null");
+    const currentToken = localStorage.getItem("token");
+    
+    setUserId(currentUser?.id || null);
+    setToken(currentToken);
+  }, []);
+
+  useEffect(() => {
+    if (!userId || !token || initializedRef.current) return;
+    
+    initializedRef.current = true;
 
     async function fetchUnread() {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/messages/unread-count`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setUnreadCount(data.count || 0);
+      try {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/messages/unread-count`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setUnreadCount(data.count || 0);
+        }
+      } catch (error) {
+        console.error("Error fetching unread count:", error);
       }
     }
 
     fetchUnread();
 
     const channel = supabase
-      .channel("messages-unread")
+      .channel(`messages-unread-${userId}`)
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "messages" },
@@ -68,6 +82,7 @@ export function useUnreadMessageCount() {
 
     return () => {
       supabase.removeChannel(channel);
+      initializedRef.current = false;
     };
   }, [userId, token]);
 

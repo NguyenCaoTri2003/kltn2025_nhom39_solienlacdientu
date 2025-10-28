@@ -1,11 +1,20 @@
 "use client";
 
-import ChangePassword from "@/components/profile/change-password";
+import NotificationDetail from "@/components/notification/NotificationDetail";
 import NavbarClient from "@/components/navbar-client";
 import { useEffect, useState } from "react";
 
-export default function Page() {
+export const dynamic = "force-dynamic";
+
+interface NotificationDetailPageProps {
+  params: Promise<{
+    id: string;
+  }>;
+}
+
+export default function NotificationDetailPage({ params }: NotificationDetailPageProps) {
   const [user, setUser] = useState<{ id: number; full_name: string } | null>(null);
+  const [notificationId, setNotificationId] = useState<string>("");
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -14,7 +23,15 @@ export default function Page() {
         setUser(JSON.parse(userData));
       }
     }
-  }, []);
+    
+    params.then((resolvedParams) => {
+      setNotificationId(resolvedParams.id);
+    });
+  }, [params]);
+
+  if (!notificationId) {
+    return <div>Loading...</div>;
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background/80 to-accent/10 flex flex-col">
@@ -23,11 +40,9 @@ export default function Page() {
         userName={user?.full_name || ""} 
         userId={user?.id || null}
       />
-      <div className="flex-1 p-6 max-w-6xl mx-auto w-full">
-        <ChangePassword />
+      <div className="flex-1">
+        <NotificationDetail notificationId={notificationId} />
       </div>
     </div>
   );
 }
-
-

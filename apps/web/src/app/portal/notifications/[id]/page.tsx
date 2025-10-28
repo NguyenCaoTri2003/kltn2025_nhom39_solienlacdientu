@@ -4,16 +4,17 @@ import Navbar from "@/components/navbar";
 export const dynamic = "force-dynamic";
 
 interface NotificationDetailPageProps {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
-export default function NotificationDetailPage({ params }: NotificationDetailPageProps) {
+export default async function NotificationDetailPage({ params }: NotificationDetailPageProps) {
+  const resolvedParams = await params;
   return (
     <>
       <Navbar />
-      <NotificationDetail notificationId={params.id} />
+      <NotificationDetail notificationId={resolvedParams.id} />
     </>
   );
 }

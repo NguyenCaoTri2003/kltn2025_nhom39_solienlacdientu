@@ -28,7 +28,11 @@ function formatTime(ts?: string) {
   return d.toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit" })
 }
 
-export default function NotificationDropdown() {
+interface NotificationDropdownProps {
+  userRole?: "admin" | "lecturer" | "student" | "parent" | null;
+}
+
+export default function NotificationDropdown({ userRole }: NotificationDropdownProps = {}) {
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [items, setItems] = useState<NotificationItem[]>([])
@@ -38,7 +42,20 @@ export default function NotificationDropdown() {
   
   const { unreadCount, markAllAsRead, deleteAll, notifications, setUnreadCount } = useNotificationManager(userId)
   const pathname = usePathname()
-  const onListPage = useMemo(() => pathname?.startsWith("/portal/notifications"), [pathname])
+  
+
+  const notificationsPath = useMemo(() => {
+
+    if (pathname?.startsWith("/lecturer")) return "/lecturer/notifications"
+    if (pathname?.startsWith("/admin")) return "/admin/notifications"
+    if (pathname?.startsWith("/portal")) return "/portal/notifications"
+    
+    if (userRole === "admin") return "/admin/notifications"
+    if (userRole === "lecturer") return "/lecturer/notifications"
+    return "/portal/notifications"
+  }, [userRole, pathname])
+  
+  const onListPage = useMemo(() => pathname?.startsWith(notificationsPath), [pathname, notificationsPath])
   const displayItems = useMemo(() => {
     return onListPage ? (notifications || []).slice(0, 10) : items
   }, [onListPage, notifications, items])
@@ -219,7 +236,7 @@ export default function NotificationDropdown() {
             )}
           </div>
           <div className="p-2 text-right">
-            <a href="/portal/notifications" className="text-xs text-primary hover:underline">
+            <a href={notificationsPath} className="text-xs text-primary hover:underline">
               Xem tất cả
             </a>
           </div>

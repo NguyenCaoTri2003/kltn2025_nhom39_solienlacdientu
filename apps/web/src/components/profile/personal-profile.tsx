@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import NavbarClient from "@/components/navbar-client";
 import {
   Card,
   CardContent,
@@ -398,24 +397,7 @@ export default function PersonalProfile() {
   const disabled = hasError || !originalProfile || !isChanged;
 
   return (
-    <div className="min-h-screen bg-background">
-      {user && (
-        <NavbarClient
-          userRole={
-            user?.role === "admin"
-              ? "admin"
-              : user?.role === "lecturer"
-              ? "lecturer"
-              : user?.role === "student"
-              ? "student"
-              : user?.role === "parent"
-              ? "parent"
-              : null
-          }
-          userName={user?.full_name || ""}
-        />
-      )}
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Header */}
         <div className="mb-8">
           <button
@@ -893,6 +875,5 @@ export default function PersonalProfile() {
           </CardContent>
         </Card>
       </div>
-    </div>
   );
 }
