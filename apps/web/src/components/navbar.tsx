@@ -6,7 +6,7 @@ export default async function Navbar() {
   const token = cookieStore.get("token")?.value;
   const user = cookieStore.get("user")?.value ? JSON.parse(cookieStore.get("user")!.value) : null;
 
-  const userRole: "admin" | "teacher" | null = user?.role === "admin" ? "admin" : user?.role === "lecturer" ? "teacher" : null;
+  const userRole: "admin" | "lecturer" | "student" | "parent" | null = user?.role === "admin" ? "admin" : user?.role === "lecturer" ? "lecturer" : user?.role === "student" ? "student" : user?.role === "parent" ? "parent" : null;
   const userName: string = user?.full_name || "";
   const avatarUrl: string | null = user?.avatar_url || null;
   const userId = user?.id || null;
