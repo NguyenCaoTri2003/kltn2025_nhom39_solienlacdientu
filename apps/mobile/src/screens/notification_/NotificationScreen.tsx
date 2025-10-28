@@ -8,9 +8,10 @@ import {
   RefreshControl,
   Alert,
   ActivityIndicator,
+  TouchableWithoutFeedback,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Bell, BellOff, Trash2, AlertCircle, MessageSquare, University } from 'lucide-react-native';
+import { Bell, BellOff, Trash2, AlertCircle, MessageSquare, University, CheckCircle, Trash } from 'lucide-react-native';
 import { useNotifications } from '../../hooks/useNotifications';
 import HeaderBar from '../../components/HeaderBar';
 import NotificationToast from '../../components/NotificationToast';
@@ -24,6 +25,7 @@ import { useNotificationContext } from '../../context/NotificationContext';
 export default function NotificationScreen() {
   const navigation = useNavigation();
   const { resetUnreadCount, refreshUnreadCount } = useNotificationContext();
+  const [showMenu, setShowMenu] = useState(false);
   const {
     notifications,
     loading,
@@ -35,6 +37,8 @@ export default function NotificationScreen() {
     connectRealtime,
     disconnectRealtime,
     markAsRead,
+    markAllAsRead,
+    deleteAll,
   } = useNotifications();
 
 
@@ -47,6 +51,7 @@ export default function NotificationScreen() {
     return unsubscribe;
   }, [navigation, refreshUnreadCount, loadNotifications]);
 
+
   const handleRefresh = () => {
     loadNotifications(true);
   };
@@ -57,6 +62,12 @@ export default function NotificationScreen() {
     }
   };
 
+  const handleScroll = () => {
+    if (showMenu) {
+      setShowMenu(false);
+    }
+  };
+
   const handleDeleteNotification = (id: number) => {
     Alert.alert(
       'Xóa thông báo',
@@ -64,6 +75,49 @@ export default function NotificationScreen() {
       [
         { text: 'Hủy', style: 'cancel' },
         { text: 'Xóa', style: 'destructive', onPress: () => deleteNotification(id) },
+      ]
+    );
+  };
+
+  const handleMarkAllAsRead = () => {
+    Alert.alert(
+      'Đánh dấu tất cả đã đọc',
+      'Bạn có chắc chắn muốn đánh dấu tất cả thông báo là đã đọc?',
+      [
+        { text: 'Hủy', style: 'cancel' },
+        { 
+          text: 'Đánh dấu', 
+          onPress: async () => {
+            try {
+              await markAllAsRead();
+              Alert.alert('Thành công', 'Tất cả thông báo đã được đánh dấu là đã đọc');
+            } catch (error) {
+              Alert.alert('Lỗi', 'Không thể đánh dấu tất cả thông báo. Vui lòng thử lại.');
+            }
+          }
+        },
+      ]
+    );
+  };
+
+  const handleDeleteAll = () => {
+    Alert.alert(
+      'Xóa tất cả thông báo',
+      'Bạn có chắc chắn muốn xóa tất cả thông báo? Hành động này không thể hoàn tác.',
+      [
+        { text: 'Hủy', style: 'cancel' },
+        { 
+          text: 'Xóa tất cả', 
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteAll();
+              Alert.alert('Thành công', 'Tất cả thông báo đã được xóa');
+            } catch (error) {
+              Alert.alert('Lỗi', 'Không thể xóa tất cả thông báo. Vui lòng thử lại.');
+            }
+          }
+        },
       ]
     );
   };
@@ -115,7 +169,10 @@ export default function NotificationScreen() {
     return (
       <TouchableOpacity 
         style={cardStyle}
-        onPress={() => (navigation as any).navigate('NotificationDetail', { notification: item })}
+        onPress={() => (navigation as any).navigate('NotificationDetail', { 
+          notification: item,
+          onNotificationDeleted: () => loadNotifications(true)
+        })}
       >
         <View style={styles.notificationHeader}>
           <View style={styles.notificationIconContainer}>
@@ -182,7 +239,50 @@ export default function NotificationScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <HeaderBar title="Thông báo" />
+      <TouchableWithoutFeedback onPress={() => setShowMenu(false)}>
+        <View style={styles.container}>
+          <HeaderBar 
+            title="Thông báo" 
+            rightIcon="ellipsis-horizontal"
+            onRightPress={() => setShowMenu(!showMenu)}
+          />
+          
+          {/* Dropdown Menu */}
+          {showMenu && (
+            <View style={styles.dropdownMenu}>
+              <TouchableOpacity 
+                style={styles.menuItem}
+                onPress={() => {
+                  setShowMenu(false);
+                  if (notifications.length > 0) {
+                    handleMarkAllAsRead();
+                  } else {
+                    Alert.alert('Thông báo', 'Không có thông báo để đánh dấu');
+                  }
+                }}
+              >
+                <CheckCircle size={20} color="#059669" />
+                <Text style={styles.menuItemText}>Đánh dấu tất cả đã đọc</Text>
+              </TouchableOpacity>
+              
+              <View style={styles.menuSeparator} />
+              
+              <TouchableOpacity 
+                style={styles.menuItem}
+                onPress={() => {
+                  setShowMenu(false);
+                  if (notifications.length > 0) {
+                    handleDeleteAll();
+                  } else {
+                    Alert.alert('Thông báo', 'Không có thông báo để xóa');
+                  }
+                }}
+              >
+                <Trash size={20} color="#EF4444" />
+                <Text style={[styles.menuItemText, styles.deleteMenuItemText]}>Xóa tất cả</Text>
+              </TouchableOpacity>
+            </View>
+          )}
       
       {error ? (
         renderError()
@@ -199,6 +299,7 @@ export default function NotificationScreen() {
               colors={['#005BAC']}
             />
           }
+          onScroll={handleScroll}
           onEndReached={handleLoadMore}
           onEndReachedThreshold={0.1}
           ListEmptyComponent={!loading ? renderEmptyState : null}
@@ -207,14 +308,15 @@ export default function NotificationScreen() {
         />
       )}
 
-      {/* Trạng thái kết nối*/}
-      {/* <View style={styles.connectionStatus}>
-        <View style={[styles.statusDot, { backgroundColor: isConnected ? '#10B981' : '#EF4444' }]} />
-        <Text style={styles.statusText}>
-          {isConnected ? 'Đã kết nối' : 'Mất kết nối'}
-        </Text>
-      </View> */}
-
+          {/* Trạng thái kết nối*/}
+          {/* <View style={styles.connectionStatus}>
+            <View style={[styles.statusDot, { backgroundColor: isConnected ? '#10B981' : '#EF4444' }]} />
+            <Text style={styles.statusText}>
+              {isConnected ? 'Đã kết nối' : 'Mất kết nối'}
+            </Text>
+          </View> */}
+        </View>
+      </TouchableWithoutFeedback>
     </SafeAreaView>
   );
 }
@@ -374,5 +476,41 @@ const styles = StyleSheet.create({
   statusText: {
     fontSize: 12,
     color: '#6B7280',
+  },
+  dropdownMenu: {
+    position: 'absolute',
+    top: 60,
+    right: 16,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 5,
+    zIndex: 1000,
+    minWidth: 200,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    gap: 12,
+  },
+  menuItemText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#374151',
+  },
+  deleteMenuItemText: {
+    color: '#EF4444',
+  },
+  menuSeparator: {
+    height: 1,
+    backgroundColor: '#E5E7EB',
+    marginHorizontal: 16,
   },
 });

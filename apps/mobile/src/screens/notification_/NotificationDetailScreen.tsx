@@ -25,12 +25,13 @@ interface NotificationDetailScreenProps {
   route: {
     params: {
       notification: any;
+      onNotificationDeleted?: () => void;
     };
   };
 }
 
 const NotificationDetailScreen: React.FC<NotificationDetailScreenProps> = ({ navigation, route }) => {
-  const { notification } = route.params;
+  const { notification, onNotificationDeleted } = route.params;
   const [isDeleting, setIsDeleting] = useState(false);
   const { markAsRead } = useNotifications();
   
@@ -44,9 +45,9 @@ const NotificationDetailScreen: React.FC<NotificationDetailScreenProps> = ({ nav
   const warningLevel = notificationData.warning_level || notification.warning_level;
   
   // Lấy notificationId để mark as read
-  const notificationId = notification.id; // ID của notifications record
+  const notificationId = notification.id; 
 
-  // Mark as read khi vào screen
+
   useEffect(() => {
     if (notificationId && !notification.is_read) {
       markAsRead(notificationId).catch(error => {
@@ -150,14 +151,18 @@ const NotificationDetailScreen: React.FC<NotificationDetailScreenProps> = ({ nav
     try {
       setIsDeleting(true);
       
-      const userNotificationId = notification.id;
+      const notificationId = notification.id;
       
-      if (!userNotificationId) {
+      if (!notificationId) {
         Alert.alert('Lỗi', 'Không thể xác định thông báo cần xóa');
         return;
       }
 
-      await notificationService.deleteNotification(userNotificationId);
+      await notificationService.markAsDeleted(notificationId);
+      
+      if (onNotificationDeleted) {
+        onNotificationDeleted();
+      }
       
       Alert.alert(
         'Thành công',

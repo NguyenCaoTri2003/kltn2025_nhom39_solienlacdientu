@@ -6,12 +6,15 @@ import { CheckCircle, XCircle, ChevronDown, ChevronUp } from "lucide-react-nativ
 
 import HeaderBar from "../components/HeaderBar";
 import LoadingScreen from "../components/LoadingScreen";
+import WarningDisplay from "../components/WarningDisplay";
 import { useGrades } from "../hooks/useGrades";
 import { useSemesterSummaries } from "../hooks/useSemesterSummary";
+import { useAcademicWarnings } from "../hooks/useAcademicWarnings";
 import { fetchSemesters, Semester } from "../services/semesterService";
 import { RootStackParamList } from "../types/navigation";
 import { getClassificationLabel } from "../utils/getClassificationLabel";
 import { useUser } from "../context/UserContext";
+import { AlertCircle } from "lucide-react-native";
 
 type GradesRouteProp = RouteProp<RootStackParamList, "Grades">;
 
@@ -44,7 +47,7 @@ export default function GradesScreen() {
     }
   }, [isParent, children, selectedStudentId]);
 
-  const { gradesBySemester, loading: loadingGrades } = useGrades(selectedStudentId, semesters);
+  const { gradesBySemester, loading: loadingGrades } = useGrades(selectedStudentId || 0, semesters);
 
   const semesterIdsWithGrades = useMemo(() => {
     return semesters
@@ -58,6 +61,8 @@ export default function GradesScreen() {
       : null,
     semesterIdsWithGrades
   );
+
+  const { getLatestWarningForSemester } = useAcademicWarnings();
 
   const toggleSemester = (id: number) => {
     setExpandedSemesterIds((prev) =>
@@ -240,6 +245,14 @@ export default function GradesScreen() {
                         />
                         <ScoreRow label="Tổng tín chỉ đạt" value={summary.total_credit_passed ?? 0} />
                         <ScoreRow label="Tổng tín chỉ rớt" value={summary.total_credit_failed ?? 0} />
+                        
+                        {/* Hiển thị cảnh báo gần nhất nếu có */}
+                        {selectedStudentId && (
+                          <WarningDisplay 
+                            studentId={selectedStudentId} 
+                            semesterId={semester.id} 
+                          />
+                        )}
                       </View>
                     )}
                   </View>
