@@ -14,6 +14,8 @@ export interface UseNotificationsReturn {
   connectRealtime: () => Promise<void>;
   disconnectRealtime: () => void;
   markAsRead: (userNotificationId: number) => Promise<void>;
+  markAllAsRead: () => Promise<void>;
+  deleteAll: () => Promise<void>;
 }
 
 export function useNotifications(): UseNotificationsReturn {
@@ -101,6 +103,30 @@ export function useNotifications(): UseNotificationsReturn {
     }
   }, [globalMarkAsRead, refreshUnreadCount]);
 
+  const markAllAsRead = useCallback(async () => {
+    try {
+      await notificationService.markAllAsRead();
+      setNotifications(prev => 
+        prev.map(notification => ({ ...notification, is_read: true }))
+      );
+      await refreshUnreadCount();
+    } catch (error) {
+      console.error('Error marking all notifications as read:', error);
+      throw error;
+    }
+  }, [refreshUnreadCount]);
+
+  const deleteAll = useCallback(async () => {
+    try {
+      await notificationService.deleteAll();
+      setNotifications([]);
+      await refreshUnreadCount();
+    } catch (error) {
+      console.error('Error deleting all notifications:', error);
+      throw error;
+    }
+  }, [refreshUnreadCount]);
+
   useEffect(() => {
     loadNotifications(true);
   }, [loadNotifications]);
@@ -138,5 +164,7 @@ export function useNotifications(): UseNotificationsReturn {
     connectRealtime,
     disconnectRealtime,
     markAsRead,
+    markAllAsRead,
+    deleteAll,
   };
 }

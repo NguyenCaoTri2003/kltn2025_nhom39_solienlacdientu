@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -13,8 +13,9 @@ import { Calendar, Clock, MapPin, X, Check } from "lucide-react-native";
 
 interface Props {
   visible: boolean;
+  data: any;
   onClose: () => void;
-  onSubmit: (data: {
+  onSubmit: (updated: {
     title: string;
     content: string;
     start_time: string;
@@ -23,24 +24,46 @@ interface Props {
   }) => void;
 }
 
-export default function AppointmentCreateModal({ visible, onClose, onSubmit }: Props) {
+export default function AppointmentEditModal({
+  visible,
+  data,
+  onClose,
+  onSubmit,
+}: Props) {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [location, setLocation] = useState("");
-
   const [date, setDate] = useState<Date | null>(null);
   const [startTime, setStartTime] = useState<Date | null>(null);
   const [endTime, setEndTime] = useState<Date | null>(null);
-  const [pickerType, setPickerType] = useState<"date" | "start" | "end" | null>(null);
 
-  const handleConfirm = () => {
-    if (!title.trim()) return Alert.alert("Thiếu thông tin", "Vui lòng nhập tiêu đề.");
+  const [pickerVisible, setPickerVisible] = useState(false);
+  const [pickerMode, setPickerMode] = useState<"date" | "start" | "end" | null>(
+    null
+  );
+
+  useEffect(() => {
+    if (data) {
+      setTitle(data.title || "");
+      setContent(data.content || "");
+      setLocation(data.location || "");
+
+      const s = new Date(data.start_time);
+      const e = new Date(data.end_time);
+      setDate(new Date(s));
+      setStartTime(new Date(s));
+      setEndTime(new Date(e));
+    }
+  }, [data, visible]);
+
+  const handleSave = () => {
+    if (!title.trim())
+      return Alert.alert("Thiếu thông tin", "Vui lòng nhập tiêu đề.");
     if (!date || !startTime || !endTime)
       return Alert.alert("Thiếu thông tin", "Vui lòng chọn đầy đủ ngày và giờ.");
 
     const startDateTime = new Date(date);
     startDateTime.setHours(startTime.getHours(), startTime.getMinutes(), 0);
-
     const endDateTime = new Date(date);
     endDateTime.setHours(endTime.getHours(), endTime.getMinutes(), 0);
 
@@ -57,29 +80,33 @@ export default function AppointmentCreateModal({ visible, onClose, onSubmit }: P
       start_time: startDateTime.toISOString(),
       end_time: endDateTime.toISOString(),
     });
-    onClose();
   };
 
-  const handlePickerConfirm = (datePicked: Date) => {
-    if (pickerType === "date") setDate(datePicked);
-    else if (pickerType === "start") setStartTime(datePicked);
-    else if (pickerType === "end") setEndTime(datePicked);
-    setPickerType(null);
+  const openPicker = (type: "date" | "start" | "end") => {
+    setPickerMode(type);
+    setPickerVisible(true);
+  };
+
+  const handleConfirm = (selected: Date) => {
+    if (!pickerMode) return;
+    setPickerVisible(false);
+
+    if (pickerMode === "date") setDate(selected);
+    else if (pickerMode === "start") setStartTime(selected);
+    else if (pickerMode === "end") setEndTime(selected);
   };
 
   return (
     <Modal visible={visible} animationType="slide" transparent>
       <View style={styles.overlay}>
         <View style={styles.modal}>
-          {/* Header */}
           <View style={styles.headerContainer}>
-            <Text style={styles.header}>Tạo lịch hẹn</Text>
+            <Text style={styles.header}>Chỉnh sửa lịch hẹn</Text>
             <TouchableOpacity onPress={onClose}>
               <X size={22} color="#6B7280" />
             </TouchableOpacity>
           </View>
 
-          {/* Inputs */}
           <TextInput
             style={styles.input}
             placeholder="* Tiêu đề"
@@ -88,7 +115,7 @@ export default function AppointmentCreateModal({ visible, onClose, onSubmit }: P
           />
           <TextInput
             style={[styles.input, { height: 60 }]}
-            placeholder="Nội dung (không bắt buộc)"
+            placeholder="Nội dung"
             multiline
             value={content}
             onChangeText={setContent}
@@ -104,10 +131,9 @@ export default function AppointmentCreateModal({ visible, onClose, onSubmit }: P
             />
           </View>
 
-          {/* Date & Time Pickers */}
           <TouchableOpacity
             style={styles.iconInput}
-            onPress={() => setPickerType("date")}
+            onPress={() => openPicker("date")}
           >
             <Calendar size={18} color="#007AFF" style={{ marginRight: 6 }} />
             <Text style={{ flex: 1, color: date ? "#111827" : "#9CA3AF" }}>
@@ -117,42 +143,49 @@ export default function AppointmentCreateModal({ visible, onClose, onSubmit }: P
 
           <TouchableOpacity
             style={styles.iconInput}
-            onPress={() => setPickerType("start")}
+            onPress={() => openPicker("start")}
           >
             <Clock size={18} color="#007AFF" style={{ marginRight: 6 }} />
             <Text style={{ flex: 1, color: startTime ? "#111827" : "#9CA3AF" }}>
-              {startTime ? startTime.toLocaleTimeString("vi-VN") : "Giờ bắt đầu"}
+              {startTime
+                ? startTime.toLocaleTimeString("vi-VN", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })
+                : "Giờ bắt đầu"}
             </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={styles.iconInput}
-            onPress={() => setPickerType("end")}
+            onPress={() => openPicker("end")}
           >
             <Clock size={18} color="#007AFF" style={{ marginRight: 6 }} />
             <Text style={{ flex: 1, color: endTime ? "#111827" : "#9CA3AF" }}>
-              {endTime ? endTime.toLocaleTimeString("vi-VN") : "Giờ kết thúc"}
+              {endTime
+                ? endTime.toLocaleTimeString("vi-VN", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })
+                : "Giờ kết thúc"}
             </Text>
           </TouchableOpacity>
 
-          {/* Modal Datetime Picker */}
           <DateTimePickerModal
-            isVisible={pickerType !== null}
-            mode={pickerType === "date" ? "date" : "time"}
+            isVisible={pickerVisible}
+            mode={pickerMode === "date" ? "date" : "time"}
             is24Hour
-            onConfirm={handlePickerConfirm}
-            onCancel={() => setPickerType(null)}
-            locale="vi_VN"
+            onConfirm={handleConfirm}
+            onCancel={() => setPickerVisible(false)}
           />
 
-          {/* Footer */}
           <View style={styles.footer}>
             <TouchableOpacity style={styles.cancelBtn} onPress={onClose}>
               <Text style={{ color: "#374151" }}>Hủy</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.submitBtn} onPress={handleConfirm}>
+            <TouchableOpacity style={styles.submitBtn} onPress={handleSave}>
               <Check size={16} color="#fff" style={{ marginRight: 4 }} />
-              <Text style={{ color: "#fff", fontWeight: "600" }}>Xác nhận</Text>
+              <Text style={{ color: "#fff", fontWeight: "600" }}>Lưu thay đổi</Text>
             </TouchableOpacity>
           </View>
         </View>

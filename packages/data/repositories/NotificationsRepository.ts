@@ -174,4 +174,22 @@ export class NotificationsRepository {
     if (error) throw error;
   }
 
+  async markAllAsRead(userId: number): Promise<void> {
+    const { error } = await supabase
+      .from("notifications")
+      .update({ is_read: true })
+      .eq("user_id", userId)
+      .eq("is_read", false);
+    if (error) throw error;
+  }
+
+  async deleteAll(userId: number): Promise<void> {
+    const { error } = await supabase
+      .from("notifications")
+      .update({ is_deleted: true })
+      .eq("user_id", userId)
+      .eq("is_deleted", false);
+    if (error) throw error;
+  }
+
 }
