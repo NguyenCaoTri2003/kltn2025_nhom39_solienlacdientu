@@ -28,7 +28,6 @@ export class AppointmentUseCase {
             throw new Error("Không tìm thấy phụ huynh của các học sinh này");
         }
 
-        // Lọc ra chỉ những phụ huynh được chọn
         const records = parents
             .filter((p) => parentIds.includes(p.parent_id))
             .map((p) => ({
@@ -41,6 +40,7 @@ export class AppointmentUseCase {
                 end_time,
                 location: location ?? null,
                 status: "pending",
+                from: "lecturer",
             }));
 
         if (records.length === 0) {
@@ -49,60 +49,6 @@ export class AppointmentUseCase {
 
         return this.repo.createAppointments(records);
     }
-
-    // async parentCreateAppointment(
-    //     parentId: number,
-    //     studentId: number,
-    //     lecturerId: number,
-    //     title: string,
-    //     content: string,
-    //     start_time: string,
-    //     end_time: string,
-    //     location?: string
-    // ) {
-    //     const { data: sp } = await supabase
-    //         .from("student_parent")
-    //         .select("student_id, parent_id")
-    //         .eq("parent_id", parentId)
-    //         .eq("student_id", studentId)
-    //         .maybeSingle();
-
-    //     if (!sp) throw new Error("Bạn không phải phụ huynh của học sinh này");
-
-    //     const { data: offeringData } = await supabase
-    //         .from("course_offerings")
-    //         .select("id")
-    //         .eq("lecturer_id", lecturerId);
-
-    //     if (!offeringData) {
-    //         throw new Error("Không tìm thấy lớp học phần của giảng viên này");
-    //     }
-
-    //     const offeringIds = offeringData.map((o) => o.id);
-
-    //     const { data: teaches } = await supabase
-    //         .from("enrollment")
-    //         .select("id")
-    //         .eq("student_id", studentId)
-    //         .in("offering_id", offeringIds)
-    //         .maybeSingle();
-
-    //     if (!teaches) throw new Error("Giảng viên này không dạy học sinh đó");
-
-    //     return this.repo.createAppointments([
-    //         {
-    //             lecturer_id: lecturerId,
-    //             parent_id: parentId,
-    //             student_id: studentId,
-    //             title,
-    //             content,
-    //             start_time,
-    //             end_time,
-    //             location: location ?? null,
-    //             status: "pending",
-    //         },
-    //     ]);
-    // }
 
     async parentCreateAppointment(
         parentId: number,
@@ -134,6 +80,7 @@ export class AppointmentUseCase {
                 end_time,
                 location: location ?? null,
                 status: "pending",
+                from: "parent",
             },
         ]);
     }
