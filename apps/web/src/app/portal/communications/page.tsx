@@ -1,7 +1,6 @@
 import EmptyState from "@/components/empty-state";
 import { MessageSquare } from "lucide-react";
 
-
 export default function CommunicationPage() {
   return (
     <div className="flex-1 flex items-center justify-center text-muted-foreground">

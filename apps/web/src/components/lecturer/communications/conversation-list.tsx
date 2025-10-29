@@ -39,7 +39,7 @@ export default function ConversationList({
   const sortedConversations = [...conversations].sort((a, b) => {
     const timeA = a.lastMessage ? new Date(a.lastMessage.created_at).getTime() : 0;
     const timeB = b.lastMessage ? new Date(b.lastMessage.created_at).getTime() : 0;
-    return timeB - timeA; // mới nhất lên trước
+    return timeB - timeA;
   });
 
   const getMessagePreview = (conv: Conversation) => {
@@ -85,26 +85,29 @@ export default function ConversationList({
         );
 
         const isUnread = conv.unreadCount && conv.unreadCount > 0;
+        const isActive = selectedConversation?.id === conv.id;
 
         return (
           <div
             key={conv.id}
             onClick={() => onSelectConversation(conv)}
-            className={`flex items-center gap-3 px-4 py-3 cursor-pointer border-b border-border hover:bg-accent transition-colors ${
-              selectedConversation?.id === conv.id ? "bg-accent/70" : ""
-            }`}
+            className={`flex items-center gap-3 px-4 py-3 cursor-pointer border-b border-border transition-all duration-200
+              ${
+                isActive
+                  ? "bg-gradient-to-r from-accent/60 to-accent/30 border-l-4 border-l-primary shadow-sm"
+                  : "hover:bg-accent/40 border-l-4 border-l-transparent"
+              }`}
           >
-            {/* Avatar */}
-            <Avatar className="w-12 h-12">
+            <Avatar className="w-11 h-11 ring-1 ring-border">
               {other.avatar_url ? <AvatarImage src={other.avatar_url} /> : null}
-              <AvatarFallback className={`text-lg font-semibold ${bgColor} text-white`}>
+              <AvatarFallback
+                className={`text-lg font-semibold ${bgColor} text-white`}
+              >
                 {initials}
               </AvatarFallback>
             </Avatar>
 
-            {/* Nội dung */}
             <div className="flex-1 min-w-0">
-              {/* Dòng trên: tên + giờ */}
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-1">
                   <span
@@ -125,7 +128,6 @@ export default function ConversationList({
                 )}
               </div>
 
-              {/* Dòng dưới: nội dung + số chưa đọc */}
               <div className="flex justify-between items-center mt-0.5">
                 <span
                   className={`truncate max-w-[75%] text-sm ${
@@ -137,9 +139,8 @@ export default function ConversationList({
                   {getMessagePreview(conv)}
                 </span>
 
-                {/* Badge số tin chưa đọc */}
                 {(conv.unreadCount ?? 0) > 0 && (
-                  <span className="ml-2 bg-red-500 text-white text-[11px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center">
+                  <span className="ml-2 bg-primary text-white text-[11px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center">
                     {conv.unreadCount}
                   </span>
                 )}
