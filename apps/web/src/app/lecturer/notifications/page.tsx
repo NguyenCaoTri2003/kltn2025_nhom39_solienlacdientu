@@ -1,10 +1,12 @@
 "use client";
 
-import ChangePassword from "@/components/profile/change-password";
+import NotificationList from "@/components/notification/NotificationList";
 import NavbarClient from "@/components/navbar-client";
 import { useEffect, useState } from "react";
 
-export default function Page() {
+export const dynamic = "force-dynamic";
+
+export default function NotificationsPage() {
   const [user, setUser] = useState<{ id: number; full_name: string } | null>(null);
 
   useEffect(() => {
@@ -23,11 +25,9 @@ export default function Page() {
         userName={user?.full_name || ""} 
         userId={user?.id || null}
       />
-      <div className="flex-1 p-6 max-w-6xl mx-auto w-full">
-        <ChangePassword />
+      <div className="flex-1">
+        <NotificationList />
       </div>
     </div>
   );
 }
-
-

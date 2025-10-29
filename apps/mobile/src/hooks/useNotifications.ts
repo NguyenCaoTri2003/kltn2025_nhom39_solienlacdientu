@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { notificationService, Notification, RealtimeNotificationEvent } from '../services/notificationService';
 import { useNotificationContext } from '../context/NotificationContext';
 import { useAuth } from '../context/AuthContext';
@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext';
 export interface UseNotificationsReturn {
   notifications: Notification[];
   loading: boolean;
+  loadingMore: boolean;
   error: string | null;
   hasMore: boolean;
   isConnected: boolean;
@@ -23,17 +24,22 @@ export function useNotifications(): UseNotificationsReturn {
   const { user } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(true);
-  const [currentPage, setCurrentPage] = useState(1);
+  const currentPageRef = useRef(1);
 
   // Load notifications
   const loadNotifications = useCallback(async (refresh: boolean = false) => {
     try {
-      setLoading(true);
+      if (refresh) {
+        setLoading(true);
+      } else {
+        setLoadingMore(true);
+      }
       setError(null);
 
-      const page = refresh ? 1 : currentPage;
+      const page = refresh ? 1 : currentPageRef.current;
       const response = await notificationService.getNotifications(page, 20);
 
       if (response.returnCode === 0) {
@@ -41,12 +47,11 @@ export function useNotifications(): UseNotificationsReturn {
         
         if (refresh) {
           setNotifications(newNotifications);
-          setCurrentPage(1);
+          currentPageRef.current = 2; 
         } else {
           setNotifications(prev => [...prev, ...newNotifications]);
-          setCurrentPage(page + 1);
+          currentPageRef.current = currentPageRef.current + 1; 
         }
-
 
         const totalPages = response.meta?.totalPages || 0;
         setHasMore(page < totalPages);
@@ -58,14 +63,17 @@ export function useNotifications(): UseNotificationsReturn {
       setError(errorMessage);
       console.error('Error loading notifications:', err);
     } finally {
-      setLoading(false);
+      if (refresh) {
+        setLoading(false);
+      } else {
+        setLoadingMore(false);
+      }
     }
-  }, [currentPage]);
+  }, []);
 
 
   const deleteNotification = useCallback(async (id: number) => {
     try {
-      // Sử dụng markAsDeleted thay vì xóa thật
       await globalMarkAsDeleted(id);
       setNotifications(prev => prev.filter(n => n.id !== id));
       await refreshUnreadCount(); // Refresh unread count sau khi xóa
@@ -129,7 +137,7 @@ export function useNotifications(): UseNotificationsReturn {
 
   useEffect(() => {
     loadNotifications(true);
-  }, [loadNotifications]);
+  }, []);
 
   useEffect(() => {
     if (!globalIsConnected) return;
@@ -156,6 +164,7 @@ export function useNotifications(): UseNotificationsReturn {
   return {
     notifications,
     loading,
+    loadingMore,
     error,
     hasMore,
     isConnected: globalIsConnected,

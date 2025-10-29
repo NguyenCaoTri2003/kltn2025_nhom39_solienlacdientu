@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-//import NavbarClient from "@/components/navbar-client";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,7 +13,15 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Mail, MapPin, Phone, Save } from "lucide-react";
+import {
+  Save,
+  ArrowLeft,
+  Edit3,
+  X,
+  AlertCircle,
+  GraduationCap,
+  Users,
+} from "lucide-react";
 
 import {
   isValidEmail,
@@ -25,15 +32,18 @@ import {
   isValidEthnic,
 } from "@packages/utils/Regex";
 import { getAvatarColor } from "@/utils/color-hash";
-//import Navbar from "../navbar";
 
 import {
   translateRole,
   translateAcademicRank,
+  translateAcademicStatus,
+  translateTrainingType,
+  translateTrainingLevel,
+  translateRelationship,
 } from "@packages/utils/translations";
 
 interface UserProfileInfo {
-  id: string; // Mã hiển thị trên giao diện (tùy theo role)
+  id: string;
   role: string;
   full_name: string;
   email: string;
@@ -46,7 +56,25 @@ interface UserProfileInfo {
   created_at: string;
   last_login: string;
   faculty_name?: string;
-  academic_rank?: string; 
+  academic_rank?: string;
+  student?: {
+    student_code?: string;
+    academic_status?: string;
+    date_of_birth?: string | null;
+    place_of_birth?: string | null;
+    contact_address?: string | null;
+    type_of_tranning?: string | null;
+    training_level?: string | null;
+    academic_year?: string | null;
+  };
+  children?: Array<{
+    id: number;
+    student_code?: string;
+    academic_year?: string | null;
+    classes?: { class_code?: string | null } | null;
+    users?: { full_name?: string | null } | null;
+    relationship?: string | null;
+  }>;
 }
 
 type LoggedInUser = {
@@ -94,8 +122,6 @@ export default function PersonalProfile() {
   >({});
   const router = useRouter();
 
-  // Hiển thị tên cố định theo dữ liệu đã lưu (originalProfile) để khi đang chỉnh sửa
-  // giá trị trong input thay đổi nhưng header/avatar không nhảy theo cho tới khi lưu
   const displayName =
     originalProfile?.full_name || user?.full_name || user?.name || "?";
 
@@ -104,8 +130,6 @@ export default function PersonalProfile() {
     const parts = displayName.trim().split(" ");
     return parts[parts.length - 1]?.[0]?.toUpperCase() ?? "?";
   }, [displayName]);
-
-  console.log("User in PersonalProfile:", user);
 
   const bgColor = useMemo(
     () =>
@@ -135,7 +159,6 @@ export default function PersonalProfile() {
     }
   }, []);
 
-  // Hàm gọi api lấy dữ liệu
   useEffect(() => {
     const fetchProfile = async () => {
       if (!user?.id) return;
@@ -176,9 +199,24 @@ export default function PersonalProfile() {
           avatar_url: u.avatar_url ?? "",
           created_at: u.created_at ?? "",
           last_login: u.last_login ?? "",
+          student:
+            u.role === "student"
+              ? {
+                  student_code: u.student?.student_code ?? "",
+                  academic_status: u.student?.academic_status ?? "",
+                  date_of_birth: u.student?.date_of_birth ?? null,
+                  place_of_birth: u.student?.place_of_birth ?? null,
+                  contact_address: u.student?.contact_address ?? null,
+                  type_of_tranning:
+                    u.student?.type_of_tranning ??
+                    (u.student?.type_of_training ?? null),
+                  training_level: u.student?.training_level ?? null,
+                  academic_year: u.student?.academic_year ?? null,
+                }
+              : undefined,
+          children: u.role === "parent" ? (u.children ?? []) : undefined,
         };
 
-        // Nếu user là lecturer, lấy thêm thông tin khoa
         if (u.role === "lecturer" && u.lecturer?.faculty_id) {
           try {
             const facultyRes = await fetch(
@@ -210,7 +248,6 @@ export default function PersonalProfile() {
     fetchProfile();
   }, [user]);
 
-  // Validate từng trường
   const validateField = (
     field: keyof UserProfileInfo,
     value: string
@@ -263,7 +300,6 @@ export default function PersonalProfile() {
     return compact;
   };
 
-  // Lưu chỉnh sửa
   const handleSaveProfile = async () => {
     if (!user?.id) return;
 
@@ -283,7 +319,6 @@ export default function PersonalProfile() {
         process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
 
       const fields: (keyof UserProfileInfo)[] = [
-        //"full_name",
         "email",
         "phone",
         "address",
@@ -334,7 +369,6 @@ export default function PersonalProfile() {
 
       const updated = await res.json();
 
-      // Cập nhật lại state bằng dữ liệu server trả về
       setProfile(updated);
       setOriginalProfile(updated);
       setIsEditing(false);
@@ -347,7 +381,6 @@ export default function PersonalProfile() {
     }
   };
 
-  // Hủy chỉnh sửa
   const handleCancelEdit = () => {
     if (originalProfile) {
       setProfile(originalProfile);
@@ -357,150 +390,174 @@ export default function PersonalProfile() {
   };
 
   if (!user) return null;
-  ///
-  console.log({
-    hasError: Object.keys(errors).length > 0,
-    hasOriginal: !!originalProfile,
-    isChanged: JSON.stringify(profile) !== JSON.stringify(originalProfile),
-    disabled:
-      Object.keys(errors).length > 0 ||
-      !originalProfile ||
-      JSON.stringify(profile) === JSON.stringify(originalProfile),
-  });
-  const hasError = Object.keys(errors).length > 0;
-  const hasOriginal = !!originalProfile;
-  const isChanged = JSON.stringify(profile) !== JSON.stringify(originalProfile);
-  console.log({ profile, originalProfile, hasError, hasOriginal, isChanged });
 
-  const disabled =
-    Object.values(errors).some((err) => err) || // chỉ disable nếu có giá trị lỗi thực sự
-    !originalProfile ||
-    JSON.stringify(profile) === JSON.stringify(originalProfile);
-
-  console.log("Errors:", errors);
-  console.log("Disabled:", disabled);
-  ////
+  const hasError = Object.values(errors).some((err) => err);
+  const isChanged =
+    JSON.stringify(profile) !== JSON.stringify(originalProfile);
+  const disabled = hasError || !originalProfile || !isChanged;
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-        <div className="mb-6 sm:mb-8">
-          <Button
-            variant="ghost"
+    <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {/* Header */}
+        <div className="mb-8">
+          <button
             onClick={() => router.back()}
-            className="mb-4 text-muted-foreground hover:text-foreground"
+            className="group inline-flex items-center gap-2 text-sm font-500 text-gray-600 hover:text-indigo-600 transition-all mb-5"
           >
-            ← Quay lại
-          </Button>
-          <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">
-            Thông tin cá nhân
-          </h1>
-          <p className="text-muted-foreground">
-            Cập nhật thông tin cá nhân của bạn
-          </p>
+            <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
+            <span>Quay lại</span>
+          </button>
+
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2 tracking-tight">
+              Thông tin cá nhân
+            </h1>
+            <p className="text-sm text-gray-500 font-400">
+              Quản lý và cập nhật hồ sơ cá nhân của bạn
+            </p>
+          </div>
         </div>
 
-        <Card className="bg-card border-border">
-          <CardHeader className="pb-4">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              <div className="flex items-center space-x-4">
-                <Avatar className="w-16 h-16 sm:w-20 sm:h-20">
-                  {profile.avatar_url ? (
-                    <AvatarImage src={profile.avatar_url} />
-                  ) : null}
-                  <AvatarFallback
-                    className={`text-lg font-semibold ${bgColor} text-white`}
-                  >
-                    {initial}
-                  </AvatarFallback>
-                </Avatar>
-                <div>
-                  <CardTitle
-                    className="text-xl sm:text-2xl text-card-foreground truncate cursor-default max-w-[200px]"
-                    title={displayName}
-                  >
-                    {displayName}
-                  </CardTitle>
-                  <CardDescription className="text-muted-foreground capitalize flex flex-wrap items-center gap-x-2">
-                    <span>{translateRole(profile.role)}</span>
-
-                    {profile.role === "lecturer" && (
-                      <>
-                        {profile.academic_rank && (
-                          <>
-                            <span className="text-muted-foreground/60">•</span>
-                            <span>
-                              {translateAcademicRank(profile.academic_rank)}
-                            </span>
-                          </>
-                        )}
-
-                        {profile.faculty_name && (
-                          <>
-                            <span className="text-muted-foreground/60">•</span>
-                            <span>Khoa {profile.faculty_name}</span>
-                          </>
-                        )}
-                      </>
-                    )}
-                  </CardDescription>
+        {/* Profile Header Card */}
+        <div className="mb-6">
+          <Card className="bg-card border border-border overflow-hidden">
+            <div className="px-5 py-5">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5">
+                <div className="flex items-center gap-4">
+                  <Avatar className="w-16 h-16 ring-2 ring-border">
+                    {profile.avatar_url ? (
+                      <AvatarImage src={profile.avatar_url} />
+                    ) : null}
+                    <AvatarFallback
+                      className={`text-2xl font-bold ${bgColor} text-white`}
+                    >
+                      {initial}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <h2 className="text-xl font-semibold text-foreground mb-0.5 truncate max-w-[16rem]"
+                      title={displayName}>
+                      {displayName}
+                    </h2>
+                    <div className="flex flex-wrap items-center gap-2 text-muted-foreground">
+                      <span className="text-xs px-2 py-0.5 rounded-full border border-border">
+                        {translateRole(profile.role)}
+                      </span>
+                      {profile.role === "lecturer" && (
+                        <>
+                          {profile.academic_rank && (
+                            <>
+                              <span className="opacity-60">•</span>
+                              <span className="text-xs">
+                                {translateAcademicRank(profile.academic_rank)}
+                              </span>
+                            </>
+                          )}
+                          {profile.faculty_name && (
+                            <>
+                              <span className="opacity-60">•</span>
+                              <span className="text-xs">
+                                Khoa {profile.faculty_name}
+                              </span>
+                            </>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  </div>
                 </div>
-              </div>
 
-              <Button
-                onClick={() => {
-                  if (isEditing) {
-                    handleCancelEdit(); // Gọi hàm hủy chỉnh sửa
-                  } else {
-                    setIsEditing(true); // Bật chế độ chỉnh sửa
-                  }
-                }}
-                variant={isEditing ? "outline" : "default"}
-                className="w-full sm:w-auto"
-              >
-                {isEditing ? "Hủy chỉnh sửa" : "Chỉnh sửa thông tin"}
-              </Button>
+                <Button
+                  onClick={() => {
+                    if (isEditing) {
+                      handleCancelEdit();
+                    } else {
+                      setIsEditing(true);
+                    }
+                  }}
+                  className={`gap-2 px-4 py-2 rounded-md text-sm transition-colors border ${
+                    isEditing
+                      ? "bg-destructive text-destructive-foreground hover:opacity-90 border-transparent"
+                      : "bg-card text-primary hover:bg-accent border-border"
+                  }`}
+                >
+                  {isEditing ? (
+                    <>
+                      <X className="w-4 h-4" />
+                      Hủy chỉnh sửa
+                    </>
+                  ) : (
+                    <>
+                      <Edit3 className="w-4 h-4" />
+                      Chỉnh sửa thông tin
+                    </>
+                  )}
+                </Button>
+              </div>
             </div>
+          </Card>
+        </div>
+
+        {/* Main Content */}
+        <Card className="bg-card border border-border">
+          <CardHeader className="pb-4 border-b border-border">
+            <CardTitle className="text-lg font-semibold text-foreground">
+              Thông tin cơ bản
+            </CardTitle>
+            <CardDescription className="text-muted-foreground text-xs mt-1">
+              {isEditing
+                ? "Chỉnh sửa các thông tin bên dưới"
+                : "Xem thông tin chi tiết của bạn"}
+            </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+
+          <CardContent className="pt-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              {/* ID Field */}
               <div className="space-y-2">
-                <Label htmlFor="userId" className="text-sm font-medium">
+                <Label className="text-xs text-muted-foreground">
                   Mã {user?.role === "lecturer" ? "giảng viên" : "người dùng"}
                 </Label>
-                <Input
-                  id="userId"
-                  value={profile.id}
-                  disabled
-                  className="bg-muted"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="full_name" className="text-sm font-medium">
-                  Họ và tên
-                </Label>
-                <Input
-                  id="full_name"
-                  maxLength={128}
-                  disabled
-                  className="bg-muted"
-                  value={profile.full_name ?? ""}
-                  readOnly
-                />
-                {errors.full_name && (
-                  <p className="text-sm text-red-500 mt-1">
-                    {errors.full_name}
-                  </p>
+                {isEditing ? (
+                  <Input
+                    value={profile.id}
+                    disabled
+                    className="bg-muted border border-border text-foreground rounded px-3 py-2 cursor-not-allowed"
+                  />
+                ) : (
+                  <div className="text-sm text-foreground px-3 py-2 bg-muted rounded">
+                    {profile.id}
+                  </div>
                 )}
               </div>
+
+              {/* Full Name Field */}
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-sm font-medium">
+                <Label className="text-xs text-muted-foreground">
+                  Họ và tên
+                </Label>
+                {isEditing ? (
+                  <Input
+                    maxLength={128}
+                    disabled
+                    className="bg-muted border border-border text-foreground rounded px-3 py-2 cursor-not-allowed"
+                    value={profile.full_name ?? ""}
+                    readOnly
+                  />
+                ) : (
+                  <div className="text-sm text-foreground px-3 py-2 bg-muted rounded">
+                    {profile.full_name ?? ""}
+                  </div>
+                )}
+              </div>
+
+              {/* Email Field */}
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground">
                   Email
                 </Label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                {isEditing ? (
                   <Input
-                    id="email"
                     type="email"
                     maxLength={100}
                     value={profile.email ?? ""}
@@ -512,22 +569,31 @@ export default function PersonalProfile() {
                         email: validateField("email", v),
                       }));
                     }}
-                    disabled={!isEditing}
-                    className={`pl-10 ${!isEditing ? "bg-muted" : ""}`}
+                    className="rounded px-3 py-2 text-sm border border-border focus:border-primary focus:ring-0"
                   />
-                </div>
+                ) : (
+                  <Input
+                    type="text"
+                    value={profile.email ?? ""}
+                    disabled
+                    className="bg-muted border border-border text-foreground rounded px-3 py-2 cursor-not-allowed"
+                  />
+                )}
                 {errors.email && (
-                  <p className="text-sm text-red-500 mt-1">{errors.email}</p>
+                  <div className="flex items-center gap-2 text-xs text-red-600">
+                    <AlertCircle className="w-4 h-4" />
+                    {errors.email}
+                  </div>
                 )}
               </div>
+
+              {/* Phone Field */}
               <div className="space-y-2">
-                <Label htmlFor="phone" className="text-sm font-medium">
+                <Label className="text-xs text-muted-foreground">
                   Số điện thoại
                 </Label>
-                <div className="relative">
-                  <Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                {isEditing ? (
                   <Input
-                    id="phone"
                     maxLength={10}
                     value={profile.phone ?? ""}
                     onChange={(e) => {
@@ -538,22 +604,31 @@ export default function PersonalProfile() {
                         phone: validateField("phone", v),
                       }));
                     }}
-                    disabled={!isEditing}
-                    className={`pl-10 ${!isEditing ? "bg-muted" : ""}`}
+                    className="rounded px-3 py-2 text-sm border border-border focus:border-primary focus:ring-0"
                   />
-                </div>
+                ) : (
+                  <Input
+                    type="text"
+                    value={profile.phone ?? ""}
+                    disabled
+                    className="bg-muted border border-border text-foreground rounded px-3 py-2 cursor-not-allowed"
+                  />
+                )}
                 {errors.phone && (
-                  <p className="text-sm text-red-500 mt-1">{errors.phone}</p>
+                  <div className="flex items-center gap-2 text-xs text-red-600">
+                    <AlertCircle className="w-4 h-4" />
+                    {errors.phone}
+                  </div>
                 )}
               </div>
-              <div className="space-y-2 sm:col-span-2">
-                <Label htmlFor="address" className="text-sm font-medium">
+
+              {/* Address Field */}
+              <div className="space-y-2 md:col-span-2">
+                <Label className="text-xs text-muted-foreground">
                   Địa chỉ
                 </Label>
-                <div className="relative">
-                  <MapPin className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                {isEditing ? (
                   <Input
-                    id="address"
                     maxLength={255}
                     value={profile.address ?? ""}
                     onChange={(e) => {
@@ -564,139 +639,235 @@ export default function PersonalProfile() {
                         address: validateField("address", v),
                       }));
                     }}
-                    disabled={!isEditing}
-                    className={`pl-10 ${!isEditing ? "bg-muted" : ""}`}
+                    className="rounded px-3 py-2 text-sm border border-border focus:border-primary focus:ring-0"
                   />
-                </div>
+                ) : (
+                  <Input
+                    type="text"
+                    value={profile.address ?? ""}
+                    disabled
+                    className="bg-muted border border-border text-foreground rounded px-3 py-2 cursor-not-allowed"
+                  />
+                )}
                 {errors.address && (
-                  <p className="text-sm text-red-500 mt-1">{errors.address}</p>
+                  <div className="flex items-center gap-2 text-xs text-red-600">
+                    <AlertCircle className="w-4 h-4" />
+                    {errors.address}
+                  </div>
                 )}
               </div>
+
+              {/* Ethnic Field */}
               <div className="space-y-2">
-                <Label htmlFor="ethnic" className="text-sm font-medium">
+                <Label className="text-xs text-muted-foreground">
                   Dân tộc
                 </Label>
-                <Input
-                  id="ethnic"
-                  maxLength={20}
-                  value={profile.ethnic ?? ""}
-                  onChange={(e) => {
-                    const v = e.target.value;
-                    setProfile({ ...profile, ethnic: v });
-                    setErrors((prev) => ({
-                      ...prev,
-                      ethnic: validateField("ethnic", v),
-                    }));
-                  }}
-                  disabled={!isEditing}
-                  className={!isEditing ? "bg-muted" : ""}
-                />
+                {isEditing ? (
+                  <Input
+                    maxLength={20}
+                    value={profile.ethnic ?? ""}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      setProfile({ ...profile, ethnic: v });
+                      setErrors((prev) => ({
+                        ...prev,
+                        ethnic: validateField("ethnic", v),
+                      }));
+                    }}
+                    className="rounded px-3 py-2 text-sm border border-border focus:border-primary focus:ring-0"
+                  />
+                ) : (
+                  <div className="text-sm text-foreground px-3 py-2 bg-muted rounded">
+                    {profile.ethnic ?? ""}
+                  </div>
+                )}
                 {errors.ethnic && (
-                  <p className="text-sm text-red-500 mt-1">{errors.ethnic}</p>
+                  <div className="flex items-center gap-2 text-xs text-red-600">
+                    <AlertCircle className="w-4 h-4" />
+                    {errors.ethnic}
+                  </div>
                 )}
               </div>
-              {/* <div className="space-y-2">
-                <Label htmlFor="status" className="text-sm font-medium">
-                  Trạng thái
-                </Label>
-                <Input
-                  id="status"
-                  value={profile.status}
-                  onChange={(e) =>
-                    setProfile({ ...profile, status: e.target.value })
-                  }
-                  //disabled={!isEditing}
-                  disabled
-                  className={!isEditing ? "bg-muted" : ""}
-                />
-              </div> */}
+
+              {/* CCCD Field */}
               <div className="space-y-2">
-                <Label
-                  htmlFor="citizen_id_card"
-                  className="text-sm font-medium"
-                >
+                <Label className="text-xs text-muted-foreground">
                   CCCD
                 </Label>
-                <Input
-                  id="citizen_id_card"
-                  maxLength={20}
-                  value={profile.citizen_id_card ?? ""}
-                  onChange={(e) => {
-                    const v = e.target.value;
-                    setProfile({ ...profile, citizen_id_card: v });
-                    setErrors((prev) => ({
-                      ...prev,
-                      citizen_id_card: validateField("citizen_id_card", v),
-                    }));
-                  }}
-                  disabled={!isEditing}
-                  className={!isEditing ? "bg-muted" : ""}
-                />
+                {isEditing ? (
+                  <Input
+                    maxLength={20}
+                    value={profile.citizen_id_card ?? ""}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      setProfile({ ...profile, citizen_id_card: v });
+                      setErrors((prev) => ({
+                        ...prev,
+                        citizen_id_card: validateField("citizen_id_card", v),
+                      }));
+                    }}
+                    className="rounded px-3 py-2 text-sm border border-border focus:border-primary focus:ring-0"
+                  />
+                ) : (
+                  <div className="text-sm text-foreground px-3 py-2 bg-muted rounded">
+                    {profile.citizen_id_card ?? ""}
+                  </div>
+                )}
                 {errors.citizen_id_card && (
-                  <p className="text-sm text-red-500 mt-1">
+                  <div className="flex items-center gap-2 text-xs text-red-600">
+                    <AlertCircle className="w-4 h-4" />
                     {errors.citizen_id_card}
-                  </p>
+                  </div>
                 )}
               </div>
-              {/* <div className="space-y-2">
-                <Label htmlFor="created_at" className="text-sm font-medium">
-                  Ngày tạo
-                </Label>
-                <div className="relative">
-                  <Calendar className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="created_at"
-                    type="date"
-                    value={
-                      profile.created_at
-                        ? new Date(profile.created_at)
-                            .toISOString()
-                            .slice(0, 10)
-                        : ""
-                    }
-                    disabled
-                    className={`pl-10 bg-muted`}
-                  />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="last_login" className="text-sm font-medium">
-                  Đăng nhập gần nhất
-                </Label>
-                <div className="relative">
-                  <Calendar className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="last_login"
-                    type="date"
-                    value={
-                      profile.last_login
-                        ? new Date(profile.last_login)
-                            .toISOString()
-                            .slice(0, 10)
-                        : ""
-                    }
-                    disabled
-                    className={`pl-10 bg-muted`}
-                  />
-                </div>
-              </div> */}
             </div>
 
+            {/* Student Info Section */}
+            {profile.role === "student" && profile.student && (
+              <div className="mt-8 pt-6 border-t border-border">
+                <div className="flex items-center gap-2 mb-4">
+                  <GraduationCap className="w-4 h-4 text-primary" />
+                  <h3 className="text-base font-semibold text-foreground">Thông tin học tập</h3>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  {[
+                    {
+                      label: "Mã sinh viên",
+                      value: profile.student.student_code ?? "",
+                    },
+                    {
+                      label: "Trạng thái học tập",
+                      value: translateAcademicStatus(
+                        profile.student.academic_status ?? ""
+                      ),
+                    },
+                    {
+                      label: "Năm học",
+                      value: profile.student.academic_year ?? "",
+                    },
+                    {
+                      label: "Loại đào tạo",
+                      value: translateTrainingType(
+                        profile.student.type_of_tranning ?? ""
+                      ),
+                    },
+                    {
+                      label: "Trình độ đào tạo",
+                      value: translateTrainingLevel(
+                        profile.student.training_level ?? ""
+                      ),
+                    },
+                    {
+                      label: "Địa chỉ liên hệ",
+                      value: profile.student.contact_address ?? "",
+                      colSpan: "md:col-span-2",
+                    },
+                  ].map((field, idx) => (
+                    <div key={idx} className={field.colSpan || ""}>
+                      <Label className="text-xs text-muted-foreground">
+                        {field.label}
+                      </Label>
+                      <div className="text-sm text-foreground px-3 py-2 mt-1 bg-muted rounded">
+                        {field.value}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Parent Children Info Section */}
+            {profile.role === "parent" &&
+              Array.isArray(profile.children) &&
+              profile.children.length > 0 && (
+                <div className="mt-8 pt-6 border-t border-border">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Users className="w-4 h-4 text-primary" />
+                    <h3 className="text-base font-semibold text-foreground">Thông tin con cái</h3>
+                  </div>
+                  <div className="space-y-4">
+                    {profile.children.map((child, idx) => (
+                      <div
+                        key={child.id ?? idx}
+                        className="p-4 rounded-lg border border-border bg-card"
+                      >
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                          <div className="md:col-span-2">
+                            <Label className="text-xs text-muted-foreground">
+                              Họ và tên
+                            </Label>
+                            <Input
+                              value={child.users?.full_name ?? ""}
+                              disabled
+                              className="mt-1 bg-muted border border-border text-foreground rounded px-3 py-2 cursor-not-allowed"
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-xs text-muted-foreground">
+                              Mã sinh viên
+                            </Label>
+                            <Input
+                              value={child.student_code ?? ""}
+                              disabled
+                              className="mt-1 bg-muted border border-border text-foreground rounded px-3 py-2 cursor-not-allowed"
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-xs text-muted-foreground">
+                              Lớp
+                            </Label>
+                            <Input
+                              value={child.classes?.class_code ?? ""}
+                              disabled
+                              className="mt-1 bg-muted border border-border text-foreground rounded px-3 py-2 cursor-not-allowed"
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-xs text-muted-foreground">
+                              Năm học
+                            </Label>
+                            <Input
+                              value={child.academic_year ?? ""}
+                              disabled
+                              className="mt-1 bg-muted border border-border text-foreground rounded px-3 py-2 cursor-not-allowed"
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-xs text-muted-foreground">
+                              Mối quan hệ
+                            </Label>
+                            <Input
+                              value={translateRelationship(
+                                child.relationship ?? ""
+                              )}
+                              disabled
+                              className="mt-1 bg-muted border border-border text-foreground rounded px-3 py-2 cursor-not-allowed"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+            {/* Action Buttons */}
             {isEditing && (
-              <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t">
+              <div className="flex flex-col sm:flex-row gap-3 mt-6 pt-6 border-t border-border">
                 <Button
                   onClick={handleSaveProfile}
-                  className="flex-1 sm:flex-none"
                   disabled={disabled}
+                  className="gap-2 px-5 py-2 rounded-md text-sm bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <Save className="w-4 h-4 mr-2" />
+                  <Save className="w-4 h-4" />
                   Lưu thay đổi
                 </Button>
                 <Button
                   variant="outline"
                   onClick={handleCancelEdit}
-                  className="flex-1 sm:flex-none"
+                  className="gap-2 px-5 py-2 rounded-md text-sm border border-border hover:bg-accent"
                 >
+                  <X className="w-4 h-4" />
                   Hủy
                 </Button>
               </div>
@@ -704,6 +875,5 @@ export default function PersonalProfile() {
           </CardContent>
         </Card>
       </div>
-    </div>
   );
 }

@@ -1,7 +1,6 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import NavbarClient from "@/components/navbar-client"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -100,13 +99,7 @@ export default function ChangePassword() {
   if (!user) return null
 
   return (
-    <div className="min-h-screen bg-background">
-      <NavbarClient
-        userRole={user?.role === "admin" ? "admin" : user?.role === "lecturer" ? "teacher" : null}
-        userName={user?.full_name || ""}
-      />
-
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         <div className="mb-6 sm:mb-8">
           <Button
             variant="ghost"
@@ -263,7 +256,6 @@ export default function ChangePassword() {
           </CardContent>
         </Card>
       </div>
-    </div>
   )
 }
 

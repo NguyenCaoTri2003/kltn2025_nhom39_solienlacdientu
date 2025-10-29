@@ -16,15 +16,6 @@ export interface NotificationRow {
   created_at?: string;
 }
 
-// DEPRECATED: Không còn sử dụng bảng user_notifications
-// export interface UserNotificationRow {
-//   id: number;
-//   user_id: number;
-//   notification_id: number;
-//   is_read: boolean;
-//   is_deleted: boolean;
-//   created_at: string;
-// }
 
 export interface ListParams {
   userId?: number;
@@ -114,21 +105,6 @@ export class NotificationsRepository {
     if (error) throw error;
   }
 
-  // DEPRECATED: Use notifications table directly
-  // async createUserNotification(userId: number, notificationId: number): Promise<UserNotificationRow> {
-  //   const { data, error } = await supabase
-  //     .from("user_notifications")
-  //     .insert({
-  //       user_id: userId,
-  //       notification_id: notificationId,
-  //       is_read: false,
-  //       is_deleted: false,
-  //     })
-  //     .select("id, user_id, notification_id, is_read, is_deleted, created_at")
-  //     .single();
-  //   if (error) throw error;
-  //   return data as UserNotificationRow;
-  // }
 
   async getUserNotifications(userId: number, params: ListParams = {}): Promise<ListResult> {
     const page = Math.max(1, Math.floor(params.page ?? 1));
