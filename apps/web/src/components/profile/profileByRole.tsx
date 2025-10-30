@@ -31,6 +31,8 @@ type StudentRel = {
       name?: string;
       majors?: { faculties?: { name?: string } };
     };
+    date_of_birth?: string | null;
+    contact_address?: string | null;
   };
 };
 
@@ -53,6 +55,9 @@ export default function ProfileByRole({ user }: { user: AnyUser }) {
     citizen_id_card: user.citizen_id_card ?? null,
     address: user.address ?? null,
     ethnic: user.ethnic ?? null,
+    role: user.role,
+    student_date_of_birth: user.student?.date_of_birth ?? null,
+    student_contact_address: user.student?.contact_address ?? null,
   };
 
   return (

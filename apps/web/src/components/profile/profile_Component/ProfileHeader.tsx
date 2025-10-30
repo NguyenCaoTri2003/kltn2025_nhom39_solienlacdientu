@@ -1,6 +1,8 @@
 "use client";
 
-import React from "react";
+import React, { useMemo } from "react";
+import { getAvatarColor } from "@/utils/color-hash";
+import { translateRole, translateAcademicRank } from "@packages/utils/translations";
 
 interface ProfileHeaderProps {
   avatar_url?: string | null;
@@ -9,26 +11,10 @@ interface ProfileHeaderProps {
   academic_rank?: string;
   faculty_name?: string;
   initial?: string;
+  userId?: number | null;
+  onEdit?: () => void;
 }
 
-function translateRole(role?: string) {
-  if (!role) return "";
-  switch (role) {
-    case "student": return "Sinh viên";
-    case "parent": return "Phụ huynh";
-    case "lecturer": return "Giảng viên";
-    case "admin": return "Admin";
-    default: return role;
-  }
-}
-function translateAcademicRank(rank?: string) {
-  if (!rank) return "";
-  switch (rank) {
-    case "master": return "Thạc sĩ";
-    case "phd": return "Tiến sĩ";
-    default: return rank;
-  }
-}
 
 export default function ProfileHeader({
   avatar_url,
@@ -36,28 +22,34 @@ export default function ProfileHeader({
   role,
   academic_rank,
   faculty_name,
-  initial
+  initial,
+  userId,
+  onEdit,
 }: ProfileHeaderProps) {
+  const bgColor = useMemo(() => getAvatarColor(userId !== null && userId !== undefined ? String(userId) : displayName), [userId, displayName]);
+
   return (
     <div className="mb-6">
-      <div className="bg-blue-50 border border-blue-300 overflow-hidden rounded-xl shadow">
+      <div className="bg-card border border-border overflow-hidden rounded-xl">
         <div className="px-5 py-5">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5">
             <div className="flex items-center gap-4">
-              <div className="w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold text-white ring-4 ring-blue-200 shadow-lg" style={{ background: avatar_url ? undefined : '#4e73df' }}>
+              <div className="w-16 h-16 ring-2 ring-border rounded-full overflow-hidden flex items-center justify-center text-white font-semibold">
                 {avatar_url ? (
-                  <img src={avatar_url} alt={displayName} className="w-full h-full object-cover rounded-full" />
+                  <img src={avatar_url} alt={displayName} className="w-full h-full object-cover" />
                 ) : (
-                  initial || (displayName?.[0] ?? "?")
+                  <span className={`${bgColor} w-full h-full flex items-center justify-center text-2xl`}>
+                    {initial || (displayName?.[0] ?? "?")}
+                  </span>
                 )}
               </div>
               <div>
-                <h2 className="text-xl font-semibold text-blue-700 mb-0.5 truncate max-w-[16rem]" title={displayName}>
+                <h2 className="text-xl font-semibold text-foreground mb-0.5 truncate max-w-[16rem]" title={displayName}>
                   {displayName}
                 </h2>
-                <div className="flex flex-wrap items-center gap-2 text-blue-800">
+                <div className="flex flex-wrap items-center gap-2 text-muted-foreground">
                   {role && (
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-white">
+                    <span className="text-xs py-0.5 rounded-full">
                       {translateRole(role)}
                     </span>
                   )}
@@ -76,6 +68,13 @@ export default function ProfileHeader({
                 </div>
               </div>
             </div>
+            {onEdit ? (
+              <div className="w-full sm:w-auto">
+                <button onClick={onEdit} className="px-4 py-2 rounded-lg bg-[#4e73df] text-white hover:bg-[#3a5ed7] transition">
+                  Chỉnh sửa
+                </button>
+              </div>
+            ) : null}
           </div>
         </div>
       </div>

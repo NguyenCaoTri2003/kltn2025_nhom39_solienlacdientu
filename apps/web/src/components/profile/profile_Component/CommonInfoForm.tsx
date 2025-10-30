@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { translateTrainingType, translateTrainingLevel } from "@packages/utils/translations";
 
 export interface BasicUserInfo {
   id: number;
@@ -10,6 +11,9 @@ export interface BasicUserInfo {
   citizen_id_card: string | null;
   address: string | null;
   ethnic: string | null;
+  role?: string;
+  student_date_of_birth?: string | null;
+  student_contact_address?: string | null;
 }
 
 export default function CommonInfoForm({ user }: { user: BasicUserInfo }) {
@@ -30,7 +34,7 @@ export default function CommonInfoForm({ user }: { user: BasicUserInfo }) {
             <input
               type="text"
               id="userId"
-              defaultValue={user.id}
+              value={String(user.id)}
               className="flex-1 bg-transparent text-gray-800 focus:outline-none border-b-2 border-transparent"
               readOnly
             />
@@ -46,8 +50,9 @@ export default function CommonInfoForm({ user }: { user: BasicUserInfo }) {
             <input
               type="text"
               id="fullName"
-              defaultValue={user.full_name}
+              value={user.full_name}
               className="flex-1 bg-transparent text-gray-800 focus:outline-none border-b-2 border-transparent"
+              readOnly
             />
           </div>
 
@@ -63,8 +68,9 @@ export default function CommonInfoForm({ user }: { user: BasicUserInfo }) {
             <input
               type="text"
               id="phone"
-              defaultValue={user.citizen_id_card || "-"}
+              value={user.citizen_id_card || "-"}
               className="flex-1 bg-transparent text-gray-800 focus:outline-none border-b-2 border-transparent"
+              readOnly
             />
           </div>
 
@@ -78,8 +84,9 @@ export default function CommonInfoForm({ user }: { user: BasicUserInfo }) {
             <input
               type="text"
               id="phone"
-              defaultValue={user.ethnic || "-"}
+              value={user.ethnic || "-"}
               className="flex-1 bg-transparent text-gray-800 focus:outline-none border-b-2 border-transparent"
+              readOnly
             />
           </div>
 
@@ -93,8 +100,9 @@ export default function CommonInfoForm({ user }: { user: BasicUserInfo }) {
             <input
               type="text"
               id="phone"
-              defaultValue={user.phone || "-"}
+              value={user.phone || "-"}
               className="flex-1 bg-transparent text-gray-800 focus:outline-none border-b-2 border-transparent"
+              readOnly
             />
           </div>
 
@@ -108,8 +116,9 @@ export default function CommonInfoForm({ user }: { user: BasicUserInfo }) {
             <input
               type="text"
               id="phone"
-              defaultValue={user.email || "-"}
+              value={user.email || "-"}
               className="flex-1 bg-transparent text-gray-800 focus:outline-none border-b-2 border-transparent"
+              readOnly
             />
           </div>
         </div>
@@ -125,10 +134,33 @@ export default function CommonInfoForm({ user }: { user: BasicUserInfo }) {
             <input
               type="text"
               id="email"
-              defaultValue={user.address || "-"}
+              value={user.address || "-"}
               className="flex-1 bg-transparent text-gray-800 focus:outline-none border-b-2 border-transparent"
+              readOnly
             />
           </div>
+          {user.role === "student" && (
+            <>
+              <div className="flex flex-row items-center gap-2">
+                <label className="text-gray-700 font-medium flex-shrink-0">Ngày sinh:</label>
+                <input
+                  type="text"
+                  value={(user.student_date_of_birth || "").slice(0,10) || "-"}
+                  className="flex-1 bg-transparent text-gray-800 focus:outline-none border-b-2 border-transparent"
+                  readOnly
+                />
+              </div>
+              <div className="flex flex-row items-center gap-2">
+                <label className="text-gray-700 font-medium flex-shrink-0">Địa chỉ liên hệ:</label>
+                <input
+                  type="text"
+                  value={user.student_contact_address || "-"}
+                  className="flex-1 bg-transparent text-gray-800 focus:outline-none border-b-2 border-transparent"
+                  readOnly
+                />
+              </div>
+            </>
+          )}
         </div>
     </div>
   );
