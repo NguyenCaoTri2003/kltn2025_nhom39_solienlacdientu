@@ -95,7 +95,6 @@ export default function ProfilePage() {
                                 role={user.role}
                                 academic_rank={user.lecturer?.academic_rank ?? user.academic_rank ?? undefined}
                                 faculty_name={user.lecturer?.faculties?.name ?? user.faculty_name ?? undefined}
-                                initial={user.full_name?.[0] ?? "?"}
                                 userId={user.id}
                                 onEdit={() => setEditing(true)}
                             />

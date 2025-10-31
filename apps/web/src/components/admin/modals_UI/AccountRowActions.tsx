@@ -23,6 +23,7 @@ interface Props {
     status: AccountStatus
   ) => Promise<{ ok: boolean; message?: string }>;
   onOpenResetPassword: (id: string, name: string) => void;
+  onOpenViewDetail?: (id: string, name: string) => void;
 }
 
 export function AccountRowActions({
@@ -32,6 +33,7 @@ export function AccountRowActions({
   isBusy,
   onChangeStatus,
   onOpenResetPassword,
+  onOpenViewDetail,
 }: Props) {
   return (
     <DropdownMenu>
@@ -41,9 +43,9 @@ export function AccountRowActions({
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="bg-popover border-border min-w-48">
-        {/* <DropdownMenuItem className="text-popover-foreground hover:bg-accent">
+        <DropdownMenuItem className="text-popover-foreground hover:bg-accent" onClick={() => onOpenViewDetail?.(accountId, accountName)}>
           <Eye className="w-4 h-4 mr-2" /> Xem chi tiết
-        </DropdownMenuItem> */}
+        </DropdownMenuItem>
         {/* <DropdownMenuItem className="text-popover-foreground hover:bg-accent">
           <Pencil className="w-4 h-4 mr-2" /> Chỉnh sửa
         </DropdownMenuItem> */}

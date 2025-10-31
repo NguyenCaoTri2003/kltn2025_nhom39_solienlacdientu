@@ -32,6 +32,8 @@ export default function ParentInfoForm({ parents }: { parents: ParentEntry[] }) 
                   ? "Họ tên cha:"
                   : p.relationship === "mother"
                   ? "Họ tên mẹ:"
+                  : p.relationship === "guardian"
+                  ? "Họ tên người giám hộ:"
                   : "Họ tên:"}
               </label>
               <input
