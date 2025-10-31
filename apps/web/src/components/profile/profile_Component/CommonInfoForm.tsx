@@ -14,6 +14,8 @@ export interface BasicUserInfo {
   role?: string;
   student_date_of_birth?: string | null;
   student_contact_address?: string | null;
+  student_code?: string | null;
+  lecturer_code?: string | null;
 }
 
 export default function CommonInfoForm({ user }: { user: BasicUserInfo }) {
@@ -24,21 +26,23 @@ export default function CommonInfoForm({ user }: { user: BasicUserInfo }) {
           Thông tin cá nhân
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-6">
-          <div className="flex flex-row items-center gap-2">
-            <label
-              htmlFor="userId"
-              className="text-gray-700 font-medium flex-shrink-0"
-            >
-              Mã người dùng:
-            </label>
-            <input
-              type="text"
-              id="userId"
-              value={String(user.id)}
-              className="flex-1 bg-transparent text-gray-800 focus:outline-none border-b-2 border-transparent"
-              readOnly
-            />
-          </div>
+          {(user.role === "student" || user.role === "lecturer") && (
+            <div className="flex flex-row items-center gap-2">
+              <label
+                htmlFor="userId"
+                className="text-gray-700 font-medium flex-shrink-0"
+              >
+                {user.role === "lecturer" ? "Mã giảng viên:" : "Mã sinh viên:"}
+              </label>
+              <input
+                type="text"
+                id="userId"
+                value={user.role === "lecturer" ? (user.lecturer_code || "-") : (user.student_code || "-")}
+                className="flex-1 bg-transparent text-gray-800 focus:outline-none border-b-2 border-transparent"
+                readOnly
+              />
+            </div>
+          )}
 
           <div className="flex flex-row items-center gap-2">
             <label
@@ -121,6 +125,20 @@ export default function CommonInfoForm({ user }: { user: BasicUserInfo }) {
               readOnly
             />
           </div>
+          {user.role === "student" && (
+            <>
+              <div className="flex flex-row items-center gap-2">
+                <label className="text-gray-700 font-medium flex-shrink-0">Ngày sinh:</label>
+                <input
+                  type="text"
+                  value={(user.student_date_of_birth || "").slice(0,10) || "-"}
+                  className="flex-1 bg-transparent text-gray-800 focus:outline-none border-b-2 border-transparent"
+                  readOnly
+                />
+              </div>
+             
+            </>
+          )}
         </div>
 
         <div className="grid grid-cols-1 gap-y-6 mt-6">
@@ -140,16 +158,7 @@ export default function CommonInfoForm({ user }: { user: BasicUserInfo }) {
             />
           </div>
           {user.role === "student" && (
-            <>
-              <div className="flex flex-row items-center gap-2">
-                <label className="text-gray-700 font-medium flex-shrink-0">Ngày sinh:</label>
-                <input
-                  type="text"
-                  value={(user.student_date_of_birth || "").slice(0,10) || "-"}
-                  className="flex-1 bg-transparent text-gray-800 focus:outline-none border-b-2 border-transparent"
-                  readOnly
-                />
-              </div>
+            <>   
               <div className="flex flex-row items-center gap-2">
                 <label className="text-gray-700 font-medium flex-shrink-0">Địa chỉ liên hệ:</label>
                 <input

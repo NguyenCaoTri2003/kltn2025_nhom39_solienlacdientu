@@ -68,20 +68,21 @@ export default function ParentInfoForm({ parents }: { parents: ParentEntry[] }) 
                 className="flex-1 bg-transparent text-gray-800 focus:outline-none border-b-2 border-transparent"
               />
             </div>
-            <div className="flex flex-row items-center gap-2">
-              <label className="text-gray-700 font-medium flex-shrink-0">Địa chỉ:</label>
-              <input
-                type="text"
-                value={p.user.address || "-"}
-                readOnly
-                className="flex-1 bg-transparent text-gray-800 focus:outline-none border-b-2 border-transparent"
-              />
-            </div>
+           
             <div className="flex flex-row items-center gap-2">
               <label className="text-gray-700 font-medium flex-shrink-0">CCCD:</label>
               <input
                 type="text"
                 value={p.user.citizen_id_card || "-"}
+                readOnly
+                className="flex-1 bg-transparent text-gray-800 focus:outline-none border-b-2 border-transparent"
+              />
+            </div>
+            <div className="flex flex-row items-center gap-2 col-span-full">
+              <label className="text-gray-700 font-medium flex-shrink-0">Địa chỉ:</label>
+              <input
+                type="text"
+                value={p.user.address || "-"}
                 readOnly
                 className="flex-1 bg-transparent text-gray-800 focus:outline-none border-b-2 border-transparent"
               />

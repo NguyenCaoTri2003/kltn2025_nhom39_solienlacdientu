@@ -1,12 +1,13 @@
 "use client"
 
 import { useEffect, useState } from "react";
-import ProfileByRole from "./profileByRole";
-import EditProfileModal from "./profile_Component/EditProfileModal";
+import { toast } from "sonner";
+import ProfileByRole, { AnyUser } from "./profileByRole";
+import EditProfileModal, { SubmitPayload } from "./profile_Component/EditProfileModal";
 import ProfileHeader from "./profile_Component/ProfileHeader";
 
 export default function ProfilePage() {
-    const [user, setUser] = useState<any | null>(null);
+    const [user, setUser] = useState<AnyUser | null>(null);
     const [loading, setLoading] = useState(true);
     const [editing, setEditing] = useState(false);
     const [submitting, setSubmitting] = useState(false);
@@ -31,7 +32,7 @@ export default function ProfilePage() {
         run();
     }, []);
 
-    const handleSubmitEdit = async (payload: { phone: string; email: string; address: string; contact_address: string; }) => {
+    const handleSubmitEdit = async (payload: SubmitPayload) => {
         if (!user) return;
         try {
             setSubmitting(true);
@@ -55,7 +56,7 @@ export default function ProfilePage() {
             });
             const updated = await res.json();
             if (!res.ok) throw new Error(updated?.error || "Cập nhật thất bại");
-            setUser((prev: any) => {
+            setUser((prev) => {
                 if (!prev) return updated;
                 const merged = { ...prev, ...updated };
 
@@ -71,10 +72,11 @@ export default function ProfilePage() {
                 }
                 return merged;
             });
+            toast.success("Cập nhật thông tin thành công");
             setEditing(false);
         } catch (e) {
             console.error(e);
-            alert("Không thể cập nhật thông tin. Vui lòng thử lại.");
+            toast.error("Không thể cập nhật thông tin. Vui lòng thử lại.");
         } finally {
             setSubmitting(false);
         }
@@ -91,8 +93,8 @@ export default function ProfilePage() {
                                 avatar_url={user.avatar_url}
                                 displayName={user.full_name}
                                 role={user.role}
-                                academic_rank={user.lecturer?.academic_rank || user.academic_rank}
-                                faculty_name={user.lecturer?.faculties?.name || user.faculty_name}
+                                academic_rank={user.lecturer?.academic_rank ?? user.academic_rank ?? undefined}
+                                faculty_name={user.lecturer?.faculties?.name ?? user.faculty_name ?? undefined}
                                 initial={user.full_name?.[0] ?? "?"}
                                 userId={user.id}
                                 onEdit={() => setEditing(true)}
@@ -102,26 +104,25 @@ export default function ProfilePage() {
                                 open={editing}
                                 onClose={() => setEditing(false)}
                                 submitting={submitting}
+                                role={user.role}
                                 initial={{
                                     phone: user.phone ?? "",
                                     email: user.email ?? "",
                                     address: user.address ?? "",
                                     contact_address: user.student?.contact_address ?? "",
                                 }}
-                                onSubmit={handleSubmitEdit}
+                                onSubmit={(data) => handleSubmitEdit({
+                                    phone: data.phone ?? "",
+                                    email: data.email ?? "",
+                                    address: data.address ?? "",
+                                    contact_address: data.contact_address ?? "",
+                                })}
                             />
                         </>
                     ) : (
                         <div className="text-gray-500">Không có dữ liệu người dùng</div>
                     )}
-                    {/* <div className="flex justify-end gap-3 mt-6">
-                        <button className="px-5 py-2 bg-gray-300 rounded-lg hover:bg-gray-400 transition">
-                            Hủy
-                        </button>
-                        <button className="px-5 py-2 bg-[#4e73df] text-white rounded-lg hover:bg-[#3a5ed7] transition">
-                            Lưu
-                        </button>
-                    </div> */}
+             
                 </div>
             </div>
         </div>

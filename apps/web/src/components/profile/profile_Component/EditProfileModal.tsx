@@ -9,18 +9,27 @@ type EditFields = {
   contact_address?: string | null;
 };
 
+export type SubmitPayload = {
+  phone: string;
+  email: string;
+  address: string;
+  contact_address: string;
+};
+
 export default function EditProfileModal({
   open,
   initial,
   onClose,
   onSubmit,
   submitting = false,
+  role,
 }: {
   open: boolean;
   initial?: EditFields;
   onClose: () => void;
-  onSubmit: (data: Required<EditFields>) => void | Promise<void>;
+  onSubmit: (data: SubmitPayload) => void | Promise<void>;
   submitting?: boolean;
+  role?: string;
 }) {
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
@@ -39,7 +48,7 @@ export default function EditProfileModal({
   if (!open) return null;
 
   const handleSubmit = async () => {
-    const payload: Required<EditFields> = {
+    const payload: SubmitPayload = {
       phone,
       email,
       address,
@@ -50,54 +59,83 @@ export default function EditProfileModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
+      {/* Nền tối */}
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
+
+      {/* Hộp nội dung */}
       <div className="relative z-10 w-full max-w-lg mx-4 rounded-xl bg-white border border-border shadow-lg">
         <div className="px-6 py-4 border-b border-border">
           <h3 className="text-lg font-semibold text-foreground">Chỉnh sửa thông tin</h3>
         </div>
+
         <div className="px-6 py-5 space-y-5">
           <div className="grid grid-cols-1 gap-4">
+            {/* Số điện thoại */}
             <div className="flex flex-row items-center gap-2">
-              <label className="text-gray-700 font-medium flex-shrink-0 min-w-[120px]">Số điện thoại</label>
+              <label className="text-gray-700 font-medium flex-shrink-0 min-w-[120px]">
+                Số điện thoại
+              </label>
               <input
                 type="text"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                className="flex-1 bg-transparent text-gray-800 focus:outline-none border-b-2 border-transparent focus:border-blue-400"
+                className="flex-1 px-3 py-2 text-gray-800 border border-gray-300 rounded-md focus:border-blue-500 focus:ring-1 focus:ring-blue-300 outline-none transition-colors"
               />
             </div>
+
+            {/* Email */}
             <div className="flex flex-row items-center gap-2">
-              <label className="text-gray-700 font-medium flex-shrink-0 min-w-[120px]">Email</label>
+              <label className="text-gray-700 font-medium flex-shrink-0 min-w-[120px]">
+                Email
+              </label>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="flex-1 bg-transparent text-gray-800 focus:outline-none border-b-2 border-transparent focus:border-blue-400"
+                className="flex-1 px-3 py-2 text-gray-800 border border-gray-300 rounded-md focus:border-blue-500 focus:ring-1 focus:ring-blue-300 outline-none transition-colors"
               />
             </div>
+
+            {/* Địa chỉ */}
             <div className="flex flex-row items-center gap-2">
-              <label className="text-gray-700 font-medium flex-shrink-0 min-w-[120px]">Địa chỉ</label>
+              <label className="text-gray-700 font-medium flex-shrink-0 min-w-[120px]">
+                Địa chỉ
+              </label>
               <input
                 type="text"
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
-                className="flex-1 bg-transparent text-gray-800 focus:outline-none border-b-2 border-transparent focus:border-blue-400"
+                className="flex-1 px-3 py-2 text-gray-800 border border-gray-300 rounded-md focus:border-blue-500 focus:ring-1 focus:ring-blue-300 outline-none transition-colors"
               />
             </div>
-            <div className="flex flex-row items-center gap-2">
-              <label className="text-gray-700 font-medium flex-shrink-0 min-w-[120px]">Địa chỉ liên hệ</label>
-              <input
-                type="text"
-                value={contactAddress}
-                onChange={(e) => setContactAddress(e.target.value)}
-                className="flex-1 bg-transparent text-gray-800 focus:outline-none border-b-2 border-transparent focus:border-blue-400"
-              />
-            </div>
+
+            {/* Địa chỉ liên hệ (chỉ sinh viên mới có) */}
+            {role === "student" && (
+              <div className="flex flex-row items-center gap-2">
+                <label className="text-gray-700 font-medium flex-shrink-0 min-w-[120px]">
+                  Địa chỉ liên hệ
+                </label>
+                <input
+                  type="text"
+                  value={contactAddress}
+                  onChange={(e) => setContactAddress(e.target.value)}
+                  className="flex-1 px-3 py-2 text-gray-800 border border-gray-300 rounded-md focus:border-blue-500 focus:ring-1 focus:ring-blue-300 outline-none transition-colors"
+                />
+              </div>
+            )}
           </div>
-          <span className="text-sm text-muted-foreground text-center italic">Vui lòng liên hệ Phòng Đào tạo để được hỗ trợ sửa các thông tin khác</span>
+
+          <span className="text-sm text-muted-foreground text-center italic block">
+            Vui lòng liên hệ Phòng Đào tạo để được hỗ trợ sửa các thông tin khác
+          </span>
         </div>
+
+        {/* Nút hành động */}
         <div className="px-6 py-4 border-t border-border flex justify-end gap-3">
-          <button onClick={onClose} className="px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 transition">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 transition"
+          >
             Hủy
           </button>
           <button
@@ -109,9 +147,7 @@ export default function EditProfileModal({
           </button>
         </div>
       </div>
-      
     </div>
   );
 }
-
 

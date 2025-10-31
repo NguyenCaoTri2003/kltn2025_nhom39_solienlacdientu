@@ -5,9 +5,9 @@ import CommonInfoForm, { BasicUserInfo } from "./profile_Component/CommonInfoFor
 import StudentInfoForm from "./profile_Component/StudentInfoForm";
 import ParentInfoForm, { ParentEntry } from "./profile_Component/ParentInfoForm";
 import ChildrenInfoForm, { ChildEntry } from "./profile_Component/ChildrenInfoForm";
-import LecturerInfoForm from "./profile_Component/LecturerInfoForm";
+// import LecturerInfoForm from "./profile_Component/LecturerInfoForm";
 
-type UserBasic = {
+export type UserBasic = {
   id: number;
   full_name: string;
   phone?: string | null;
@@ -16,9 +16,12 @@ type UserBasic = {
   address?: string | null;
   ethnic?: string | null;
   role?: string;
+  avatar_url?: string | null;
+  academic_rank?: string | null;
+  faculty_name?: string | null;
 };
 
-type StudentRel = {
+export type StudentRel = {
   student?: {
     academic_status?: string;
     academic_year?: string;
@@ -36,7 +39,7 @@ type StudentRel = {
   };
 };
 
-type AnyUser = UserBasic & StudentRel & {
+export type AnyUser = UserBasic & StudentRel & {
   parents?: ParentEntry[];
   children?: ChildEntry[];
   lecturer?: {
@@ -58,6 +61,8 @@ export default function ProfileByRole({ user }: { user: AnyUser }) {
     role: user.role,
     student_date_of_birth: user.student?.date_of_birth ?? null,
     student_contact_address: user.student?.contact_address ?? null,
+    student_code: user.student?.student_code ?? null,
+    lecturer_code: user.lecturer?.lecturer_code ?? null,
   };
 
   return (
