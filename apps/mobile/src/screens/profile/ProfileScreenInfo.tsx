@@ -74,7 +74,6 @@ export default function ProfileScreenInfo() {
         };
         setProfile(mapped);
       } else {
-        // fallback to existing minimal info
         const mapped: UserProfileInfo = {
           id: String(user.id),
           role: user.role || "",
@@ -233,7 +232,6 @@ export default function ProfileScreenInfo() {
               </View>
             </View>
 
-            {/* Ngày sinh (đưa lên phần thông tin cá nhân khi là sinh viên) */}
             {profile.role === 'student' && detail?.student?.date_of_birth && (
               <View style={styles.infoRow}>
                 <MaterialIcons name="date-range" size={20} color="#005BAC" />
@@ -244,7 +242,6 @@ export default function ProfileScreenInfo() {
               </View>
             )}
 
-            {/* Nghề nghiệp - chỉ hiển thị cho phụ huynh */}
             {profile.role === 'parent' && (detail?.parent?.occupation || userData?.parent?.occupation) && (
               <View style={styles.infoRow}>
                 <MaterialIcons name="work" size={20} color="#005BAC" />
@@ -317,8 +314,12 @@ export default function ProfileScreenInfo() {
               <View style={styles.infoRow}>
                 <MaterialIcons name="calendar-today" size={20} color="#005BAC" />
                 <View style={styles.infoContent}>
-                  <Text style={styles.infoLabel}>Năm học</Text>
-                  <Text style={styles.infoValue}>{detail.student?.academic_year || "Chưa có"}</Text>
+                  <Text style={styles.infoLabel}>Khoá học</Text>
+                  <Text style={styles.infoValue}>{
+                    detail.student?.academic_year ||
+                    (detail.student as any)?.classes?.academic_year ||
+                    "Chưa có"
+                  }</Text>
                 </View>
               </View>
 
@@ -416,7 +417,6 @@ export default function ProfileScreenInfo() {
                   <Text style={styles.childName}>{child.user?.full_name || child.users?.full_name || "Chưa có tên"}</Text>
                 </View>
                 
-                {/* Liên hệ của con (nếu có) */}
                 {(child.user?.email || child.user?.phone) && (
                   <>
                     {child.user?.email && (
@@ -449,33 +449,26 @@ export default function ProfileScreenInfo() {
                   </View>
                 </View>
 
-                {(child.class || child.classes) && (
+                {(child.student?.class || child.class || child.classes) && (
                   <View style={styles.infoRow}>
                     <MaterialIcons name="class" size={20} color="#005BAC" />
                     <View style={styles.infoContent}>
                       <Text style={styles.infoLabel}>Lớp</Text>
-                      <Text style={styles.infoValue}>{child.class?.name || child.classes?.name || child.classes?.class_code || "Chưa có"}</Text>
+                      <Text style={styles.infoValue}>{child.student?.class?.name || child.class?.name || child.classes?.name || child.classes?.class_code || "Chưa có"}</Text>
                     </View>
                   </View>
                 )}
 
-                {(child.class?.majors?.faculties?.name || child.classes?.majors?.faculties?.name) && (
+                {(child.student?.class?.majors?.faculties?.name || child.class?.majors?.faculties?.name || child.classes?.majors?.faculties?.name) && (
                   <View style={styles.infoRow}>
                     <MaterialIcons name="apartment" size={20} color="#005BAC" />
                     <View style={styles.infoContent}>
                       <Text style={styles.infoLabel}>Khoa</Text>
-                      <Text style={styles.infoValue}>{child.class?.majors?.faculties?.name || child.classes?.majors?.faculties?.name || "Chưa có"}</Text>
+                      <Text style={styles.infoValue}>{child.student?.class?.majors?.faculties?.name || child.class?.majors?.faculties?.name || child.classes?.majors?.faculties?.name || "Chưa có"}</Text>
                     </View>
                   </View>
                 )}
 
-                <View style={styles.infoRow}>
-                  <MaterialIcons name="calendar-today" size={20} color="#005BAC" />
-                  <View style={styles.infoContent}>
-                    <Text style={styles.infoLabel}>Năm học</Text>
-                    <Text style={styles.infoValue}>{child.academic_year || "Chưa có"}</Text>
-                  </View>
-                </View>
 
                 {/* Thông tin mối quan hệ */}
                 {child.relationship && (
