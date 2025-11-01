@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { User, Lock, Eye, EyeOff, CheckSquare, Square } from "lucide-react"
+import { useUser } from "@/context/user-context"
 
 export function StudentLoginForm() {
   const [account, setAccount] = useState("")
@@ -14,6 +15,7 @@ export function StudentLoginForm() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
   const router = useRouter()
+  const { refreshUser } = useUser();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -33,8 +35,9 @@ export function StudentLoginForm() {
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || "Đăng nhập thất bại")
 
-      localStorage.setItem("user", JSON.stringify(data.user))
-      localStorage.setItem("token", data.token)
+        localStorage.setItem("user", JSON.stringify(data.user))
+        localStorage.setItem("token", data.token)
+        await refreshUser();
 
       router.push("/portal")
     } catch (err: any) {
