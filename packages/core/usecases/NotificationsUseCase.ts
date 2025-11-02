@@ -1,11 +1,14 @@
 import { NotificationsRepository, type ListParams, type ListResult, type NotificationRow, type NotificationType } from "@packages/data/repositories/NotificationsRepository";
+import { UserRepository } from "@packages/data/repositories/UserRepository";
 import { NotificationCategory } from "@packages/core/entities/Notifications";
 
 export class NotificationsUseCase {
   private repo: NotificationsRepository;
+  private usersRepo: UserRepository;
 
   constructor(repo?: NotificationsRepository) {
     this.repo = repo ?? new NotificationsRepository();
+    this.usersRepo = new UserRepository();
   }
 
   async list(params: { userId?: number | string; page?: number; pageSize?: number }): Promise<ListResult> {
@@ -35,15 +38,14 @@ export class NotificationsUseCase {
     category?: NotificationCategory | null;
     target_student_id?: number | string | null;
   }): Promise<NotificationRow> {
-    // Validate và parse input
+
     const user_id = payload.user_id != null ? this.toPositiveInt(payload.user_id) ?? null : null;
     const title = typeof payload.title === "string" ? payload.title : null;
     const content = typeof payload.content === "string" ? payload.content : null;
     const type = (payload.type ?? null) as NotificationType | null;
     const category = (payload.category ?? null) as NotificationCategory | null;
     const target_student_id = payload.target_student_id != null ? this.toPositiveInt(payload.target_student_id) ?? null : null;
-    
-    // Tạo notification record
+
     const notification = await this.repo.create({ 
       user_id, 
       title,
@@ -55,11 +57,48 @@ export class NotificationsUseCase {
     
     // Nếu có user_id, broadcast realtime
     if (user_id) {
-      // Broadcast realtime (async, không block) - Đã chuyển sang Supabase Realtime
-      // NotificationBroadcaster.broadcastToUser(user_id, notification);
+
     }
     
     return notification;
+  }
+
+  /**
+   * Broadcast: tạo thông báo cho tất cả người dùng (mỗi user một record)
+   */
+  async createForAll(payload: {
+    title: string;
+    content: string;
+    type?: NotificationType | null;
+    category?: NotificationCategory | null;
+  }): Promise<{ created: number }> {
+    const title = String(payload.title || "").trim();
+    const content = String(payload.content || "").trim();
+    if (!title && !content) {
+      throw new Error("Title or content is required");
+    }
+
+    const type = (payload.type ?? "university") as NotificationType | null;
+    const category = (payload.category ?? "GENERAL") as NotificationCategory | null;
+
+    const users = await this.usersRepo.getAllUsers();
+    const rows = users.map(u => ({
+      user_id: Number(u.id),
+      title,
+      content,
+      type,
+      category,
+      target_student_id: null as number | null,
+    }));
+
+    // dùng “chunking” để chia nhỏ danh sách bản ghi khi broadcast, tránh insert một mẻ quá lớn gây lỗi/timeout
+    const chunkSize = 500;
+    let created = 0;
+    for (let i = 0; i < rows.length; i += chunkSize) {
+      const chunk = rows.slice(i, i + chunkSize);
+      created += await this.repo.createBulk(chunk);
+    }
+    return { created };
   }
 
   async delete(id: number | string): Promise<void> {

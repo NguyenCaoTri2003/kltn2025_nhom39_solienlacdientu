@@ -95,14 +95,14 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      const { 
-        user_id, 
-        title, 
-        content, 
-        type = "university", 
-        category = "GENERAL",
-        target_student_id 
-      } = body;
+    const { 
+      user_id, 
+      title, 
+      content, 
+      type = "university", 
+      category = "GENERAL",
+      target_student_id 
+    } = body;
 
       // Validate required fields
       if (!title || !content) {
