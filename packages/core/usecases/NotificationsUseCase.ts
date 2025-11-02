@@ -1,17 +1,14 @@
 import { NotificationsRepository, type ListParams, type ListResult, type NotificationRow, type NotificationType } from "@packages/data/repositories/NotificationsRepository";
 import { UserRepository } from "@packages/data/repositories/UserRepository";
 import { NotificationCategory } from "@packages/core/entities/Notifications";
-import { ImageUseCase, type ProcessImageOptions } from "./ImageUseCase";
 
 export class NotificationsUseCase {
   private repo: NotificationsRepository;
   private usersRepo: UserRepository;
-  private imageUseCase?: ImageUseCase;
 
-  constructor(repo?: NotificationsRepository, imageUseCase?: ImageUseCase) {
+  constructor(repo?: NotificationsRepository) {
     this.repo = repo ?? new NotificationsRepository();
     this.usersRepo = new UserRepository();
-    this.imageUseCase = imageUseCase;
   }
 
   async list(params: { userId?: number | string; page?: number; pageSize?: number }): Promise<ListResult> {
@@ -40,7 +37,7 @@ export class NotificationsUseCase {
     category?: NotificationCategory | null;
     target_student_id?: number | string | null;
     url?: string | null;
-  }, imageOptions?: ProcessImageOptions): Promise<NotificationRow> {
+  }): Promise<NotificationRow> {
 
     const user_id = payload.user_id != null ? this.toPositiveInt(payload.user_id) ?? null : null;
     const title = typeof payload.title === "string" ? payload.title : null;
@@ -48,17 +45,6 @@ export class NotificationsUseCase {
     const type = (payload.type ?? null) as NotificationType | null;
     const category = (payload.category ?? null) as NotificationCategory | null;
     const target_student_id = payload.target_student_id != null ? this.toPositiveInt(payload.target_student_id) ?? null : null;
-    
-    // Xử lý ảnh nếu có
-    let processedUrl = payload.url ?? null;
-    if (processedUrl && this.imageUseCase) {
-      try {
-        processedUrl = await this.imageUseCase.processImage(processedUrl, imageOptions || {});
-      } catch (error) {
-        console.error("Failed to process notification image:", error);
-        processedUrl = null;
-      }
-    }
 
     const notification = await this.repo.create({ 
       user_id, 
@@ -67,7 +53,7 @@ export class NotificationsUseCase {
       type, 
       category,
       target_student_id,
-      url: processedUrl
+      url: payload.url ?? null
     });
     // Nếu có user_id, broadcast realtime
     if (user_id) {
@@ -86,7 +72,7 @@ export class NotificationsUseCase {
     type?: NotificationType | null;
     category?: NotificationCategory | null;
     url?: string | null;
-  }, imageOptions?: ProcessImageOptions): Promise<{ created: number }> {
+  }): Promise<{ created: number }> {
     const title = String(payload.title || "").trim();
     const content = String(payload.content || "").trim();
     if (!title && !content) {
@@ -95,17 +81,6 @@ export class NotificationsUseCase {
 
     const type = (payload.type ?? "university") as NotificationType | null;
     const category = (payload.category ?? "GENERAL") as NotificationCategory | null;
-    
-    // Xử lý ảnh nếu có
-    let processedUrl = payload.url ?? null;
-    if (processedUrl && this.imageUseCase) {
-      try {
-        processedUrl = await this.imageUseCase.processImage(processedUrl, imageOptions || {});
-      } catch (error) {
-        console.error("Failed to process notification image:", error);
-        processedUrl = null;
-      }
-    }
 
     const users = await this.usersRepo.getAllUsers();
     const rows = users.map(u => ({
@@ -115,7 +90,7 @@ export class NotificationsUseCase {
       type,
       category,
       target_student_id: null as number | null,
-      url: processedUrl,
+      url: payload.url ?? null,
     }));
 
     // dùng "chunking" để chia nhỏ danh sách bản ghi khi broadcast, tránh insert một mẻ quá lớn gây lỗi/timeout

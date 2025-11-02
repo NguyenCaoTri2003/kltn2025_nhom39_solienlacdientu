@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { authenticate } from "@packages/utils/auth";
 import { NotificationsUseCase } from "@packages/core/usecases/NotificationsUseCase";
-import { ImageUseCase } from "@packages/core/usecases/ImageUseCase";
 
-const imageUseCase = new ImageUseCase();
-const notificationsUseCase = new NotificationsUseCase(undefined, imageUseCase);
+const notificationsUseCase = new NotificationsUseCase();
 
 export async function POST(req: NextRequest) {
   try {

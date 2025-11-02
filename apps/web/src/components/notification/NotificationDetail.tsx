@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import { notificationService } from '../../services/notificationService';
 import { useRouter, usePathname } from 'next/navigation';
+import Image from "next/image";
 
 interface Notification {
   id: number;
@@ -28,6 +29,7 @@ interface Notification {
   is_deleted?: boolean;
   created_at?: string;
   warning_level?: string;
+  url?: string | null;
 }
 
 interface NotificationDetailProps {
@@ -310,10 +312,27 @@ export default function NotificationDetail({ notificationId }: NotificationDetai
           )}
           
           <div className="prose max-w-none">
-            <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
+            <p className="text-gray-700 leading-relaxed whitespace-pre-wrap mb-4">
               {notification.content || 'Không có nội dung'}
             </p>
           </div>
+
+          {notification.url && (
+            <div className="mt-4 flex justify-center">
+              <Image
+                src={notification.url}
+                alt="Notification image"
+                className="max-w-full h-auto rounded-lg border border-gray-200 shadow-sm"
+                width={800}
+                height={600}
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.style.display = 'none';
+                }}
+                unoptimized
+              />
+            </div>
+          )}
         </CardContent>
       </Card>
 
