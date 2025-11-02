@@ -57,6 +57,30 @@ export class NotificationsRepository {
     return data as NotificationRow;
   }
 
+  async createBulk(rows: Array<{
+    user_id?: number | null;
+    title?: string | null;
+    content?: string | null;
+    type?: NotificationType | null;
+    category?: NotificationCategory | null;
+    target_student_id?: number | null;
+  }>): Promise<number> {
+    if (!rows || rows.length === 0) return 0;
+    const { data, error } = await supabase
+      .from("notifications")
+      .insert(rows.map(r => ({
+        user_id: r.user_id ?? null,
+        title: r.title ?? null,
+        content: r.content ?? null,
+        type: r.type ?? null,
+        category: r.category ?? null,
+        target_student_id: r.target_student_id ?? null,
+      })))
+      .select("id");
+    if (error) throw error;
+    return (data?.length ?? 0);
+  }
+
   async getById(id: number): Promise<NotificationRow | null> {
     const { data, error } = await supabase
       .from("notifications")

@@ -142,6 +142,119 @@ export class UserRepository {
     return user;
   }
 
+  /**
+   * Lấy chi tiết đầy đủ cho user bao gồm liên kết theo role
+   */
+  async getUserFullDetail(id: number): Promise<any | null> {
+    const { data: user, error: userError } = await supabase
+      .from("users")
+      .select("*")
+      .eq("id", id)
+      .single();
+    if (userError || !user) return null;
+
+    if (user.role === "student") {
+      const { data: student } = await supabase
+        .from("students")
+        .select(`
+          *,
+          classes:class_id (
+            id, class_code, name,
+            majors:major_id (
+              id,
+              faculties:faculty_id (id, name)
+            )
+          )
+        `)
+        .eq("id", id)
+        .maybeSingle();
+
+      const { data: parentLinks } = await supabase
+        .from("student_parent")
+        .select(`
+          relationship,
+          parents:parent_id (
+            id,
+            occupation,
+            users:users!parents_id_fkey (
+              id, full_name, email, phone, role, status, citizen_id_card, address, ethnic
+            )
+          )
+        `)
+        .eq("student_id", id);
+
+      const parents = (parentLinks || []).map((p: any) => ({
+        id: p.parents?.id,
+        relationship: p.relationship,
+        occupation: p.parents?.occupation ?? null,
+        user: p.parents?.users || null,
+      }));
+
+      return {
+        ...user,
+        student: student || null,
+        parents,
+      };
+    }
+
+    if (user.role === "parent") {
+      const { data: parent } = await supabase
+        .from("parents")
+        .select("*")
+        .eq("id", id)
+        .maybeSingle();
+
+      const { data: childrenLinks } = await supabase
+        .from("student_parent")
+        .select(`
+          relationship,
+          students:student_id (
+            id, student_code, academic_status,
+            classes:class_id (
+              id, class_code, name,
+              majors:major_id (
+                id,
+                faculties:faculty_id (id, name)
+              )
+            ),
+            users:users!students_id_fkey (id, full_name, email, phone, role, status)
+          )
+        `)
+        .eq("parent_id", id);
+
+      const children = (childrenLinks || []).map((c: any) => ({
+        relationship: c.relationship,
+        student: {
+          id: c.students?.id,
+          student_code: c.students?.student_code,
+          academic_status: c.students?.academic_status,
+          class: c.students?.classes || null,
+        },
+        user: c.students?.users || null,
+      }));
+
+      return { ...user, parent: parent || null, children };
+    }
+
+    if (user.role === "lecturer") {
+      const { data: lecturer } = await supabase
+        .from("lecturers")
+        .select(`
+          *,
+          faculties:faculty_id (id, name)
+        `)
+        .eq("id", id)
+        .maybeSingle();
+
+      return {
+        ...user,
+        lecturer: lecturer || null,
+      };
+    }
+
+    return user;
+  }
+
   async findByStudentCode(studentCode: string): Promise<User | null> {
     const { data, error } = await supabase
       .from("students")

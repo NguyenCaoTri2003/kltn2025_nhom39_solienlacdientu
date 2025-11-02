@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { getAvatarColor } from "@/utils/color-hash";
 import { useUnreadMessageCount } from "@/hooks/useUnreadMessageCount";
+import { useUser } from "@/context/user-context";
 
 interface NavbarProps {
   userRole: "admin" | "lecturer" | "student" | "parent" | null;
@@ -41,12 +42,20 @@ export default function NavbarClient({ userRole, userName, avatarUrl, userId }: 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
+  const { clearUser } = useUser();
   const unreadCount = useUnreadMessageCount();
 
   const handleLogout = () => {
     document.cookie = "token=; path=/; max-age=0";
     document.cookie = "user=; path=/; max-age=0";
+
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+
+    clearUser();
+
     router.push(userRole === "student" || userRole === "parent" ? "/portal/login" : "/login");
+    setTimeout(() => window.location.reload(), 200);
   };
 
   const adminNavItems = [
@@ -90,6 +99,7 @@ export default function NavbarClient({ userRole, userName, avatarUrl, userId }: 
   };
 
   const initial = useMemo(() => {
+
     const parts = userName.trim().split(" ");
     return parts[parts.length - 1]?.[0]?.toUpperCase() ?? "?";
   }, [userName]);
@@ -101,7 +111,7 @@ export default function NavbarClient({ userRole, userName, avatarUrl, userId }: 
   }
 
   const roleBasePath = userRole === 'admin' ? '/admin' : userRole === 'lecturer' ? '/lecturer' : '/portal';
-  const profilePath = (subPath: "info" | "change-password") => `${roleBasePath}/profile/${subPath}`;
+  const profilePath = (subPath: "infoV2" | "change-password") => `${roleBasePath}/profile/${subPath}`;
   const navItems = userRole === 'admin' ? adminNavItems : userRole === 'lecturer' ? teacherNavItems : userRole === 'student' ? studentNavItems : parentNavItems;
 
   if (userRole === 'student' || userRole === 'parent') {
@@ -176,7 +186,7 @@ export default function NavbarClient({ userRole, userName, avatarUrl, userId }: 
                     {userName}
                   </div>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => router.push(profilePath("info"))}>
+                  <DropdownMenuItem onClick={() => router.push(profilePath("infoV2"))}>
                     <User className="w-4 h-4 mr-2" /> Thông tin cá nhân
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => router.push(profilePath("change-password"))}>
@@ -287,7 +297,7 @@ export default function NavbarClient({ userRole, userName, avatarUrl, userId }: 
                   <Button variant="outline" size="sm" className="text-xs">Tùy chọn</Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48">
-                  <DropdownMenuItem onClick={() => router.push(profilePath('info'))}>
+                  <DropdownMenuItem onClick={() => router.push(profilePath('infoV2'))}>
                     <User className="w-4 h-4 mr-2" /> Thông tin cá nhân
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => router.push(profilePath('change-password'))}>
@@ -343,7 +353,7 @@ export default function NavbarClient({ userRole, userName, avatarUrl, userId }: 
                 );
               })}
               <div className="pt-2 border-t border-border mt-2 space-y-1">
-                <button onClick={() => { router.push(profilePath('info')); setIsMobileMenuOpen(false); }} className="w-full flex items-center gap-2 rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-accent hover:text-foreground">
+                <button onClick={() => { router.push(profilePath('infoV2')); setIsMobileMenuOpen(false); }} className="w-full flex items-center gap-2 rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-accent hover:text-foreground">
                   <User className="w-4 h-4" /> Thông tin cá nhân
                 </button>
                 <button onClick={() => { router.push(profilePath('change-password')); setIsMobileMenuOpen(false); }} className="w-full flex items-center gap-2 rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-accent hover:text-foreground">
@@ -439,7 +449,7 @@ export default function NavbarClient({ userRole, userName, avatarUrl, userId }: 
                   {userName}
                 </div>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => router.push(profilePath("info"))}>
+                <DropdownMenuItem onClick={() => router.push(profilePath("infoV2"))}>
                   <User className="w-4 h-4 mr-2" /> Thông tin cá nhân
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => router.push(profilePath("change-password"))}>

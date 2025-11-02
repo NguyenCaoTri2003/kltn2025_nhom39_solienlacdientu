@@ -38,6 +38,7 @@ import type { ChangeEvent, KeyboardEvent } from "react";
 
 import { ResetPasswordModal } from "@/components/admin/modals_UI/ResetPasswordModal";
 import { AddUserModal } from "@/components/admin/modals_UI/AddUserModal";
+import UserDetailModal from "@/components/admin/modals_UI/UserDetailModal";
 
 interface Account {
   id: string;
@@ -53,7 +54,6 @@ interface Account {
   studentSemesterName?: string | null;
 }
 
-// Phản hồi API từ BE
 type ApiUser = {
   id: number | string;
   full_name: string;
@@ -191,6 +191,10 @@ export function AccountManagement() {
     id: string;
     name: string;
   } | null>(null);
+
+  // Modal view detail
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [detailUser, setDetailUser] = useState<{ id: string; name: string } | null>(null);
 
   // Model add user
   const [addUserOpen, setAddUserOpen] = useState(false);
@@ -974,6 +978,10 @@ export function AccountManagement() {
                         setSelectedUser({ id, name });
                         setResetOpen(true);
                       }}
+                      onOpenViewDetail={(id, name) => {
+                        setDetailUser({ id, name });
+                        setDetailOpen(true);
+                      }}
                     />
                   </td>
                 </tr>
@@ -1029,6 +1037,12 @@ export function AccountManagement() {
           toast.success("Tạo tài khoản mới thành công!");
           loadAccounts(page, pageSize, query); // reload danh sách
         }}
+      />
+      {/* Modal xem chi tiết người dùng */}
+      <UserDetailModal
+        open={detailOpen}
+        userId={detailUser?.id || null}
+        onClose={() => setDetailOpen(false)}
       />
     </div>
   );
