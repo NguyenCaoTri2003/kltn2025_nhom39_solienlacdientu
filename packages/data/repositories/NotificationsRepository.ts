@@ -14,6 +14,7 @@ export interface NotificationRow {
   is_read: boolean;
   is_deleted: boolean;
   created_at?: string;
+  url?: string | null;
 }
 
 
@@ -39,6 +40,7 @@ export class NotificationsRepository {
     type?: NotificationType | null;
     category?: NotificationCategory | null;
     target_student_id?: number | null;
+    url?: string | null;
   }): Promise<NotificationRow> {
     const insertData = {
       user_id: payload.user_id ?? null,
@@ -47,11 +49,12 @@ export class NotificationsRepository {
       type: payload.type ?? null,
       category: payload.category ?? null,
       target_student_id: payload.target_student_id ?? null,
+      url: payload.url ?? null,
     } as const;
     const { data, error } = await supabase
       .from("notifications")
       .insert(insertData)
-      .select("id, user_id, title, content, type, category, target_student_id, is_read, is_deleted, created_at")
+      .select("id, user_id, title, content, type, category, target_student_id, is_read, is_deleted, created_at, url")
       .single();
     if (error) throw error;
     return data as NotificationRow;
@@ -64,6 +67,7 @@ export class NotificationsRepository {
     type?: NotificationType | null;
     category?: NotificationCategory | null;
     target_student_id?: number | null;
+    url?: string | null;
   }>): Promise<number> {
     if (!rows || rows.length === 0) return 0;
     const { data, error } = await supabase
@@ -75,6 +79,7 @@ export class NotificationsRepository {
         type: r.type ?? null,
         category: r.category ?? null,
         target_student_id: r.target_student_id ?? null,
+        url: r.url ?? null,
       })))
       .select("id");
     if (error) throw error;
@@ -84,7 +89,7 @@ export class NotificationsRepository {
   async getById(id: number): Promise<NotificationRow | null> {
     const { data, error } = await supabase
       .from("notifications")
-      .select("id, user_id, title, content, type, category, target_student_id, is_read, is_deleted, created_at")
+      .select("id, user_id, title, content, type, category, target_student_id, is_read, is_deleted, created_at, url")
       .eq("id", id)
       .single();
     if (error) {
@@ -105,7 +110,7 @@ export class NotificationsRepository {
 
     let query = supabase
       .from("notifications")
-      .select("id, user_id, content, type, category, created_at", { count: "exact" })
+      .select("id, user_id, content, type, category, created_at, url", { count: "exact" })
       .order("created_at", { ascending: false });
 
     if (params.userId != null) {
@@ -140,7 +145,7 @@ export class NotificationsRepository {
       .from("notifications")
       .select(`
         id, user_id, title, content, type, category, target_student_id, 
-        is_read, is_deleted, created_at
+        is_read, is_deleted, created_at, url
       `, { count: "exact" })
       .eq("user_id", userId)
       .eq("is_deleted", false)

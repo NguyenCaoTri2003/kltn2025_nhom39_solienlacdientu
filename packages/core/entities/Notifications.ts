@@ -15,5 +15,6 @@ export interface Notification {
   is_read?: boolean;
   is_deleted?: boolean;
   created_at?: string; 
+  url?: string | null;
 }
 

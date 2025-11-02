@@ -62,6 +62,7 @@ export default function NavbarClient({ userRole, userName, avatarUrl, userId }: 
     { icon: Home, label: "Trang chủ", href: "/admin" },
     { icon: Users, label: "Quản lý tài khoản", href: "/admin/accounts/account-management" },
     { icon: BarChart3, label: "Tạo cảnh cáo", href: "/admin/statistics" },
+    { icon: BellIcon, label: "Tạo thông báo", href: "/admin/notifications" },
   ];
 
   const teacherNavItems = [
