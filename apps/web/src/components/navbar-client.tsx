@@ -86,7 +86,7 @@ export default function NavbarClient({ userRole, userName, avatarUrl, userId }: 
     { icon: Book, label: "Lớp học phần", href: "/portal/classes" },
     { icon: User, label: "Điểm danh", href: "/portal/attendances" },
     { icon: BarChart3, label: "Kết quả học tập", href: "/portal/grades" },
-    { icon: Calendar, label: "Lịch hẹn", href: "/lecturer/appointments" },
+    { icon: Calendar, label: "Lịch hẹn", href: "/portal/appointments" },
     { icon: MessageSquare, label: "Nhắn tin", href: "/portal/communications" },
   ];
 
