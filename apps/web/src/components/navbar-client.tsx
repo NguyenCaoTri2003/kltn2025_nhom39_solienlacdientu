@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { getAvatarColor } from "@/utils/color-hash";
 import { useUnreadMessageCount } from "@/hooks/useUnreadMessageCount";
+import { useUser } from "@/context/user-context";
 
 interface NavbarProps {
   userRole: "admin" | "lecturer" | "student" | "parent" | null;
@@ -41,12 +42,20 @@ export default function NavbarClient({ userRole, userName, avatarUrl, userId }: 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
+  const { clearUser } = useUser();
   const unreadCount = useUnreadMessageCount();
 
   const handleLogout = () => {
     document.cookie = "token=; path=/; max-age=0";
     document.cookie = "user=; path=/; max-age=0";
+
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+
+    clearUser();
+
     router.push(userRole === "student" || userRole === "parent" ? "/portal/login" : "/login");
+    setTimeout(() => window.location.reload(), 200);
   };
 
   const adminNavItems = [
