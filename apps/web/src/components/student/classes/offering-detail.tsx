@@ -16,7 +16,15 @@ import {
   AlertTriangle,
   MessageCircle,
   BookOpen,
+  Loader2,
+  BookText,
 } from "lucide-react";
+import EmptyState from "@/components/empty-state";
+import Loading from "@/components/ui/loading";
+import { PageBreadcrumb } from "@/components/page-breadcrumb";
+import { conversationService } from "@/services/conversationService";
+import { AppointmentModalBase } from "@/components/portal/appointment/appointment-modal";
+import { useAppointment } from "@/hooks/useAppointment";
 
 export default function OfferingDetail() {
   const { id } = useParams();
@@ -25,6 +33,8 @@ export default function OfferingDetail() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
+  const token = localStorage.getItem("token");
+  const { createAppointment, loading: creating } = useAppointment(token || undefined);
 
   const studentId =
     userData?.role === "student"
@@ -46,18 +56,16 @@ export default function OfferingDetail() {
     })();
   }, [id, studentId]);
 
-  if (loading)
-    return (
-      <div className="flex h-screen items-center justify-center">
-        <p>Đang tải chi tiết lớp học phần...</p>
-      </div>
-    );
-
+  if (loading) return (
+    <Loading text="Đang tải chi tiết lớp học phần..." />
+  );
   if (!data)
     return (
-      <div className="flex h-screen items-center justify-center">
-        <p>Không tìm thấy thông tin lớp học phần.</p>
-      </div>
+      <EmptyState
+        icon={<BookText className="w-10 h-10" />}
+        text="Không có lớp học phần nào được tìm thấy."
+        className="py-1"
+      />
     );
 
   const { label, color } = getStatusLabel(data.status);
@@ -66,18 +74,76 @@ export default function OfferingDetail() {
     "Chủ nhật", "Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7",
   ];
 
-  const handleChat = async (lecturerId: number, lecturerName: string) => {
+  const handleChat = async (lecturerId: number) => {
+    if (!token) {
+      toast.error("Bạn cần đăng nhập để nhắn tin.");
+      return;
+    }
+
     try {
-      toast.info(`(Giả lập) Mở chat với ${lecturerName}`);
+      toast.info("Đang mở trò chuyện...");
+
+      const conversation = await conversationService.getOrCreateConversation(
+        token,
+        lecturerId
+      );
+
+      router.push(`/portal/communications/${conversation.id}`);
     } catch (err) {
       console.error("Chat error:", err);
       toast.error("Không thể mở cuộc trò chuyện.");
     }
   };
 
+  const handleCreateAppointment = async (formData: {
+    title: string;
+    date: string;
+    start: string;
+    end: string;
+    location?: string;
+    content?: string;
+    studentId?: number;
+    lecturerId?: number;
+  }) => {
+    if (!studentId) {
+      toast.error("Không tìm thấy thông tin học sinh!");
+      return;
+    }
+
+    const toUTCString = (date: string, time: string) =>
+      new Date(`${date}T${time}:00+07:00`).toISOString();
+
+    const start_time = toUTCString(formData.date, formData.start);
+    const end_time = toUTCString(formData.date, formData.end);
+
+    try {
+      await createAppointment({
+        studentId,
+        lecturerId: data.lecturer.id,
+        title: formData.title,
+        content: formData.content || "",
+        start_time: start_time,
+        end_time: end_time,
+        location: formData.location || "",
+      });
+
+      toast.success("Đã gửi yêu cầu lịch hẹn thành công!");
+      setModalVisible(false);
+    } catch (err) {
+      console.error(err);
+      toast.error("Không thể gửi yêu cầu lịch hẹn.");
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background/80 to-accent/10 flex flex-col">
-      <div className="flex-1 max-w-5xl mx-auto p-6 w-full space-y-8 animate-fadeIn">
+      <PageBreadcrumb
+        items={[
+          { label: "Lớp học phần", href: "/portal/classes" },
+          { label: data.name }
+        ]}
+      />
+      <div className="flex-1 mx-auto w-full space-y-8 animate-fadeIn mt-3">
         {/* Header */}
         <div className="border-b pb-4 flex items-center gap-3">
           <div>
@@ -142,12 +208,12 @@ export default function OfferingDetail() {
 
           {!semesterEnded && (
             <div className="flex flex-wrap gap-2 mb-4">
-              <Button onClick={() => handleChat(data.lecturer.id, data.lecturer.full_name)}>
+              <Button onClick={() => handleChat(data.lecturer.id)}>
                 <MessageCircle className="w-4 h-4 mr-1" /> Nhắn tin
               </Button>
 
               {userData?.role === "parent" && (
-                <Button variant="outline" onClick={() => setModalVisible(true)}>
+                <Button variant="outline" onClick={() => setModalVisible(true)} className="border-blue-500 text-blue-700">
                   <Calendar className="w-4 h-4 mr-1" /> Đặt lịch hẹn
                 </Button>
               )}
@@ -201,10 +267,7 @@ export default function OfferingDetail() {
                 <Button
                   className="bg-emerald-600 hover:bg-emerald-700"
                   onClick={() =>
-                    handleChat(
-                      data.practice_group.lecturer.id,
-                      data.practice_group.lecturer.full_name
-                    )
+                    handleChat(data.practice_group.lecturer.id)
                   }
                 >
                   <MessageCircle className="w-4 h-4 mr-1" /> Nhắn tin
@@ -244,6 +307,13 @@ export default function OfferingDetail() {
           </div>
         )}
       </div>
+
+      <AppointmentModalBase
+        open={modalVisible}
+        onOpenChange={setModalVisible}
+        onSubmit={handleCreateAppointment}
+        title="Đặt lịch hẹn với giảng viên"
+      />
     </div>
   );
 }
