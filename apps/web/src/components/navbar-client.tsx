@@ -62,6 +62,7 @@ export default function NavbarClient({ userRole, userName, avatarUrl, userId }: 
     { icon: Home, label: "Trang chủ", href: "/admin" },
     { icon: Users, label: "Quản lý tài khoản", href: "/admin/accounts/account-management" },
     { icon: BarChart3, label: "Tạo cảnh cáo", href: "/admin/statistics" },
+    { icon: BellIcon, label: "Tạo thông báo", href: "/admin/notifications" },
   ];
 
   const teacherNavItems = [
@@ -86,7 +87,7 @@ export default function NavbarClient({ userRole, userName, avatarUrl, userId }: 
     { icon: Book, label: "Lớp học phần", href: "/portal/classes" },
     { icon: User, label: "Điểm danh", href: "/portal/attendances" },
     { icon: BarChart3, label: "Kết quả học tập", href: "/portal/grades" },
-    { icon: Calendar, label: "Lịch hẹn", href: "/lecturer/appointments" },
+    { icon: Calendar, label: "Lịch hẹn", href: "/portal/appointments" },
     { icon: MessageSquare, label: "Nhắn tin", href: "/portal/communications" },
   ];
 
