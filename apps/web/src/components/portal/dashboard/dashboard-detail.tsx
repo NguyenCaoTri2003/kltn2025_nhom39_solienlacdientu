@@ -11,6 +11,8 @@ import { Calendar, BookOpen, Users, GraduationCap, Clock, Sun, CloudSun, Moon } 
 import { getAvatarColor } from "@/utils/color-hash";
 import Loading from "@/components/ui/loading";
 import { motion } from "framer-motion";
+import { translateTrainingLevel, translateTrainingType } from "@/utils/get-status-profile";
+import { useRouter } from "next/navigation";
 
 export default function Dashboard() {
     const { userData } = useUser();
@@ -20,6 +22,7 @@ export default function Dashboard() {
     const studentYear = isParent ? activeChild?.academic_year : userData?.student?.academic_year;
 
     const token = typeof window !== "undefined" ? localStorage.getItem("token") ?? undefined : undefined;
+    const router = useRouter();
 
     const { semester, offerings, loading } = useCourseOfferings(studentYear, studentId);
     const { appointments, loading: appointmentsLoading } = useAppointment(token);
@@ -31,7 +34,7 @@ export default function Dashboard() {
         [appointments]
     );
 
-    const todayIndex = new Date().getDay(); // 0 = Chủ nhật, 1 = Thứ hai ...
+    const todayIndex = new Date().getDay();
 
     const todayClasses = useMemo(() => {
         if (!offerings) return [];
@@ -70,7 +73,6 @@ export default function Dashboard() {
     const greeting = getGreeting();
     const nameToShow = userData?.full_name || (isParent ? "Phụ huynh" : "Sinh viên");
 
-    // Animation icon dựa trên giờ
     const iconColor = useMemo(() => {
         const hour = new Date().getHours();
         if (hour < 12) return "text-yellow-400";
@@ -80,7 +82,7 @@ export default function Dashboard() {
 
     if (!userData || isLoading) {
         return (
-            <div className="flex items-center justify-center h-screen bg-gray-50 dark:bg-gray-900">
+            <div className="flex items-center justify-center">
                 <Loading text="Đang tải dữ liệu..." />
             </div>
         );
@@ -88,7 +90,7 @@ export default function Dashboard() {
 
     const cardStyle = "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm rounded-lg p-5 transition hover:shadow-md";
 
-    
+
 
     return (
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
@@ -142,8 +144,8 @@ export default function Dashboard() {
                             <p><span className="font-semibold">Nơi sinh:</span> {userData.student?.place_of_birth}</p>
                             <p><span className="font-semibold">Lớp học:</span> {userData.student?.classes?.class_code || "Chưa có"}</p>
                             <p><span className="font-semibold">Khóa học:</span> {userData.student?.academic_year}</p>
-                            <p><span className="font-semibold">Bậc đào tạo:</span> {userData.student?.training_level || "Chưa có"}</p>
-                            <p><span className="font-semibold">Loại hình đào tạo:</span> {userData.student?.type_of_tranning || "Chưa có"}</p>
+                            <p><span className="font-semibold">Bậc đào tạo:</span> {translateTrainingLevel(userData.student?.training_level)}</p>
+                            <p><span className="font-semibold">Loại hình đào tạo:</span> {translateTrainingType(userData.student?.type_of_tranning)}</p>
                             <p><span className="font-semibold">Ngành:</span> Kỹ thuật phần mềm</p>
                         </>
                     )}
@@ -161,7 +163,7 @@ export default function Dashboard() {
                                 <div key={child.id} className="p-3 border border-gray-200 dark:border-gray-700 rounded-md bg-gray-50 dark:bg-gray-700">
                                     <p className="font-medium text-gray-900 dark:text-gray-100">{child.users.full_name}</p>
                                     <p className="text-sm">Mã SV: {child.student_code}</p>
-                                    <p className="text-sm">Lớp: {child.classes.class_code}</p>
+                                    <p className="text-sm">Lớp: {child.classes?.class_code}</p>
                                 </div>
                             ))}
                         </div>
@@ -174,7 +176,11 @@ export default function Dashboard() {
                         <div className="flex flex-col gap-3">
                             {todayAppointments.length > 0
                                 ? todayAppointments.map(a => (
-                                    <div key={a.id} className="p-2 border border-gray-200 dark:border-gray-700 rounded-md bg-gray-50 dark:bg-gray-700">
+                                    <div
+                                        key={a.id}
+                                        className="p-4 border border-gray-200 dark:border-gray-700 rounded-md bg-gray-50 dark:bg-gray-700 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 hover:scale-101 hover:shadow-lg transition-all duration-300 ease-in-out"
+                                        onClick={() => router.push(`/portal/appointments`)}
+                                    >
                                         <p className="font-semibold text-gray-900 dark:text-gray-100">{a.title}</p>
                                         <p className="text-sm flex items-center gap-1">
                                             <Clock className="w-4 h-4" /> {format(parseISO(a.start_time), "HH:mm", { locale: vi })} - {format(parseISO(a.end_time), "HH:mm", { locale: vi })}
@@ -195,7 +201,11 @@ export default function Dashboard() {
                         <div className="flex flex-col gap-3">
                             {todayClasses.length > 0
                                 ? todayClasses.map(c => (
-                                    <div key={c.id} className="p-4 border border-gray-200 dark:border-gray-700 rounded-md bg-gray-50 dark:bg-gray-700">
+                                    <div
+                                        key={c.id}
+                                        className="p-4 border border-gray-200 dark:border-gray-700 rounded-md bg-gray-50 dark:bg-gray-700 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 hover:scale-101 hover:shadow-lg transition-all duration-300 ease-in-out"
+                                        onClick={() => router.push(`/portal/classes/${c.id}`)}
+                                    >
                                         <p className="font-semibold text-gray-900 dark:text-gray-100">{c.course?.name || c.name || "Không rõ tên"}</p>
                                         <p className="text-sm text-gray-600 dark:text-gray-300 flex items-center gap-1">
                                             <GraduationCap className="w-4 h-4" /> Mã lớp: {c.class_code}
@@ -216,7 +226,11 @@ export default function Dashboard() {
                         {offerings?.length > 0 ? (
                             <div className="grid md:grid-cols-2 lg:grid-cols-2 gap-4">
                                 {offerings.map(c => (
-                                    <div key={c.id} className="p-4 border border-gray-200 dark:border-gray-700 rounded-md bg-gray-50 dark:bg-gray-700">
+                                    <div
+                                        key={c.id}
+                                        className="p-4 border border-gray-200 dark:border-gray-700 rounded-md bg-gray-50 dark:bg-gray-700 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 hover:scale-101 hover:shadow-lg transition-all duration-300 ease-in-out"
+                                        onClick={() => router.push(`/portal/classes/${c.id}`)}
+                                    >
                                         <p className="font-semibold text-gray-900 dark:text-gray-100">{c.course?.name || c.name || "Không rõ tên"}</p>
                                         <p className="text-sm text-gray-600 dark:text-gray-300 flex items-center gap-1">
                                             <GraduationCap className="w-4 h-4" /> Mã lớp: {c.class_code}
@@ -224,7 +238,7 @@ export default function Dashboard() {
                                         <p className="text-sm text-gray-600 dark:text-gray-300 flex items-center gap-1">
                                             Giảng viên: {c.lecturer?.full_name || c.detail?.lecturer?.full_name || "Chưa rõ"}
                                         </p>
-                                        {c.detail?.schedule?.map((s, i) => (
+                                        {c.detail?.schedule?.map((s: any, i: number) => (
                                             <p key={i} className="text-sm text-gray-600 dark:text-gray-300 flex items-center gap-1">
                                                 <Calendar className="w-4 h-4" /> {getDayName(Number(s.day_of_week))} - Tiết {s.start_period} → {s.start_period + s.period_count - 1} tại {s.classroom} ({s.building})
                                             </p>

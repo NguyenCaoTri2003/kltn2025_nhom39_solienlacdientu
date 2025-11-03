@@ -84,7 +84,12 @@ export class UserRepository {
     if (user.role === "student") {
       const { data: student, error: studentError } = await supabase
         .from("students")
-        .select("*")
+        .select(`
+          *,
+          classes:class_id (
+            name, class_code
+          )
+        `)
         .eq("id", id)
         .single();
       if (!studentError && student) {
