@@ -14,12 +14,14 @@ export type RootStackParamList = {
       category: string;
       created_at: string;
       warning_level?: string;
+      url?: string | null;
       notifications?: {
         content: string;
         type: string;
         category: string;
         created_at: string;
         warning_level?: string;
+        url?: string | null;
       };
     };
   };

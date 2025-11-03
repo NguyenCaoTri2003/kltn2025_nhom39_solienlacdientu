@@ -72,26 +72,6 @@ export class MessageRepository {
 
     if (error) throw error;
 
-    // const conversationsWithUnread = await Promise.all(
-    //   data.map(async (c) => {
-    //     const { count, error: countError } = await supabase
-    //       .from("messages")
-    //       .select("id", { count: "exact", head: true })
-    //       .eq("conversation_id", c.id)
-    //       .neq("sender_id", userId)
-    //       .eq("is_read", false);
-
-    //     if (countError) throw countError;
-
-    //     return {
-    //       ...c,
-    //       lastMessage: c.messages?.[c.messages.length - 1] || null,
-    //       unreadCount: count || 0,
-    //       isUnread: (count || 0) > 0,
-    //     };
-    //   })
-    // );
-
     const conversationsWithUnread = await Promise.all(
       data.map(async (c) => {
         // Lấy last message mới nhất
@@ -142,6 +122,26 @@ export class MessageRepository {
       .eq("conversation_id", conversationId)
       .neq("sender_id", userId)
       .eq("is_read", false);
+
+    if (error) throw error;
+    return data;
+  }
+
+  async getConversationWith(userA: number, userB: number) {
+    const user1_id = Math.min(userA, userB);
+    const user2_id = Math.max(userA, userB);
+
+    const { data, error } = await supabase
+      .from("conversations")
+      .select(`
+        id,
+        user1:users!user1_id(id, full_name, role, avatar_url),
+        user2:users!user2_id(id, full_name, role, avatar_url),
+        messages(id, content, created_at, sender_id, type, is_read)
+      `)
+      .eq("user1_id", user1_id)
+      .eq("user2_id", user2_id)
+      .maybeSingle();
 
     if (error) throw error;
     return data;

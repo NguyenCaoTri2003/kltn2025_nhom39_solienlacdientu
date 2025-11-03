@@ -1,4 +1,5 @@
 import { JSX } from "react/jsx-runtime";
+import { Class } from "./Classes";
 
 export type Student = {
   id: number;
@@ -11,6 +12,7 @@ export type Student = {
   type_of_tranning: string;
   training_level: string;
   academic_year: string;
+  classes?: Class;
 };
 
 export type Parent = {
@@ -22,7 +24,7 @@ type Children = {
     id: number;
     users: User;
     classes?: {
-        class_code: string;
+        class_code?: string;
     };
     student_code: string;
     relationship?: string;
@@ -41,4 +43,6 @@ export type User = {
   student?: Student;
   parent?: Parent;
   children?: Children[];
+  citizen_id_card?: string;
+  ethnic?: string;
 };

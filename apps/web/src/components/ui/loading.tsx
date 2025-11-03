@@ -1,38 +1,67 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Loader2 } from "lucide-react";
 
-interface LoadingIndicatorProps {
-  text?: string; // 👈 cho phép truyền text tuỳ ý
-  size?: "sm" | "md" | "lg"; // 👈 kích cỡ
+interface LoadingDotsProps {
+  text?: string;
+  size?: "sm" | "md" | "lg";
+  color?: string;
+  dotCount?: number;
 }
 
 export default function Loading({
-  text = "Đang tải...",
+  text = "Đang tải dữ liệu...",
   size = "md",
-}: LoadingIndicatorProps) {
+  color = "#005FF9",
+  dotCount = 8,
+}: LoadingDotsProps) {
   const sizes = {
-    sm: "w-4 h-4 text-gray-500",
-    md: "w-6 h-6 text-indigo-600",
-    lg: "w-8 h-8 text-indigo-700",
+    sm: 6,
+    md: 10,
+    lg: 14,
   };
 
-  return (
-    <div className="flex items-center justify-center gap-3">
-      {/* Icon xoay mượt */}
-      <motion.div
-        animate={{ rotate: 360 }}
-        transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
-      >
-        <Loader2 className={`${sizes[size]}`} />
-      </motion.div>
+  const radius = sizes[size] * 2.5; 
 
-      {/* Text có animation nhịp nhịp */}
+  const dots = Array.from({ length: dotCount });
+
+  return (
+    <div className="flex flex-col items-center justify-center gap-1 select-none">
+      <div className="relative w-32 h-32">
+        {dots.map((_, i) => {
+          const angle = (360 / dotCount) * i;
+          const rad = (angle * Math.PI) / 180;
+
+          return (
+            <motion.div
+              key={i}
+              className="absolute rounded-full"
+              style={{
+                width: sizes[size],
+                height: sizes[size],
+                background: `radial-gradient(circle, ${color} 0%, ${color}99 80%)`,
+                top: `calc(50% + ${radius * Math.sin(rad)}px - ${sizes[size] / 2}px)`,
+                left: `calc(50% + ${radius * Math.cos(rad)}px - ${sizes[size] / 2}px)`,
+              }}
+              animate={{
+                rotate: [0, 360],
+                scale: [0.6, 1, 0.6],
+              }}
+              transition={{
+                repeat: Infinity,
+                duration: 1.6,
+                delay: (i * 0.1),
+                ease: "easeInOut",
+              }}
+            />
+          );
+        })}
+      </div>
+
       <motion.span
-        className="text-gray-700 font-medium text-sm md:text-base"
+        className="text-blue-600 dark:text-blue-300 font-semibold text-base md:text-lg tracking-wide"
         animate={{ opacity: [0.5, 1, 0.5] }}
-        transition={{ duration: 1.5, repeat: Infinity }}
+        transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
       >
         {text}
       </motion.span>

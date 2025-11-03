@@ -1,0 +1,57 @@
+// export const conversationService = {
+//   async getOrCreateConversation(token: string, receiverId: number) {
+//     const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/conversations?userId=${receiverId}`, {
+//       headers: { Authorization: `Bearer ${token}` },
+//     });
+
+//     if (res.status === 200) {
+//       const data = await res.json();
+//       if (data?.id) return data; 
+//     }
+
+//     const create = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/messages`, {
+//       method: "POST",
+//       headers: {
+//         "Content-Type": "application/json",
+//         Authorization: `Bearer ${token}`,
+//       },
+//       body: JSON.stringify({
+//         receiverId,
+//         content: "Xin chào thầy/cô",
+//         type: "text",
+//       }),
+//     });
+
+//     if (!create.ok) throw new Error("Không thể tạo cuộc trò chuyện");
+//     return create.json(); 
+//   },
+// };
+export const conversationService = {
+  async getOrCreateConversation(token: string, receiverId: number) {
+    // 1️⃣ Kiểm tra xem có cuộc trò chuyện nào giữa hai người không
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/api/conversations/with?otherUserId=${receiverId}`,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
+
+    if (res.ok) {
+      const data = await res.json();
+      if (data?.id) return data;
+    }
+
+    // 2️⃣ Nếu chưa có thì tạo mới
+    const create = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/conversations`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ receiverId }),
+    });
+
+    if (!create.ok) throw new Error("Không thể tạo cuộc trò chuyện mới");
+    return create.json();
+  },
+};

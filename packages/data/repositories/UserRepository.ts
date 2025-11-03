@@ -84,7 +84,12 @@ export class UserRepository {
     if (user.role === "student") {
       const { data: student, error: studentError } = await supabase
         .from("students")
-        .select("*")
+        .select(`
+          *,
+          classes:class_id (
+            name, class_code
+          )
+        `)
         .eq("id", id)
         .single();
       if (!studentError && student) {
@@ -317,17 +322,26 @@ export class UserRepository {
       student?: Partial<Student>;
       parent?: Partial<Parent>;
       lecturer?: Partial<Lecturers>;
+      parents?: Array<{
+        parent_id: number;
+        relationship: "father" | "mother" | "guardian";
+      }>;
+      children?: Array<{
+        student_id: number;
+        relationship: "father" | "mother" | "guardian";
+      }>;
     }
   ): Promise<User & RoleSpecificData> {
-    const { user: userUpdates, student, parent, lecturer } = updates;
+    const { user: userUpdates, student, parent, lecturer, parents, children } = updates;
 
     if (userUpdates) {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("users")
         .update(userUpdates)
         .eq("id", id)
         .select()
         .single();
+      if (error) this.throwFriendlyForUnique(error);
       if (!data) throw new Error("Update user failed");
     }
 
@@ -340,16 +354,55 @@ export class UserRepository {
     if (!userRoleData) throw new Error("User not found");
 
     if (userRoleData.role === "student" && student) {
-      await supabase.from("students").update(student).eq("id", id);
+      const { error: stuError } = await supabase.from("students").update(student).eq("id", id);
+      if (stuError) this.throwFriendlyForUnique(stuError);
     }
     if (userRoleData.role === "parent" && parent) {
-      await supabase.from("parents").update(parent).eq("id", id);
+      const { error: parError } = await supabase.from("parents").update(parent).eq("id", id);
+      if (parError) this.throwFriendlyForUnique(parError);
     }
     if (userRoleData.role === "lecturer" && lecturer) {
-      await supabase.from("lecturers").update(lecturer).eq("id", id);
+      const { error: lecError } = await supabase.from("lecturers").update(lecturer).eq("id", id);
+      if (lecError) this.throwFriendlyForUnique(lecError);
     }
 
-    const userFull = await this.findById(id);
+    if (userRoleData.role === "student" && parents && parents.length >= 0) {
+      await supabase.from("student_parent").delete().eq("student_id", id);
+
+      if (parents.length > 0) {
+        const relationships = parents.map((p) => ({
+          student_id: id,
+          parent_id: p.parent_id,
+          relationship: p.relationship,
+        }));
+        
+        const { error: spError } = await supabase
+          .from("student_parent")
+          .insert(relationships);
+        
+        if (spError) throw spError;
+      }
+    }
+
+    if (userRoleData.role === "parent" && children && children.length >= 0) {
+      await supabase.from("student_parent").delete().eq("parent_id", id);
+      
+      if (children.length > 0) {
+        const relationships = children.map((c) => ({
+          student_id: c.student_id,
+          parent_id: id,
+          relationship: c.relationship,
+        }));
+        
+        const { error: spError } = await supabase
+          .from("student_parent")
+          .insert(relationships);
+        
+        if (spError) throw spError;
+      }
+    }
+
+    const userFull = await this.getUserFullDetail(id);
     if (!userFull) throw new Error("User not found after update");
 
     return userFull;

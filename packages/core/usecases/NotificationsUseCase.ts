@@ -28,7 +28,6 @@ export class NotificationsUseCase {
 
   /**
    * Tạo thông báo mới
-   * Tự động tạo user notification record và broadcast realtime
    */
   async create(payload: { 
     user_id?: number | string | null; 
@@ -37,6 +36,7 @@ export class NotificationsUseCase {
     type?: NotificationType | null;
     category?: NotificationCategory | null;
     target_student_id?: number | string | null;
+    url?: string | null;
   }): Promise<NotificationRow> {
 
     const user_id = payload.user_id != null ? this.toPositiveInt(payload.user_id) ?? null : null;
@@ -52,9 +52,9 @@ export class NotificationsUseCase {
       content, 
       type, 
       category,
-      target_student_id
+      target_student_id,
+      url: payload.url ?? null
     });
-    
     // Nếu có user_id, broadcast realtime
     if (user_id) {
 
@@ -71,6 +71,7 @@ export class NotificationsUseCase {
     content: string;
     type?: NotificationType | null;
     category?: NotificationCategory | null;
+    url?: string | null;
   }): Promise<{ created: number }> {
     const title = String(payload.title || "").trim();
     const content = String(payload.content || "").trim();
@@ -89,9 +90,10 @@ export class NotificationsUseCase {
       type,
       category,
       target_student_id: null as number | null,
+      url: payload.url ?? null,
     }));
 
-    // dùng “chunking” để chia nhỏ danh sách bản ghi khi broadcast, tránh insert một mẻ quá lớn gây lỗi/timeout
+    // dùng "chunking" để chia nhỏ danh sách bản ghi khi broadcast, tránh insert một mẻ quá lớn gây lỗi/timeout
     const chunkSize = 500;
     let created = 0;
     for (let i = 0; i < rows.length; i += chunkSize) {

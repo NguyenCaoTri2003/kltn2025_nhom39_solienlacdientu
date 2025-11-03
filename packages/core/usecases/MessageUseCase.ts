@@ -36,6 +36,10 @@ export class MessageUseCase {
     return await this.repo.listConversations(userId);
   }
 
+  async getConversationWith(userId: number, otherUserId: number) {
+    return await this.repo.getConversationWith(userId, otherUserId);
+  }
+
   async markAsRead(conversationId: number, userId: number) {
     return await this.repo.markMessagesAsRead(conversationId, userId);
   }

@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Bell, MessageSquare, University, AlertCircle, Clock, User } from 'lucide-react-native';
@@ -35,7 +36,7 @@ const NotificationDetailScreen: React.FC<NotificationDetailScreenProps> = ({ nav
   const [isDeleting, setIsDeleting] = useState(false);
   const { markAsRead } = useNotifications();
   
-  // Lấy thông tin notification (ưu tiên từ nested object)
+  // Lấy thông tin notification 
   const notificationData = notification.notifications || notification;
   const title = notificationData.title || notification.title || null;
   const content = notificationData.content || notification.content || 'Không có nội dung';
@@ -43,6 +44,7 @@ const NotificationDetailScreen: React.FC<NotificationDetailScreenProps> = ({ nav
   const category = notificationData.category || notification.category || 'GENERAL';
   const createdAt = notificationData.created_at || notification.created_at;
   const warningLevel = notificationData.warning_level || notification.warning_level;
+  const imageUrl = notificationData.url || notification.url || null;
   
   // Lấy notificationId để mark as read
   const notificationId = notification.id; 
@@ -221,6 +223,19 @@ const NotificationDetailScreen: React.FC<NotificationDetailScreenProps> = ({ nav
           )}
           <Text style={styles.contentTitle}>Nội dung chi tiết</Text>
           <Text style={styles.contentText}>{content}</Text>
+          
+          {imageUrl && (
+            <View style={styles.imageContainer}>
+              <Image
+                source={{ uri: imageUrl }}
+                style={styles.image}
+                resizeMode="contain"
+                onError={() => {
+                  console.log('Failed to load notification image');
+                }}
+              />
+            </View>
+          )}
         </View>
 
 
@@ -380,6 +395,19 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#374151',
     lineHeight: 22,
+  },
+  imageContainer: {
+    marginTop: 16,
+    alignItems: 'center',
+    borderRadius: 12,
+    overflow: 'hidden',
+    backgroundColor: '#F9FAFB',
+  },
+  image: {
+    width: '100%',
+    minHeight: 200,
+    maxHeight: 400,
+    borderRadius: 12,
   },
   infoSection: {
     backgroundColor: '#FFFFFF',

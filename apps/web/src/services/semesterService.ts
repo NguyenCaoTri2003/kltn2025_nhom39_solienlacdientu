@@ -8,6 +8,7 @@ export type Semester = {
 
 export async function fetchSemestersByStudentYear(studentYear?: number): Promise<Semester[]> {
   const token = localStorage.getItem("token");
+  console.log("studentYear in fetchSemestersByStudentYear:", studentYear);
 
   const url = studentYear
     ? `${process.env.NEXT_PUBLIC_API_URL}/api/semesters?fromYear=${studentYear}`
