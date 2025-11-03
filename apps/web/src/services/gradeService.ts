@@ -28,7 +28,6 @@ export type CourseGrade = {
 
 export async function fetchGradesWithStudent(student_id: number, semester_id: number): Promise<CourseGrade[]> {
   const token = localStorage.getItem("token");
-  console.log("Fetching grades for student:", student_id, "semester:", semester_id);
 
   const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/grades?student_id=${student_id}&semester_id=${semester_id}`, {
     headers: { Authorization: `Bearer ${token}` },
