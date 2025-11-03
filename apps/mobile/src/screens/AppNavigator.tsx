@@ -19,6 +19,7 @@ import { useNotificationContext } from "../context/NotificationContext";
 import MessagesStack from "./MessagesStack";
 import { useMessageContext } from "../context/MessageProvider";
 import { useUnreadMessages } from "../hooks/useUnreadMessages";
+import AppBackground from "../components/AppBackground";  
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator<RootStackParamList>();

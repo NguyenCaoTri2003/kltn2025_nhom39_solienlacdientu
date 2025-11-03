@@ -12,7 +12,9 @@ import {
   Platform,
   ScrollView,
 } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "../context/AuthContext";
+import AppBackground from "../components/AppBackground";
 
 export default function LoginScreen({ navigation }: any) {
   const { login } = useAuth();
@@ -21,6 +23,7 @@ export default function LoginScreen({ navigation }: any) {
   const [password, setPassword] = useState("");
   const [role, setRole] = useState<"student" | "parent">("student");
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleLogin = async () => {
     if (!identifier || !password)
@@ -42,8 +45,9 @@ export default function LoginScreen({ navigation }: any) {
       style={{ flex: 1 }}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
-      <ScrollView contentContainerStyle={styles.scroll}>
-        <View style={styles.container}>
+      <AppBackground>
+        <ScrollView contentContainerStyle={styles.scroll}>
+          <View style={styles.container}>
           {/* Logo IUH */}
           <Image
             source={require("../../assets/logo-iuh.png")} 
@@ -64,14 +68,27 @@ export default function LoginScreen({ navigation }: any) {
               placeholderTextColor="#6b7280"
             />
 
-            <TextInput
-              placeholder="Mật khẩu"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-              style={styles.input}
-              placeholderTextColor="#6b7280"
-            />
+            <View style={styles.passwordContainer}>
+              <TextInput
+                placeholder="Mật khẩu"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry={!showPassword}
+                style={[styles.input, styles.passwordInput]}
+                placeholderTextColor="#6b7280"
+              />
+              <TouchableOpacity
+                onPress={() => setShowPassword((v) => !v)}
+                style={styles.eyeButton}
+                accessibilityLabel={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+              >
+                <Ionicons
+                  name={showPassword ? "eye-off" : "eye"}
+                  size={20}
+                  color="#6b7280"
+                />
+              </TouchableOpacity>
+            </View>
 
             {/* Vai trò */}
             <View style={styles.roleContainer}>
@@ -109,8 +126,9 @@ export default function LoginScreen({ navigation }: any) {
               )}
             </TouchableOpacity>
           </View>
-        </View>
-      </ScrollView>
+          </View>
+        </ScrollView>
+      </AppBackground>
     </KeyboardAvoidingView>
   );
 }
@@ -119,7 +137,6 @@ const styles = StyleSheet.create({
   scroll: {
     flexGrow: 1,
     justifyContent: "center",
-    backgroundColor: "#E6F0FA",
     paddingVertical: 30,
   },
   container: {
@@ -162,6 +179,24 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#d1d5db",
     color: "#111827",
+    width: "100%",
+  },
+  passwordContainer: {
+    position: "relative",
+    justifyContent: "center",
+  },
+  passwordInput: {
+    paddingRight: 44, 
+  },
+  eyeButton: {
+    position: "absolute",
+    right: 12,
+    top: "50%",
+    transform: [{ translateY: -20 }], 
+    width: 32,
+    height: 32,
+    alignItems: "center",
+    justifyContent: "center",
   },
   roleContainer: {
     flexDirection: "row",
