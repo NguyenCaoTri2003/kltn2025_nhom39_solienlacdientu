@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "date-fns": "^4.1.0",
+    "dayjs": "^1.11.19",
     "framer-motion": "^12.23.22",
     "next": "15.5.3",
     "nodemailer": "^7.0.9",

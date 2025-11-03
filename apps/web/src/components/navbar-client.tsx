@@ -70,25 +70,27 @@ export default function NavbarClient({ userRole, userName, avatarUrl, userId }: 
     { icon: Users, label: "Lớp học", href: "/lecturer/classes" },
     { icon: Calendar, label: "Lịch hẹn", href: "/lecturer/appointments" },
     { icon: MessageSquare, label: "Nhắn tin", href: "/lecturer/communications" },
-    { icon: BellIcon, label: "Thông báo", href: "/lecturer/notifications" },
+    // { icon: BellIcon, label: "Thông báo", href: "/lecturer/notifications" },
   ];
 
   const studentNavItems = [
     { icon: Home, label: "Trang chủ", href: "/portal" },
     { icon: Book, label: "Lớp học phần", href: "/portal/classes" },
+    { icon: Calendar, label: "Lịch học", href: "/portal/schedules" },
     { icon: User, label: "Điểm danh", href: "/portal/attendances" },
     { icon: BarChart3, label: "Kết quả học tập", href: "/portal/grades" },
     { icon: MessageSquare, label: "Nhắn tin", href: "/portal/communications" },
-    { icon: BellIcon, label: "Thông báo", href: "/portal/notifications" },
+    // { icon: BellIcon, label: "Thông báo", href: "/portal/notifications" },
   ];
 
   const parentNavItems = [
     { icon: Home, label: "Trang chủ", href: "/portal" },
     { icon: Book, label: "Lớp học phần", href: "/portal/classes" },
+    { icon: Calendar, label: "Lịch học", href: "/portal/schedules" },
     { icon: User, label: "Điểm danh", href: "/portal/attendances" },
     { icon: BarChart3, label: "Kết quả học tập", href: "/portal/grades" },
     { icon: Calendar, label: "Lịch hẹn", href: "/portal/appointments" },
-    { icon: MessageSquare, label: "Nhắn tin", href: "/portal/communications" },
+    // { icon: MessageSquare, label: "Nhắn tin", href: "/portal/communications" },
   ];
 
   const isActiveLink = (href: string) => {
