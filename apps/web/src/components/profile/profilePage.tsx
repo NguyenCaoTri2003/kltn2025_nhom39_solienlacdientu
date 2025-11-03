@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import ProfileByRole, { AnyUser } from "./profileByRole";
 import EditProfileModal, { SubmitPayload } from "./profile_Component/EditProfileModal";
 import ProfileHeader from "./profile_Component/ProfileHeader";
+import Loading from "@/components/ui/loading";
 
 export default function ProfilePage() {
     const [user, setUser] = useState<AnyUser | null>(null);
@@ -86,7 +87,9 @@ export default function ProfilePage() {
             <div className="max-w-4xl mx-auto">
                 <div className="bg-white border border-gray-100 rounded-2xl shadow-lg p-8">
                     {loading ? (
-                        <div className="text-gray-500">Đang tải...</div>
+                        <div className="flex justify-center items-center py-10">
+                            <Loading text="Đang tải..." />
+                        </div>
                     ) : user ? (
                         <>
                             <ProfileHeader

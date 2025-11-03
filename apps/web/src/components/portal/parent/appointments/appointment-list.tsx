@@ -22,6 +22,7 @@ import EmptyState from "@/components/empty-state";
 import { Appointment } from "@packages/core/entities/Appointment";
 import { toast } from "sonner";
 import { AppointmentEditModal } from "@/components/lecturer/appointment/appointment-edit-modal";
+import Loading from "@/components/ui/loading";
 
 interface AppointmentWithLecturer extends Appointment {
   lecturer?: { id: number; users?: { full_name: string } };
@@ -244,8 +245,7 @@ export default function ParentAppointmentList() {
   if (loading)
     return (
       <div className="flex justify-center items-center h-full text-muted-foreground">
-        <Loader2 className="w-5 h-5 animate-spin mr-2" />
-        Đang tải danh sách lịch hẹn...
+        <Loading text="Đang tải danh sách lịch hẹn..." />
       </div>
     );
 

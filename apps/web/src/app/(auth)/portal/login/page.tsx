@@ -1,8 +1,10 @@
 import { StudentLoginForm } from "@/components/student-login-form"
+import AppBackground from "@/components/AppBackground"
 
 export default function LoginPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#E3F2FD] p-4">
+    <AppBackground>
+    <div className="min-h-screen flex items-center justify-center p-4">
       <div className="w-full max-w-6xl">
         <div className="text-center mb-12">
           <h1 className="text-4xl md:text-5xl font-bold text-[#0D47A1] mb-2 tracking-tight">
@@ -16,5 +18,6 @@ export default function LoginPage() {
         <StudentLoginForm />
       </div>
     </div>
+    </AppBackground>
   )
 }

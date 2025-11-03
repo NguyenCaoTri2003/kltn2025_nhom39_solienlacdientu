@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { CalendarDays, AlertTriangle } from "lucide-react";
+import Loading from "@/components/ui/loading";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
 import { translateWarningLevel } from "@packages/utils/translations";
@@ -165,7 +166,9 @@ export function WarningHistoryModal({ open, onClose, studentId, semesterId, apiB
 
         <div className="space-y-4 py-2">
           {loading ? (
-            <div className="text-sm text-muted-foreground">Đang tải lịch sử cảnh cáo...</div>
+            <div className="flex items-center justify-center py-6">
+              <Loading text="Đang tải lịch sử cảnh cáo..." />
+            </div>
           ) : error ? (
             <div className="text-sm text-red-600">{error}</div>
           ) : data ? (

@@ -12,6 +12,8 @@ import {
   MessageSquare,
   Search,
   X,
+  CheckCircle2,
+  XCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDateTimeVN, formatTimeVN } from "@/utils/format-time";
@@ -21,6 +23,7 @@ import { useRouter } from "next/navigation";
 import { Appointment } from "@packages/core/entities/Appointment";
 import { toast } from "sonner";
 import { AppointmentEditModal } from "./appointment-edit-modal";
+import Loading from "@/components/ui/loading";
 
 export default function AppointmentList() {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
@@ -32,6 +35,7 @@ export default function AppointmentList() {
   const [hasSearched, setHasSearched] = useState(false);
   const router = useRouter();
   const [selected, setSelected] = useState<Appointment | null>(null);
+  const [actionLoading, setActionLoading] = useState(false);
 
   useEffect(() => {
     const fetchAppointments = async () => {
@@ -152,11 +156,82 @@ export default function AppointmentList() {
     }
   };
 
+  const handleAccept = async (appointment: Appointment) => {
+    try {
+      setActionLoading(true);
+      const token = localStorage.getItem("token");
+      if (!token) {
+        toast.error("Bạn chưa đăng nhập");
+        return;
+      }
+
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/appointments`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ id: appointment.id, status: "confirmed" }),
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || "Chấp nhận thất bại");
+      }
+
+      toast.success("Đã chấp nhận lịch hẹn");
+
+      const updated = { ...appointment, status: "confirmed" } as Appointment;
+      setAppointments((prev) => prev.map((a) => (a.id === appointment.id ? updated : a)));
+      setFiltered((prev) => prev.map((a) => (a.id === appointment.id ? updated : a)));
+      setSelected(null);
+    } catch (e: any) {
+      toast.error(e.message || "Lỗi chấp nhận");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleReject = async (appointment: Appointment) => {
+    try {
+      setActionLoading(true);
+      const token = localStorage.getItem("token");
+      if (!token) {
+        toast.error("Bạn chưa đăng nhập");
+        return;
+      }
+
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/appointments`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ id: appointment.id, status: "cancelled" }),
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || "Từ chối thất bại");
+      }
+
+      toast.success("Đã từ chối lịch hẹn");
+
+      const updated = { ...appointment, status: "cancelled" } as Appointment;
+      setAppointments((prev) => prev.map((a) => (a.id === appointment.id ? updated : a)));
+      setFiltered((prev) => prev.map((a) => (a.id === appointment.id ? updated : a)));
+      setSelected(null);
+    } catch (e: any) {
+      toast.error(e.message || "Lỗi từ chối");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   if (loading)
     return (
       <div className="flex justify-center items-center h-full text-muted-foreground">
-        <Loader2 className="w-5 h-5 animate-spin mr-2" />
-        Đang tải danh sách lịch hẹn...
+        <Loading text="Đang tải danh sách lịch hẹn..." />
       </div>
     );
 
@@ -287,23 +362,56 @@ export default function AppointmentList() {
                   </div>
                 )}
 
-                <div>
+                <div className="flex items-center justify-between mt-3">
                   <span
                     className={cn(
-                      "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium mt-1",
+                      "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium",
                       a.status === "pending"
                         ? "bg-yellow-100 text-yellow-800"
                         : a.status === "confirmed"
                           ? "bg-green-100 text-green-800"
-                          : "bg-gray-100 text-gray-600"
+                          : a.status === "cancelled"
+                            ? "bg-red-100 text-red-800"
+                            : "bg-gray-100 text-gray-600"
                     )}
                   >
                     {a.status === "pending"
                       ? "Chờ xác nhận"
                       : a.status === "confirmed"
                         ? "Đã xác nhận"
-                        : "Hoàn tất"}
+                        : a.status === "cancelled"
+                          ? "Đã hủy"
+                          : "Hoàn tất"}
                   </span>
+
+                  {a.status === "pending" && (
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-green-600 border-green-600 hover:bg-green-50"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleAccept(a);
+                        }}
+                        disabled={actionLoading}
+                      >
+                        <CheckCircle2 className="w-4 h-4 mr-1" /> Chấp nhận
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-red-600 border-red-600 hover:bg-red-50"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleReject(a);
+                        }}
+                        disabled={actionLoading}
+                      >
+                        <XCircle className="w-4 h-4 mr-1" /> Từ chối
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
