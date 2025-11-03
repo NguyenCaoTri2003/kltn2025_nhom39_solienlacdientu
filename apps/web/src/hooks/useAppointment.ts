@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { appointmentService } from "../services/appointmentService";
 
 export function useAppointment(token?: string) {
@@ -18,6 +18,10 @@ export function useAppointment(token?: string) {
       setLoading(false);
     }
   }
+
+  useEffect(() => {
+    fetchAppointments();
+  }, [token]);
 
   async function createAppointment(payload: {
     studentId: number;

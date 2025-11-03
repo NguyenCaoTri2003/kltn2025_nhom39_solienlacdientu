@@ -41,4 +41,6 @@ export type User = {
   student?: Student;
   parent?: Parent;
   children?: Children[];
+  citizen_id_card?: string;
+  ethnic?: string;
 };
