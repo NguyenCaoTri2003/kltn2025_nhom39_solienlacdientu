@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: kltn-api
+    rootDir: apps/api
+    env: node
+    buildCommand: pnpm install --no-frozen-lockfile && pnpm run build
+    startCommand: pnpm run start
+    envVars:
+      - key: NODE_ENV
+        value: production
