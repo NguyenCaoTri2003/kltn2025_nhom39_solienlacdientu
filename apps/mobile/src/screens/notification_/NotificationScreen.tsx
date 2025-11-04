@@ -207,7 +207,7 @@ export default function NotificationScreen() {
     );
   };
 
-  const renderEmptyState = () => (
+  const renderState = () => (
     <View style={styles.emptyState}>
       <Bell size={48} color="#9CA3AF" />
       <Text style={styles.emptyStateTitle}>Chưa có thông báo</Text>

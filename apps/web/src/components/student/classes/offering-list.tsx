@@ -13,9 +13,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { Loader2, Search, X } from "lucide-react";
+import { Book, Loader2, Search, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Pagination from "@/components/pagination";
+import EmptyState from "@/components/empty-state";
 
 const DAY_NAMES = [
   "Chủ nhật",
@@ -201,9 +202,11 @@ export default function OfferingsList() {
       ) : error ? (
         <p className="text-center text-red-500">{error}</p>
       ) : paginatedOfferings.length === 0 ? (
-        <p className="text-center text-gray-500 py-10">
-          Không có lớp học phần {isSearching ? "phù hợp" : "trong học kỳ này"}.
-        </p>
+        <EmptyState
+          icon={<Book className="w-10 h-10" />}
+          text="Không có lớp học phần nào."
+          className="py-1"
+        />
       ) : (
         <>
           <div className="grid md:grid-cols-2 gap-6">
@@ -229,9 +232,8 @@ export default function OfferingsList() {
                   </div>
 
                   <div
-                    className={`grid gap-3 ${
-                      hasPractice ? "md:grid-cols-2" : "grid-cols-1"
-                    }`}
+                    className={`grid gap-3 ${hasPractice ? "md:grid-cols-2" : "grid-cols-1"
+                      }`}
                   >
                     {/* Lý thuyết */}
                     <div className="bg-indigo-50/70 p-3 rounded-lg border border-indigo-100">
