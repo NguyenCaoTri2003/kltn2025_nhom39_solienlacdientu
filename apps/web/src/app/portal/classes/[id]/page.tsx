@@ -1,5 +1,5 @@
 import Navbar from "@/components/navbar";
-import OfferingDetail from "@/components/student/classes/offering-detail";
+import OfferingDetail from "@/components/portal/classes/offering-detail";
 
 export default async function ClassDetailPage() {
   return (

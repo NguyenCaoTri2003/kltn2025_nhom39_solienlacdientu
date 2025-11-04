@@ -1,5 +1,5 @@
 import Navbar from "@/components/navbar";
-import GradesList from "@/components/student/grades/grade-list";
+import GradesList from "@/components/portal/grades/grade-list";
 
 export default async function ClassesPage() {
   return (
