@@ -1,0 +1,16 @@
+{
+  "build": {
+    "env": {
+      "NEXT_TELEMETRY_DISABLED": "1"
+    }
+  },
+  "projects": [
+    {
+      "src": "apps/web",
+      "use": "@vercel/next",
+      "config": {
+        "outputFileTracingRoot": "../../"
+      }
+    }
+  ]
+}
