@@ -97,7 +97,7 @@ export function StudentLoginForm() {
       }
 
       console.log("➡️ Redirecting to /portal ...");
-      await router.push("/portal"); // thêm await để đảm bảo điều hướng
+      router.push("/portal"); // thêm await để đảm bảo điều hướng
 
     } catch (err: any) {
       console.error("❌ Login error:", err);
@@ -107,6 +107,7 @@ export function StudentLoginForm() {
     }
   };
 
+  console.log("Render StudentLoginForm");
 
   return (
     <div className="flex items-center justify-center p-6">
