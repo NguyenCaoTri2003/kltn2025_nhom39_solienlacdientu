@@ -17,36 +17,96 @@ export function StudentLoginForm() {
   const router = useRouter()
   const { refreshUser } = useUser();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
-    setError("")
+  // const handleSubmit = async (e: React.FormEvent) => {
+  //   e.preventDefault()
+  //   setIsLoading(true)
+  //   setError("")
 
-    const role = isParent ? "parent" : "student"
+  //   const role = isParent ? "parent" : "student"
+
+  //   try {
+  //     const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/login/studentorparent`, {
+  //       method: "POST",
+  //       headers: { "Content-Type": "application/json" },
+  //       credentials: "include",
+  //       body: JSON.stringify({ identifier: account, password, role }),
+  //     })
+
+  //     const data = await res.json()
+  //     console.log("Login response:", data);
+  //     if (!res.ok) throw new Error(data.error || "Đăng nhập thất bại")
+
+  //       localStorage.setItem("user", JSON.stringify(data.user))
+  //       localStorage.setItem("token", data.token)
+  //       await refreshUser();
+
+  //     router.push("/portal")
+  //   } catch (err: any) {
+  //     setError(err.message)
+  //   } finally {
+  //     setIsLoading(false)
+  //   }
+  // }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError("");
+
+    const role = isParent ? "parent" : "student";
 
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/login/studentorparent`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ identifier: account, password, role }),
-      })
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/auth/login/studentorparent`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include", // bắt buộc nếu có cookie
+          body: JSON.stringify({ identifier: account, password, role }),
+        }
+      );
 
-      const data = await res.json()
-      console.log("Login response:", data);
-      if (!res.ok) throw new Error(data.error || "Đăng nhập thất bại")
+      let data: any = {};
+      try {
+        data = await res.json();
+      } catch {
+        console.warn("⚠️ API không trả JSON hợp lệ");
+      }
 
-        localStorage.setItem("user", JSON.stringify(data.user))
-        localStorage.setItem("token", data.token)
+      console.log("📩 Login response:", data);
+      console.log("📡 Status:", res.status);
+
+      if (!res.ok) {
+        throw new Error(data?.error || "Đăng nhập thất bại");
+      }
+
+      // ✅ Lưu thông tin user
+      if (data?.user) {
+        localStorage.setItem("user", JSON.stringify(data.user));
+      }
+      if (data?.token) {
+        localStorage.setItem("token", data.token);
+      }
+
+      // ✅ refreshUser có thể lỗi — bọc riêng
+      try {
         await refreshUser();
+        console.log("✅ refreshUser thành công");
+      } catch (e) {
+        console.warn("⚠️ refreshUser lỗi:", e);
+      }
 
-      router.push("/portal")
+      console.log("➡️ Redirecting to /portal ...");
+      await router.push("/portal"); // thêm await để đảm bảo điều hướng
+
     } catch (err: any) {
-      setError(err.message)
+      console.error("❌ Login error:", err);
+      setError(err?.message || "Đăng nhập thất bại");
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
+
 
   return (
     <div className="flex items-center justify-center p-6">
