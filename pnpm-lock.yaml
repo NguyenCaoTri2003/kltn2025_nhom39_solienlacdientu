@@ -277,7 +277,14 @@ importers:
         specifier: ^5
         version: 5.9.2
 
-  packages/core: {}
+  packages/core:
+    dependencies:
+      react:
+        specifier: 19.1.0
+        version: 19.1.0
+      react-dom:
+        specifier: 19.1.0
+        version: 19.1.0(react@19.1.0)
 
   packages/data:
     dependencies:
