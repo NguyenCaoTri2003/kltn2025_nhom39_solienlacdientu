@@ -1,15 +1,9 @@
 {
   "buildCommand": "pnpm run build",
-  "outputDirectory": ".next",
   "installCommand": "pnpm install --no-frozen-lockfile",
+  "outputDirectory": ".next",
   "framework": "nextjs",
   "env": {
     "NEXT_TELEMETRY_DISABLED": "1"
-  },
-  "build": {
-    "env": {
-      "NEXT_TELEMETRY_DISABLED": "1"
-    }
-  },
-  "outputFileTracingRoot": "../../"
+  }
 }

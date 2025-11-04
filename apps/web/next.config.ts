@@ -22,6 +22,7 @@ const nextConfig: NextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
+  outputFileTracingRoot: path.join(__dirname, '../../'),
   webpack: (config) => {
     config.resolve.alias["@packages"] = path.resolve(__dirname, "../../packages");
     return config;
