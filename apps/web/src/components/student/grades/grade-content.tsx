@@ -83,7 +83,7 @@ export default function GradeContent({
           >
             <button
               onClick={() => toggleExpand(semester.id)}
-              className="w-full flex justify-between items-center bg-blue-50 dark:bg-blue-900/30 px-4 py-2 text-blue-800 dark:text-blue-200 font-medium"
+              className="cursor-pointer w-full flex justify-between items-center bg-blue-50 dark:bg-blue-900/30 px-4 py-2 text-blue-800 dark:text-blue-200 font-medium"
             >
               <span>
                 {semester.name} ({semester.academic_year})

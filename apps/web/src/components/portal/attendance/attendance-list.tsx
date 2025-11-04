@@ -147,25 +147,20 @@ export default function AttendanceList() {
     <div className="space-y-6">
       {/* Phần để phụ huynh chọn con*/}
       {isParent && children.length > 1 && (
-        <Card>
-          {/* <CardHeader>
-            <CardTitle className="text-lg">Chọn con</CardTitle>
-          </CardHeader> */}
-          <CardContent>
-            <div className="flex gap-2 flex-wrap">
-              {children.map((child, index) => (
-                <Button
-                  key={child.id}
-                  variant={selectedChildIndex === index ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => handleSelectChild(index)}
-                >
-                  {child.users?.full_name || `Con ${index + 1}`}
-                </Button>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+        <div className="flex gap-2 flex-wrap bg-indigo-50 p-2 rounded-lg">
+          {children.map((child, index) => (
+            <button
+              key={child.id}
+              className={`cursor-pointer px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition ${selectedChildIndex === index
+                ? "bg-indigo-600 text-white"
+                : "bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-300"
+                }`}
+              onClick={() => handleSelectChild(index)}
+            >
+              {child.users?.full_name || `Con ${index + 1}`}
+            </button>
+          ))}
+        </div>
       )}
 
       {/* chọn học kỳ*/}

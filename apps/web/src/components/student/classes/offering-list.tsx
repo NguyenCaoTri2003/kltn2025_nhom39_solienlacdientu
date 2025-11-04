@@ -109,14 +109,16 @@ export default function OfferingsList() {
       {isParent && children.length > 1 && (
         <div className="flex gap-2 flex-wrap bg-indigo-50 p-2 rounded-lg">
           {children.map((child: any, index: number) => (
-            <Button
+            <button
               key={child.id}
-              size="sm"
-              variant={selectedChildIndex === index ? "default" : "outline"}
+              className={`cursor-pointer px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition ${selectedChildIndex === index
+                ? "bg-indigo-600 text-white"
+                : "bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-300"
+                }`}
               onClick={() => setSelectedChildIndex(index)}
             >
               {child.users?.full_name || `Con ${index + 1}`}
-            </Button>
+            </button>
           ))}
         </div>
       )}

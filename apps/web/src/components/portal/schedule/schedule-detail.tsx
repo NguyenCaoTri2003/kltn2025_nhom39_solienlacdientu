@@ -17,6 +17,7 @@ export default function ScheduleDetail() {
     const isParent = userData?.role === "parent";
 
     const [selectedStudentId, setSelectedStudentId] = useState<number | null>(null);
+    const [selectedDate, setSelectedDate] = useState(dayjs().format("YYYY-MM-DD"));
 
     useEffect(() => {
         if (!userData) return;
@@ -37,8 +38,9 @@ export default function ScheduleDetail() {
         nextWeek,
         prevWeek,
         weekDays,
-        setCurrentDate, 
-        resetToToday,   
+        setCurrentDate,
+        resetToToday,
+        baseDate,
     } = useStudentSchedule(selectedStudentId);
 
     const getSession = (period: number) => {
@@ -70,21 +72,28 @@ export default function ScheduleDetail() {
     const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const newDate = dayjs(e.target.value);
         if (newDate.isValid()) {
+            setSelectedDate(newDate.format("YYYY-MM-DD"));
             setCurrentDate?.(newDate);
         }
     };
 
+    useEffect(() => {
+        if (baseDate) {
+            setSelectedDate(dayjs(baseDate).format("YYYY-MM-DD"));
+        }
+    }, [baseDate]);
+
     return (
         <div className="flex flex-col w-full h-full transition-all duration-300">
             {isParent && children.length > 0 && (
-                <div className="flex overflow-x-auto gap-2 p-3 ">
+                <div className="flex overflow-x-auto gap-2 p-3 bg-indigo-50 rounded-lg">
                     {children.map((child) => (
                         <button
                             key={child.id}
                             onClick={() => setSelectedStudentId(child.id)}
-                            className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition ${selectedStudentId === child.id
-                                    ? "bg-indigo-600 text-white"
-                                    : "bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-300"
+                            className={`cursor-pointer px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition ${selectedStudentId === child.id
+                                ? "bg-indigo-600 text-white"
+                                : "bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-300"
                                 }`}
                         >
                             {child?.users?.full_name}
@@ -103,7 +112,7 @@ export default function ScheduleDetail() {
                     <button
                         onClick={prevWeek}
                         disabled={loading}
-                        className="flex items-center gap-1 px-3 py-1.5 rounded-md bg-indigo-100 text-indigo-700 hover:bg-indigo-200 dark:bg-indigo-900/40 dark:hover:bg-indigo-800/60 dark:text-indigo-300 transition disabled:opacity-50"
+                        className="cursor-pointer flex items-center gap-1 px-3 py-1.5 rounded-md bg-indigo-100 text-indigo-700 hover:bg-indigo-200 dark:bg-indigo-900/40 dark:hover:bg-indigo-800/60 dark:text-indigo-300 transition disabled:opacity-50"
                     >
                         <ChevronLeft className="w-4 h-4" />
                         <span>Trở về</span>
@@ -117,7 +126,7 @@ export default function ScheduleDetail() {
                     <button
                         onClick={nextWeek}
                         disabled={loading}
-                        className="flex items-center gap-1 px-3 py-1.5 rounded-md bg-indigo-100 text-indigo-700 hover:bg-indigo-200 dark:bg-indigo-900/40 dark:hover:bg-indigo-800/60 dark:text-indigo-300 transition disabled:opacity-50"
+                        className="cursor-pointer flex items-center gap-1 px-3 py-1.5 rounded-md bg-indigo-100 text-indigo-700 hover:bg-indigo-200 dark:bg-indigo-900/40 dark:hover:bg-indigo-800/60 dark:text-indigo-300 transition disabled:opacity-50"
                     >
                         <span>Tiếp</span>
                         <ChevronRight className="w-4 h-4" />
@@ -129,6 +138,7 @@ export default function ScheduleDetail() {
                         <CalendarSearch className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
                         <input
                             type="date"
+                            value={selectedDate}
                             onChange={handleDateChange}
                             className="text-sm bg-transparent focus:outline-none dark:text-gray-200"
                         />
@@ -136,7 +146,7 @@ export default function ScheduleDetail() {
 
                     <button
                         onClick={() => resetToToday?.()}
-                        className="flex items-center gap-1 px-3 py-1.5 rounded-md bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 transition"
+                        className="cursor-pointer flex items-center gap-1 px-3 py-1.5 rounded-md bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 transition"
                     >
                         <RotateCcw className="w-4 h-4" />
                         <span>Hiện tại</span>
@@ -192,15 +202,15 @@ export default function ScheduleDetail() {
                                                             <Card
                                                                 key={item.id}
                                                                 className={`p-2 border-l-4 ${item.type === "practice"
-                                                                        ? "border-purple-500 bg-purple-50 dark:border-purple-500 "
-                                                                        : "border-sky-500 bg-sky-50 dark:border-sky-500 "
+                                                                    ? "border-purple-500 bg-purple-50 dark:border-purple-500 "
+                                                                    : "border-sky-500 bg-sky-50 dark:border-sky-500 "
                                                                     }`}
                                                             >
                                                                 <p className="text-xs font-semibold">
                                                                     {item.course_offering.name}
                                                                 </p>
                                                                 <p className="text-[11px] text-gray-600 dark:text-gray-300">
-                                                                    Tiết: {item.start_period}–{item.start_period + item.period_count - 1} 
+                                                                    Tiết: {item.start_period}–{item.start_period + item.period_count - 1}
                                                                 </p>
                                                                 <p className="text-[11px] text-gray-600 dark:text-gray-300">
                                                                     Phòng: {item.classroom} ({item.building})

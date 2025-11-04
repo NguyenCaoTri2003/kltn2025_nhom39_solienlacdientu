@@ -256,7 +256,7 @@ export default function Dashboard() {
                   <EmptyState
                     icon={<Calendar className="w-10 h-10" />}
                     text="Không có lịch hẹn nào hôm nay."
-                    className="py-1"
+                    className="py-1 px-2"
                   />
                 )}
               </div>
