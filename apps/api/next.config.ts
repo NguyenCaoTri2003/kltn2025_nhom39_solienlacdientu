@@ -7,7 +7,6 @@ const nextConfig: NextConfig = {
     return config;
   },
   eslint: {
-    // Không fail build do ESLint warnings/errors
     ignoreDuringBuilds: true
   }
 };
