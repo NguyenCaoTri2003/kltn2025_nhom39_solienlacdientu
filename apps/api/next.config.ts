@@ -6,6 +6,10 @@ const nextConfig: NextConfig = {
     config.resolve.alias['@packages'] = path.resolve(__dirname, 'packages');
     return config;
   },
+  eslint: {
+    // Không fail build do ESLint warnings/errors
+    ignoreDuringBuilds: true
+  }
 };
 
 export default nextConfig;

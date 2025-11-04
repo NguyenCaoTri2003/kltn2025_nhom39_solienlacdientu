@@ -73,7 +73,7 @@ export class UserRepository {
     throw err instanceof Error ? err : new Error(msg || "Lỗi không xác định");
   }
 
-  async findById(id: number): Promise<User & { student?: any }> {
+  async findById(id: number): Promise<(User & { student?: any }) | null> {
     const { data: user, error: userError } = await supabase
       .from("users")
       .select("*")

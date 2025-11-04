@@ -6,7 +6,6 @@ const academicWarningUseCase = new AcademicWarningUseCase();
 
 export async function GET(req: NextRequest) {
   try {
-    const user = await authenticate(req);
     const { searchParams } = new URL(req.url);
     const studentId = searchParams.get("studentId");
     const semesterId = searchParams.get("semesterId");

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { UserRepository } from "@packages/data/repositories/UserRepository";
 import { authenticate } from "@packages/utils/auth";
-import { logUserChange } from "@packages/core/usecases/UserAuditLogUseCase"; 
+import { logUserChange } from "@packages/core/usecases/UserAuditLogUseCase";
 import { sendEmail } from "../../../../email/mailer";
 import { renderTemplate } from "../../../../email/templates";
 
@@ -30,13 +30,13 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
       );
     }
 
-  const targetId = Number(id);
+    const targetId = Number(id);
 
     if (userPayload.role !== "admin" && userPayload.id !== null) {
       return NextResponse.json(
         { returnCode: -1, message: "Permission denied: Admin only", data: null },
         { status: 403 }
-      ); 
+      );
     }
 
     const body = await req.json();
@@ -54,6 +54,10 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
 
     const updatedUser = await repo.updateUserStatus(targetId, status);
 
+    if (!oldUser) {
+      return NextResponse.json({ error: "Người dùng cũ không tồn tại" }, { status: 404 });
+    }
+
     try {
       await logUserChange({
         user_id: targetId,
@@ -70,7 +74,7 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
     }
 
 
-    ;(async () => {
+    ; (async () => {
       try {
         interface BasicUser { email?: string; full_name?: string }
         const targetUser = updatedUser as BasicUser;
@@ -99,7 +103,7 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
         data: {
           id: updatedUser.id,
           full_name: updatedUser.full_name,
-          status: updatedUser.status, 
+          status: updatedUser.status,
           status_label: STATUS_LABEL_VI[updatedUser.status] || updatedUser.status,
           role: updatedUser.role,
         },

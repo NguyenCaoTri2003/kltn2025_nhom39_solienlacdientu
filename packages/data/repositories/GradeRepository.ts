@@ -403,9 +403,12 @@ export class GradeRepository {
 
     if (practiceError) throw practiceError;
 
+    const extractEnrollmentId = (enrollment: any) =>
+      Array.isArray(enrollment) ? enrollment[0]?.id : enrollment?.id;
+
     const enrollmentIds = [
-      ...(theoryGrades?.map((g) => g.enrollment?.id) ?? []),
-      ...(practiceGrades?.map((g) => g.practice_enrollment?.enrollment?.id) ?? []),
+      ...(theoryGrades?.map((g: any) => extractEnrollmentId(g.enrollment)) ?? []),
+      ...(practiceGrades?.map((g: any) => extractEnrollmentId(g.practice_enrollment?.enrollment)) ?? []),
     ].filter((id): id is number => !!id);
 
     const uniqueEnrollmentIds = [...new Set(enrollmentIds)];
