@@ -33,6 +33,7 @@ export function StudentLoginForm() {
       })
 
       const data = await res.json()
+      console.log("Login response:", data);
       if (!res.ok) throw new Error(data.error || "Đăng nhập thất bại")
 
         localStorage.setItem("user", JSON.stringify(data.user))
