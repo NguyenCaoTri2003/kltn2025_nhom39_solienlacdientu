@@ -3,7 +3,6 @@ import React from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { DataTable } from "@/components/ui/data-table";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { CalendarDays, AlertTriangle } from "lucide-react";
 import Loading from "@/components/ui/loading";
@@ -17,6 +16,7 @@ interface WarningHistoryModalProps {
   studentId?: string | number | null;
   semesterId?: string | number | null;
   apiBase?: string;
+  semesters?: Array<{ id: number | string; name?: string }>;
 }
 
 type WarningHistoryData = {
@@ -35,7 +35,7 @@ type WarningHistoryData = {
   }>;
 };
 
-export function WarningHistoryModal({ open, onClose, studentId, semesterId, apiBase }: WarningHistoryModalProps) {
+export function WarningHistoryModal({ open, onClose, studentId, semesterId, apiBase, semesters }: WarningHistoryModalProps) {
   const API_BASE = apiBase || process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
   const getToken = () => {
     try {
@@ -90,17 +90,22 @@ export function WarningHistoryModal({ open, onClose, studentId, semesterId, apiB
     };
   }, [open, studentId, semesterId, API_BASE]);
 
-  // Resolve semester name from API when we have a semester id
+
   React.useEffect(() => {
     let alive = true;
     const resolveSemesterName = async () => {
       if (!open) return;
       const sid = semesterId ?? data?.semester_id;
-      if (!sid && sid !== 0) {
+      if (sid == null) {
         setSemesterName(null);
         return;
       }
       try {
+        if (Array.isArray(semesters) && semesters.length > 0) {
+          const found = semesters.find((s) => Number(s.id) === Number(sid));
+          setSemesterName(found?.name ?? `Học kỳ ${sid}`);
+          return;
+        }
         const token = getToken();
         const res = await fetch(`${API_BASE}/api/semesters`, {
           method: "GET",
@@ -110,32 +115,23 @@ export function WarningHistoryModal({ open, onClose, studentId, semesterId, apiB
         });
         const json = await res.json();
         if (!alive) return;
-        
-        console.log("Semester API response:", json); // Debug log
-        
         if (json?.returnCode === 0 && Array.isArray(json.data)) {
           type Sem = { id: number | string; name?: string };
           const arr: Sem[] = json.data as Sem[];
           const found = arr.find((s) => Number(s.id) === Number(sid));
-          console.log("Found semester:", found, "for ID:", sid); // Debug log
           setSemesterName(found?.name ?? `Học kỳ ${sid}`);
         } else {
-          // Fallback: nếu không lấy được từ API thì dùng ID
           setSemesterName(`Học kỳ ${sid}`);
         }
-      } catch (error) {
-        console.error("Error fetching semester:", error);
-        if (alive) {
-          // Fallback: nếu có lỗi thì dùng ID
-          setSemesterName(`Học kỳ ${sid}`);
-        }
+      } catch {
+        if (alive) setSemesterName(`Học kỳ ${sid}`);
       }
     };
     resolveSemesterName();
     return () => {
       alive = false;
     };
-  }, [open, semesterId, data?.semester_id, API_BASE]);
+  }, [open, semesterId, data?.semester_id, API_BASE, semesters]);
   const getLevelColor = (level: string) => {
     switch (level) {
       case "minor":

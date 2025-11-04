@@ -16,23 +16,23 @@ export type AcademicWarningV2Row = {
   total_credit_failed: number | null;
   semester_classification?: string | null;
   cumulative_classification: string | null;
-  // Added fields for richer warning logic
+ 
   total_credit_accumulated: number | null;
   total_credit_registered: number | null;
   academic_status: string | null;
   year_of_study: number | null;
   gpa_threshold: number | null;
-  under_threshold: boolean; // boolean, never null
-  previous_warnings_count: number; // computed per student for current page
-  // Derived flags & summaries for warning logic
-  failed_over_50: boolean; // boolean, never null
+  under_threshold: boolean; 
+  previous_warnings_count: number; 
+
+  failed_over_50: boolean; 
   total_credit_failed_cumulative: number | null;
-  violation_reasons: string[]; // human-readable reasons
+  violation_reasons: string[];
   proposed_warning_level: "FIRST" | "SECOND" | "FINAL" | null;
-  expulsion_candidate: boolean; // boolean, never null
-  warnings_count_total?: number; // optional: total warnings regardless of level
-  // New field to track if warning has been issued
-  is_warned: boolean; // boolean, never null - true if warning has been issued for this student/semester
+  expulsion_candidate: boolean; 
+  warnings_count_total?: number;
+
+  is_warned: boolean; 
 };
 
 export type AcademicWarningV2Result = {
@@ -60,27 +60,34 @@ export class AcademicWarningV2Repository {
     const from = (page - 1) * pageSize;
     const to = from + pageSize - 1;
 
-    // Optional pre-filters to compute candidate ids
     const filters: { studentIds?: number[]; semesterIds?: number[] } = {};
 
-    // Search by student_code or full_name
     const client = supabase;
     const q = (params.search || "").trim();
     if (q) {
-      const { data: stu, error: stuErr } = await client
-        .from("students")
-        .select(
-          `id, student_code, users ( id, full_name ), classes:class_id ( class_code )`
-        )
-        .or(`student_code.ilike.%${q}%,users.full_name.ilike.%${q}%`);
-      if (stuErr) throw stuErr;
-      const ids = (stu ?? [])
-        .map((s: any) => Number(s.id))
-        .filter((n) => Number.isFinite(n));
-      if (ids.length === 0) {
+
+      const pattern = `%${q}%`;
+      const [byCode, byName] = await Promise.all([
+        client
+          .from("students")
+          .select(`id, student_code`)
+          .ilike("student_code", pattern),
+        client
+          .from("students")
+          .select(`id, users!inner ( id, full_name )`)
+          .ilike("users.full_name", pattern),
+      ]);
+      if (byCode.error) throw byCode.error;
+      if (byName.error) throw byName.error;
+      const ids = [
+        ...((byCode.data ?? []) as any[]).map((s) => Number(s.id)),
+        ...((byName.data ?? []) as any[]).map((s) => Number(s.id)),
+      ].filter((n) => Number.isFinite(n));
+      const uniq = Array.from(new Set(ids));
+      if (uniq.length === 0) {
         return { items: [], total: 0, page, pageSize, totalPages: 0 };
       }
-      filters.studentIds = ids;
+      filters.studentIds = uniq;
     }
 
     // Filter by class code
@@ -204,7 +211,7 @@ export class AcademicWarningV2Repository {
       const semesterAY: string | null = row.semesters?.academic_year ?? null;
       const studentAY: string | null = row.students?.academic_year ?? null;
       const yearOfStudy = computeYearOfStudy(studentAY, semesterAY);
-      // Parse raw scores
+ 
       let avg4 =
         typeof row.avg_score_4 === "number"
           ? row.avg_score_4
@@ -230,7 +237,7 @@ export class AcademicWarningV2Repository {
           ? Number(row.cum_avg_score_10)
           : null;
 
-      // Sync 10 <-> 4 scales if only one is available
+      // Đồng bộ GPA 10 <-> 4 nếu chỉ có một trong hai
       if (avg4 == null && avg10 != null) avg4 = Number((avg10 / 2.5).toFixed(2));
       if (avg10 == null && avg4 != null) avg10 = Number((avg4 * 2.5).toFixed(2));
       if (cum4 == null && cum10 != null) cum4 = Number((cum10 / 2.5).toFixed(2));
@@ -239,7 +246,7 @@ export class AcademicWarningV2Repository {
       const threshold = thresholdByYear(yearOfStudy);
       const avgBelow = threshold != null && avg4 != null ? avg4 < threshold : false;
       const cumBelow = threshold != null && cum4 != null ? cum4 < threshold : false;
-      const underThreshold = avgBelow || cumBelow; // boolean only
+      const underThreshold = avgBelow || cumBelow; 
 
       const reg =
         typeof row.total_credit_registered === "number"
@@ -255,7 +262,7 @@ export class AcademicWarningV2Repository {
           : null;
   const failedOver50 = reg != null && reg > 0 && failed != null ? failed > reg * 0.5 : false;
 
-      // total accumulated credits normalization
+      // tổng tín chỉ đã học
       const accumulated =
         typeof row.total_credit_accumulated === "number"
           ? row.total_credit_accumulated
@@ -285,32 +292,33 @@ export class AcademicWarningV2Repository {
         year_of_study: yearOfStudy,
         gpa_threshold: threshold,
         under_threshold: underThreshold,
-        previous_warnings_count: 0, // will be filled below
+        previous_warnings_count: 0, 
         failed_over_50: failedOver50,
-        total_credit_failed_cumulative: null, // to be filled below when semesterId provided
+        total_credit_failed_cumulative: null, 
         violation_reasons: [],
         proposed_warning_level: null,
         expulsion_candidate: false,
+        is_warned: false,
       };
     });
 
-    // Compute previous warnings count for current page's students (single extra query)
+ 
     const studentIds = Array.from(new Set(items.map((i) => i.student_id))).filter((n) => Number.isFinite(n));
     const userIds = Array.from(new Set(items.map((i) => i.user_id))).filter((n) => Number.isFinite(n));
     if (userIds.length > 0) {
-      // Count all warnings (any level)
+
       const { data: warnsAll, error: warnsAllErr } = await client
         .from("academic_warnings")
         .select("student_id, level")
         .in("student_id", userIds as number[]);
       if (!warnsAllErr && Array.isArray(warnsAll)) {
-        const totalCounts = new Map<number, number>(); // keyed by user_id
-        const levelCounts = new Map<number, number>(); // keyed by user_id
+        const totalCounts = new Map<number, number>(); 
+        const levelCounts = new Map<number, number>(); 
         for (const w of warnsAll as any[]) {
           const sid = Number(w.student_id);
           if (!Number.isFinite(sid)) continue;
           totalCounts.set(sid, (totalCounts.get(sid) ?? 0) + 1);
-          // Only count FIRST/SECOND/FINAL for previous_warnings_count
+
           if (w.level === "FIRST" || w.level === "SECOND" || w.level === "FINAL") {
             levelCounts.set(sid, (levelCounts.get(sid) ?? 0) + 1);
           }
@@ -323,7 +331,7 @@ export class AcademicWarningV2Repository {
       }
     }
 
-    // Compute cumulative failed credits up to selected semester (if semesterId provided)
+ 
     if (params.semesterId && studentIds.length > 0) {
       const { data: cum, error: cumErr } = await client
         .from("semester_summary")
@@ -345,7 +353,7 @@ export class AcademicWarningV2Repository {
       }
     }
 
-    // Finalize violations and proposed level/expulsion flags
+
     items = items.map((it) => {
       const cond1 = it.failed_over_50 === true;
       const cond2 = it.total_credit_failed_cumulative != null ? it.total_credit_failed_cumulative > 24 : false;
