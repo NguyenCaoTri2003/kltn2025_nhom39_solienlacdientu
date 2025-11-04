@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Eye, EyeOff, Lock, AlertCircle } from "lucide-react"
 import { isValidPassword } from "@packages/utils/Regex"
 import { PasswordStrengthChecker } from "@/components/profile/check-password"
+import Loading from "@/components/ui/loading"
 
 
 type LoggedInUser = {
@@ -96,7 +97,11 @@ export default function ChangePassword() {
     }
   }
 
-  if (!user) return null
+  if (!user) return (
+    <div className="min-h-[40vh] flex items-center justify-center">
+      <Loading text="Đang tải..." />
+    </div>
+  )
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">

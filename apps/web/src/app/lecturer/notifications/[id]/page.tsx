@@ -3,6 +3,7 @@
 import NotificationDetail from "@/components/notification/NotificationDetail";
 import NavbarClient from "@/components/navbar-client";
 import { useEffect, useState } from "react";
+import Loading from "@/components/ui/loading";
 
 export const dynamic = "force-dynamic";
 
@@ -30,7 +31,11 @@ export default function NotificationDetailPage({ params }: NotificationDetailPag
   }, [params]);
 
   if (!notificationId) {
-    return <div>Loading...</div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loading text="Đang tải thông báo..." />
+      </div>
+    );
   }
 
   return (

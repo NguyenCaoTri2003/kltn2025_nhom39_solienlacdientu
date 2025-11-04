@@ -11,12 +11,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Loader2,
-  Calendar,
-  BookOpen,
-  AlertCircle,
-} from "lucide-react";
+import { Loader2, Calendar, BookOpen, AlertCircle } from "lucide-react";
+import Loading from "@/components/ui/loading";
 import { useUser } from "@/context/user-context";
 import { fetchAttendanceByOffering, AttendanceRecord } from "@/services/attendanceService";
 import { fetchOfferingsBySemesterWithStudent, Offering } from "@/services/offeringService";
@@ -142,8 +138,7 @@ export default function AttendanceList() {
   if (loading && !semester) {
     return (
       <div className="flex justify-center items-center py-20">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-        <span className="ml-2 text-muted-foreground">Đang tải...</span>
+        <Loading text="Đang tải..." />
       </div>
     );
   }
@@ -152,25 +147,20 @@ export default function AttendanceList() {
     <div className="space-y-6">
       {/* Phần để phụ huynh chọn con*/}
       {isParent && children.length > 1 && (
-        <Card>
-          {/* <CardHeader>
-            <CardTitle className="text-lg">Chọn con</CardTitle>
-          </CardHeader> */}
-          <CardContent>
-            <div className="flex gap-2 flex-wrap">
-              {children.map((child, index) => (
-                <Button
-                  key={child.id}
-                  variant={selectedChildIndex === index ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => handleSelectChild(index)}
-                >
-                  {child.users?.full_name || `Con ${index + 1}`}
-                </Button>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+        <div className="flex gap-2 flex-wrap bg-indigo-50 p-2 rounded-lg">
+          {children.map((child, index) => (
+            <button
+              key={child.id}
+              className={`cursor-pointer px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition ${selectedChildIndex === index
+                ? "bg-indigo-600 text-white"
+                : "bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-300"
+                }`}
+              onClick={() => handleSelectChild(index)}
+            >
+              {child.users?.full_name || `Con ${index + 1}`}
+            </button>
+          ))}
+        </div>
       )}
 
       {/* chọn học kỳ*/}
@@ -206,7 +196,7 @@ export default function AttendanceList() {
       {/* Phần để chọn lớp học phần*/}
       {loading ? (
         <div className="flex justify-center items-center py-10">
-          <Loader2 className="w-6 h-6 animate-spin text-primary" />
+          <Loading text="Đang tải danh sách lớp học phần..." />
         </div>
       ) : offerings.length === 0 ? (
         <EmptyState
@@ -251,7 +241,7 @@ export default function AttendanceList() {
           <CardContent>
             {loadingAttendance ? (
               <div className="flex justify-center items-center py-10">
-                <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                <Loading text="Đang tải lịch sử điểm danh..." />
               </div>
             ) : attendance.length === 0 ? (
               <EmptyState

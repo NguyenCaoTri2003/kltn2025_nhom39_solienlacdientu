@@ -1,5 +1,5 @@
 import Navbar from "@/components/navbar";
-import OfferingsList from "@/components/student/classes/offering-list"; 
+import OfferingsList from "@/components/portal/classes/offering-list"; 
 
 export default async function ClassesPage() {
   return (

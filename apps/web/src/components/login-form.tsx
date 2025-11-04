@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { User, Lock, Eye, EyeOff } from "lucide-react"
 
+
 export function LoginForm() {
   const [account, setAccount] = useState("")
   const [password, setPassword] = useState("")
@@ -42,10 +43,10 @@ export function LoginForm() {
   }
 
   return (
-    <div className="flex items-center justify-center bg-[#E3F2FD] p-6">
+    <div className="flex items-center justify-center p-6">
       <div className="flex flex-col md:flex-row w-full max-w-6xl shadow-2xl rounded-3xl overflow-hidden">
         <div className="md:w-3/5 bg-white p-12 flex flex-col justify-center">
-          <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-8 text-center tracking-tight">
+          <h1 className="text-3xl md:text-4xl font-bold text-[#1565C0] mb-8 text-center tracking-tight">
             Đăng nhập
           </h1>
           <form onSubmit={handleSubmit} className="space-y-5">

@@ -26,7 +26,7 @@ function SelectTrigger({
         'disabled:cursor-not-allowed disabled:opacity-50',
         size === 'default' && 'h-10 py-2',
         size === 'sm' && 'h-8 py-1.5 text-xs',
-        'border-gray-300 bg-background hover:border-primary/60',
+        'border-gray-300 bg-white hover:border-primary/60',
         'focus:border-primary focus:ring-2 focus:ring-primary/30',
         'data-[placeholder]:text-muted-foreground',
 
@@ -68,7 +68,7 @@ function SelectContent({
 
       <SelectPrimitive.Content
   className={cn(
-    'z-50 w-[var(--radix-select-trigger-width)] max-h-60 overflow-y-auto rounded-lg border bg-popover text-popover-foreground shadow-lg animate-in fade-in-80 zoom-in-95',
+    'z-50 w-[var(--radix-select-trigger-width)] max-h-60 overflow-y-auto rounded-lg border bg-white text-foreground shadow-lg animate-in fade-in-80 zoom-in-95',
     'data-[side=bottom]:slide-in-from-top-1 data-[side=top]:slide-in-from-bottom-1',
     className,
   )}

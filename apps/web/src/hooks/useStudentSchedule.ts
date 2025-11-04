@@ -55,5 +55,6 @@ export function useStudentSchedule(studentId: number | null | undefined) {
     prevWeek,
     setCurrentDate,
     resetToToday,
+    baseDate,
   };
 }

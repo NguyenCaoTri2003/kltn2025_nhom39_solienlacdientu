@@ -324,7 +324,7 @@ export default function NotificationList() {
             <Card 
               key={notification.id} 
               className={`cursor-pointer transition-all hover:shadow-md ${
-                !notification.is_read ? 'border-l-4 border-l-blue-500 bg-blue-50/30' : ''
+                !notification.is_read ? 'border-l-5 border-l-blue-500 bg-[#f7ffff]' : ''
               }`}
               onClick={() => handleNotificationClick(notification)}
             >

@@ -7,7 +7,7 @@ export default async function AttendancesPage() {
       <Navbar />
 
       <div className="flex-1 p-6 max-w-6xl mx-auto w-full">
-        <h1 className="text-3xl font-bold mb-6">Điểm danh học phần</h1>
+        {/* <h1 className="text-3xl font-bold mb-6">Điểm danh học phần</h1> */}
         <AttendanceList />
       </div>
     </div>

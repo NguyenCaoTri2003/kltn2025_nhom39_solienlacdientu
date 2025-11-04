@@ -48,7 +48,7 @@ export function StudentLoginForm() {
   }
 
   return (
-    <div className="flex items-center justify-center bg-[#E3F2FD] p-6">
+    <div className="flex items-center justify-center p-6">
       <div className="flex flex-col md:flex-row w-full max-w-6xl shadow-2xl rounded-3xl overflow-hidden">
         {/* Form đăng nhập */}
         <div className="md:w-3/5 bg-white p-12 flex flex-col justify-center">

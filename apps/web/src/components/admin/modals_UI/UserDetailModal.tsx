@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { translateRole, translateAcademicStatus, translateTrainingType, translateTrainingLevel, translateAcademicRank } from "@packages/utils/translations";
+import Loading from "@/components/ui/loading";
 
 type DetailUser = {
   id: number | string;
@@ -106,7 +107,9 @@ export function UserDetailModal({ open, userId, onClose }: { open: boolean; user
         </div>
         <div className="px-6 py-5 max-h-[75vh] overflow-y-auto">
           {loading ? (
-            <div className="text-muted-foreground">Đang tải...</div>
+            <div className="flex items-center justify-center py-6">
+              <Loading text="Đang tải..." />
+            </div>
           ) : error ? (
             <div className="text-red-500">{error}</div>
           ) : user ? (

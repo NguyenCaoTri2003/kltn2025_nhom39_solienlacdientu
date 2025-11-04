@@ -16,6 +16,7 @@ import {
 import { notificationService } from '../../services/notificationService';
 import { useRouter, usePathname } from 'next/navigation';
 import Image from "next/image";
+import Loading from "@/components/ui/loading";
 
 interface Notification {
   id: number;
@@ -200,10 +201,7 @@ export default function NotificationDetail({ notificationId }: NotificationDetai
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Đang tải thông báo...</p>
-        </div>
+        <Loading text="Đang tải thông báo..." />
       </div>
     );
   }

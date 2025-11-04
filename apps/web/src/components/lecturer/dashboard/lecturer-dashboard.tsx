@@ -24,6 +24,8 @@ import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import EmptyState from "@/components/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
+import { motion } from "framer-motion";
+import Loading from "@/components/ui/loading";
 
 interface Semester {
     id: number;
@@ -214,7 +216,6 @@ export default function LecturerDashboard() {
 
     const today = new Date();
 
-    // Gộp các lịch hẹn trùng thông tin
     const groupedAppointments = Object.values(
         appointments.reduce((acc, a) => {
             const key = `${a.student.users.full_name}-${a.start_time}-${a.end_time}-${a.title}`;
@@ -227,199 +228,423 @@ export default function LecturerDashboard() {
         }, {} as Record<string, Appointment & { parents: string[] }>)
     );
 
+    //     <div className="py-8 px-6">
+    //         <div className="max-w-7xl mx-auto">
+    //             {/* Header */}
+    //             <div className="w-full flex flex-col items-start mb-8 px-4">
+    //                 {loading ? (
+    //                     <>
+    //                         <h1 className="text-3xl font-bold tracking-tight">
+    //                             Bảng điều khiển Giảng viên
+    //                         </h1>
+    //                         <Skeleton className="h-4 w-96" />
+    //                     </>
+    //                 ) : (
+    //                     <>
+    //                         <h1 className="text-3xl font-bold tracking-tight">
+    //                             Bảng điều khiển Giảng viên
+    //                         </h1>
+    //                         {currentSemester && (
+    //                             <p className="text-muted-foreground mt-1 flex items-center gap-2">
+    //                                 <CalendarDays className="w-4 h-4" />
+    //                                 <span>
+    //                                     {currentSemester.name} - {currentSemester.academic_year} —{" "}
+    //                                     {weekdayMap[weekday]}, ngày {today.getDate()} tháng{" "}
+    //                                     {today.getMonth() + 1} năm {today.getFullYear()}
+    //                                 </span>
+    //                             </p>
+    //                         )}
+    //                     </>
+    //                 )}
+    //             </div>
+
+    //             {/* Cards tổng quan */}
+    //             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8">
+    //                 {loading ? (
+    //                     <>
+    //                         <Skeleton className="h-24 w-full" />
+    //                         <Skeleton className="h-24 w-full" />
+    //                     </>
+    //                 ) : (
+    //                     <>
+    //                         <Card>
+    //                             <CardContent className="p-5 flex justify-between items-center">
+    //                                 <div>
+    //                                     <p className="text-sm text-muted-foreground">Lớp học phần hôm nay</p>
+    //                                     <p className="text-2xl font-bold">{todaySchedules.length}</p>
+    //                                 </div>
+    //                                 <Layers className="w-8 h-8 text-blue-500" />
+    //                             </CardContent>
+    //                         </Card>
+
+    //                         <Card>
+    //                             <CardContent className="p-5 flex justify-between items-center">
+    //                                 <div>
+    //                                     <p className="text-sm text-muted-foreground">Lịch hẹn hôm nay</p>
+    //                                     <p className="text-2xl font-bold">{appointments.length}</p>
+    //                                 </div>
+    //                                 <Clock className="w-8 h-8 text-amber-500" />
+    //                             </CardContent>
+    //                         </Card>
+    //                     </>
+    //                 )}
+    //             </div>
+
+    //             {/* Nội dung chính */}
+    //             <div className="flex flex-col lg:flex-row gap-8 items-start">
+    //                 {/* Lịch học hôm nay */}
+    //                 <Card className={cn("flex-1 w-full lg:w-1/2", loading && "opacity-50")}>
+    //                     <CardHeader>
+    //                         <CardTitle>Lịch học hôm nay</CardTitle>
+    //                     </CardHeader>
+    //                     <CardContent className="space-y-3">
+    //                         {loading ? (
+    //                             <>
+    //                                 <Skeleton className="h-16 w-full" />
+    //                                 <Skeleton className="h-16 w-full" />
+    //                                 <Skeleton className="h-16 w-full" />
+    //                             </>
+    //                         ) : todaySchedules.length === 0 ? (
+    //                             <EmptyState
+    //                                 icon={<Calendar className="w-10 h-10" />}
+    //                                 text="Hôm nay không có lịch học nào."
+    //                             />
+    //                         ) : (
+    //                             todaySchedules.map((s, i) => (
+    //                                 <div
+    //                                     key={i}
+    //                                     className="group p-4 border rounded-xl bg-background flex items-center justify-between cursor-pointer hover:shadow-md hover:border-primary/30 transition-all duration-200"
+    //                                     onClick={() => router.push(`/lecturer/classes/${s.offeringId}`)}
+    //                                 >
+    //                                     <div className="flex flex-col justify-center">
+    //                                         <div className="flex flex-wrap items-center gap-2">
+    //                                             <span className="font-semibold text-foreground text-lg">
+    //                                                 {s.courseName}{" "}
+    //                                                 <span className="text-muted-foreground text-sm">
+    //                                                     ({s.classCode})
+    //                                                 </span>
+    //                                             </span>
+    //                                             <Badge
+    //                                                 variant="outline"
+    //                                                 className={cn(
+    //                                                     "px-2 py-0.5 text-xs font-medium rounded-full",
+    //                                                     s.isPractice
+    //                                                         ? "bg-orange-500/10 text-orange-600 border-orange-500/20"
+    //                                                         : "bg-blue-500/10 text-blue-600 border-blue-500/20"
+    //                                                 )}
+    //                                             >
+    //                                                 {s.isPractice ? "Thực hành" : "Lý thuyết"}
+    //                                             </Badge>
+    //                                             {s.isPractice && s.groupNumber && s.isMyPractice && (
+    //                                                 <Badge className="px-2 py-0.5 text-xs font-medium rounded-full bg-emerald-500/10 text-emerald-600 border-emerald-500/20">
+    //                                                     Nhóm {s.groupNumber}
+    //                                                 </Badge>
+    //                                             )}
+    //                                         </div>
+
+    //                                         <div className="flex items-center text-sm text-muted-foreground mt-1">
+    //                                             <span>
+    //                                                 {s.building}-{s.classroom} • Tiết {s.start_period} →{" "}
+    //                                                 {s.start_period + s.period_count - 1}
+    //                                             </span>
+    //                                         </div>
+    //                                     </div>
+
+    //                                     <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+    //                                         <ArrowRight className="w-5 h-5 text-muted-foreground" />
+    //                                     </div>
+    //                                 </div>
+
+
+    //                             ))
+    //                         )}
+    //                     </CardContent>
+    //                 </Card>
+
+    //                 {/* Lịch hẹn hôm nay */}
+    //                 <Card className={cn("flex-1 w-full lg:w-1/2", loading && "opacity-50")}>
+    //                     <CardHeader>
+    //                         <CardTitle>Lịch hẹn hôm nay</CardTitle>
+    //                     </CardHeader>
+    //                     <CardContent className="space-y-3">
+    //                         {loading ? (
+    //                             <>
+    //                                 <Skeleton className="h-20 w-full" />
+    //                                 <Skeleton className="h-20 w-full" />
+    //                             </>
+    //                         ) : groupedAppointments.length === 0 ? (
+    //                             <EmptyState
+    //                                 icon={<CalendarDays className="w-10 h-10" />}
+    //                                 text="Hôm nay không có lịch hẹn nào."
+    //                             />
+    //                         ) : (
+    //                             groupedAppointments.map((a) => (
+    //                                 <div
+    //                                     key={a.id + a.start_time}
+    //                                     className="group p-4 border rounded-xl bg-background hover:bg-secondary/80 transition-all duration-200 space-y-2 cursor-pointer hover:shadow-md hover:border-primary/30"
+    //                                     onClick={() => router.push(`/lecturer/appointments`)}
+    //                                 >
+    //                                     <div className="flex justify-between items-center">
+    //                                         <span className="font-semibold">{a.title}</span>
+    //                                         <Badge className="bg-blue-500/10 text-blue-600 border-blue-500/20">
+    //                                             {new Date(a.start_time).toLocaleTimeString("vi-VN", {
+    //                                                 hour: "2-digit",
+    //                                                 minute: "2-digit",
+    //                                             })}{" "}
+    //                                             -{" "}
+    //                                             {new Date(a.end_time).toLocaleTimeString("vi-VN", {
+    //                                                 hour: "2-digit",
+    //                                                 minute: "2-digit",
+    //                                             })}
+    //                                         </Badge>
+    //                                     </div>
+    //                                     <p className="text-sm text-muted-foreground">
+    //                                         Phụ huynh:{" "}
+    //                                         <span className="font-medium text-foreground">
+    //                                             {a.parents.join(", ")}
+    //                                         </span>{" "}
+    //                                         • Học sinh:{" "}
+    //                                         <span className="font-medium text-foreground">
+    //                                             {a.student.users.full_name}
+    //                                         </span>
+    //                                     </p>
+    //                                     {a.location && (
+    //                                         <p className="text-sm text-muted-foreground">
+    //                                             Địa điểm: {a.location}
+    //                                         </p>
+    //                                     )}
+    //                                 </div>
+    //                             ))
+    //                         )}
+    //                     </CardContent>
+    //                 </Card>
+    //             </div>
+    //         </div>
+    //     </div>
+    // );
     return (
-        <div className="min-h-screen bg-background py-8 px-6">
-            <div className="max-w-7xl mx-auto">
+        <motion.div
+            className="py-8 px-6"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.6 }}
+        >
+            <div className="max-w-7xl mx-auto space-y-8">
                 {/* Header */}
-                <div className="w-full flex flex-col items-start mb-8 px-4">
-                    {loading ? (
-                        <>
-                            <h1 className="text-3xl font-bold tracking-tight">
-                                Bảng điều khiển Giảng viên
-                            </h1>
-                            <Skeleton className="h-4 w-96" />
-                        </>
-                    ) : (
-                        <>
-                            <h1 className="text-3xl font-bold tracking-tight">
-                                Bảng điều khiển Giảng viên
-                            </h1>
-                            {currentSemester && (
-                                <p className="text-muted-foreground mt-1 flex items-center gap-2">
-                                    <CalendarDays className="w-4 h-4" />
-                                    <span>
-                                        {currentSemester.name} - {currentSemester.academic_year} —{" "}
-                                        {weekdayMap[weekday]}, ngày {today.getDate()} tháng{" "}
-                                        {today.getMonth() + 1} năm {today.getFullYear()}
-                                    </span>
-                                </p>
-                            )}
-                        </>
+                <motion.div
+                    className="w-full flex flex-col items-start px-4"
+                    initial={{ y: -10, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{ duration: 0.6 }}
+                >
+                    <h1 className="text-3xl font-bold tracking-tight text-indigo-700 dark:text-indigo-300">
+                        Bảng điều khiển Giảng viên
+                    </h1>
+                    {currentSemester && (
+                        <p className="text-muted-foreground mt-1 flex items-center gap-2">
+                            <CalendarDays className="w-4 h-4" />
+                            <span>
+                                {currentSemester.name} - {currentSemester.academic_year} —{" "}
+                                {weekdayMap[today.getDay()]}, ngày {today.getDate()} tháng{" "}
+                                {today.getMonth() + 1} năm {today.getFullYear()}
+                            </span>
+                        </p>
                     )}
-                </div>
+                </motion.div>
 
-                {/* Cards tổng quan */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8">
-                    {loading ? (
-                        <>
-                            <Skeleton className="h-24 w-full" />
-                            <Skeleton className="h-24 w-full" />
-                        </>
-                    ) : (
-                        <>
-                            <Card>
-                                <CardContent className="p-5 flex justify-between items-center">
-                                    <div>
-                                        <p className="text-sm text-muted-foreground">Lớp học phần hôm nay</p>
-                                        <p className="text-2xl font-bold">{todaySchedules.length}</p>
-                                    </div>
-                                    <Layers className="w-8 h-8 text-blue-500" />
-                                </CardContent>
-                            </Card>
-
-                            <Card>
-                                <CardContent className="p-5 flex justify-between items-center">
-                                    <div>
-                                        <p className="text-sm text-muted-foreground">Lịch hẹn hôm nay</p>
-                                        <p className="text-2xl font-bold">{appointments.length}</p>
-                                    </div>
-                                    <Clock className="w-8 h-8 text-amber-500" />
-                                </CardContent>
-                            </Card>
-                        </>
-                    )}
-                </div>
-
-                {/* Nội dung chính */}
-                <div className="flex flex-col lg:flex-row gap-8 items-start">
-                    {/* Lịch học hôm nay */}
-                    <Card className={cn("flex-1 w-full lg:w-1/2", loading && "opacity-50")}>
-                        <CardHeader>
-                            <CardTitle>Lịch học hôm nay</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-3">
-                            {loading ? (
-                                <>
-                                    <Skeleton className="h-16 w-full" />
-                                    <Skeleton className="h-16 w-full" />
-                                    <Skeleton className="h-16 w-full" />
-                                </>
-                            ) : todaySchedules.length === 0 ? (
-                                <EmptyState
-                                    icon={<Calendar className="w-10 h-10" />}
-                                    text="Hôm nay không có lịch học nào."
-                                />
-                            ) : (
-                                todaySchedules.map((s, i) => (
-                                    <div
-                                        key={i}
-                                        className="group p-4 border rounded-xl bg-background flex items-center justify-between cursor-pointer hover:shadow-md hover:border-primary/30 transition-all duration-200"
-                                        onClick={() => router.push(`/lecturer/classes/${s.offeringId}`)}
-                                    >
-                                        <div className="flex flex-col justify-center">
-                                            <div className="flex flex-wrap items-center gap-2">
-                                                <span className="font-semibold text-foreground text-lg">
-                                                    {s.courseName}{" "}
-                                                    <span className="text-muted-foreground text-sm">
-                                                        ({s.classCode})
-                                                    </span>
-                                                </span>
-                                                <Badge
-                                                    variant="outline"
-                                                    className={cn(
-                                                        "px-2 py-0.5 text-xs font-medium rounded-full",
-                                                        s.isPractice
-                                                            ? "bg-orange-500/10 text-orange-600 border-orange-500/20"
-                                                            : "bg-blue-500/10 text-blue-600 border-blue-500/20"
-                                                    )}
-                                                >
-                                                    {s.isPractice ? "Thực hành" : "Lý thuyết"}
-                                                </Badge>
-                                                {s.isPractice && s.groupNumber && s.isMyPractice && (
-                                                    <Badge className="px-2 py-0.5 text-xs font-medium rounded-full bg-emerald-500/10 text-emerald-600 border-emerald-500/20">
-                                                        Nhóm {s.groupNumber}
-                                                    </Badge>
-                                                )}
-                                            </div>
-
-                                            <div className="flex items-center text-sm text-muted-foreground mt-1">
-                                                <span>
-                                                    {s.building}-{s.classroom} • Tiết {s.start_period} →{" "}
-                                                    {s.start_period + s.period_count - 1}
-                                                </span>
-                                            </div>
-                                        </div>
-
-                                        <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                            <ArrowRight className="w-5 h-5 text-muted-foreground" />
-                                        </div>
-                                    </div>
-
-
-                                ))
-                            )}
-                        </CardContent>
-                    </Card>
-
-                    {/* Lịch hẹn hôm nay */}
-                    <Card className={cn("flex-1 w-full lg:w-1/2", loading && "opacity-50")}>
-                        <CardHeader>
-                            <CardTitle>Lịch hẹn hôm nay</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-3">
-                            {loading ? (
-                                <>
-                                    <Skeleton className="h-20 w-full" />
-                                    <Skeleton className="h-20 w-full" />
-                                </>
-                            ) : groupedAppointments.length === 0 ? (
-                                <EmptyState
-                                    icon={<CalendarDays className="w-10 h-10" />}
-                                    text="Hôm nay không có lịch hẹn nào."
-                                />
-                            ) : (
-                                groupedAppointments.map((a) => (
-                                    <div
-                                        key={a.id + a.start_time}
-                                        className="group p-4 border rounded-xl bg-background hover:bg-secondary/80 transition-all duration-200 space-y-2 cursor-pointer hover:shadow-md hover:border-primary/30"
-                                        onClick={() => router.push(`/lecturer/appointments`)}
-                                    >
-                                        <div className="flex justify-between items-center">
-                                            <span className="font-semibold">{a.title}</span>
-                                            <Badge className="bg-blue-500/10 text-blue-600 border-blue-500/20">
-                                                {new Date(a.start_time).toLocaleTimeString("vi-VN", {
-                                                    hour: "2-digit",
-                                                    minute: "2-digit",
-                                                })}{" "}
-                                                -{" "}
-                                                {new Date(a.end_time).toLocaleTimeString("vi-VN", {
-                                                    hour: "2-digit",
-                                                    minute: "2-digit",
-                                                })}
-                                            </Badge>
-                                        </div>
-                                        <p className="text-sm text-muted-foreground">
-                                            Phụ huynh:{" "}
-                                            <span className="font-medium text-foreground">
-                                                {a.parents.join(", ")}
-                                            </span>{" "}
-                                            • Học sinh:{" "}
-                                            <span className="font-medium text-foreground">
-                                                {a.student.users.full_name}
-                                            </span>
-                                        </p>
-                                        {a.location && (
+                {loading ? (
+                    <div className="flex items-center justify-center h-[60vh]">
+                        <Loading text="Đang tải dữ liệu..." />
+                    </div>
+                ) : (
+                    <>
+                        <motion.div
+                            className="grid grid-cols-1 sm:grid-cols-2 gap-6"
+                            initial={{ y: 10, opacity: 0 }}
+                            animate={{ y: 0, opacity: 1 }}
+                            transition={{ duration: 0.6, delay: 0.2 }}
+                        >
+                            <motion.div
+                                whileHover={{ scale: 1.03 }}
+                                transition={{ type: "spring", stiffness: 200 }}
+                            >
+                                <Card className="shadow-md hover:shadow-lg transition-all border border-gray-200 dark:border-gray-700 backdrop-blur-md">
+                                    <CardContent className="p-5 flex justify-between items-center">
+                                        <div>
                                             <p className="text-sm text-muted-foreground">
-                                                Địa điểm: {a.location}
+                                                Lớp học phần hôm nay
                                             </p>
+                                            <p className="text-2xl font-bold text-foreground">
+                                                {todaySchedules.length}
+                                            </p>
+                                        </div>
+                                        <Layers className="w-8 h-8 text-blue-500" />
+                                    </CardContent>
+                                </Card>
+                            </motion.div>
+
+                            <motion.div
+                                whileHover={{ scale: 1.03 }}
+                                transition={{ type: "spring", stiffness: 200 }}
+                            >
+                                <Card className="shadow-md hover:shadow-lg transition-all border border-gray-200 dark:border-gray-700 backdrop-blur-md">
+                                    <CardContent className="p-5 flex justify-between items-center">
+                                        <div>
+                                            <p className="text-sm text-muted-foreground">
+                                                Lịch hẹn hôm nay
+                                            </p>
+                                            <p className="text-2xl font-bold text-foreground">
+                                                {appointments.length}
+                                            </p>
+                                        </div>
+                                        <Clock className="w-8 h-8 text-amber-500" />
+                                    </CardContent>
+                                </Card>
+                            </motion.div>
+                        </motion.div>
+
+                        {/* Nội dung chính */}
+                        <div className="flex flex-col lg:flex-row gap-8 items-start">
+                            {/* Lịch học hôm nay */}
+                            <motion.div
+                                className={cn("flex-1 w-full lg:w-1/2")}
+                                initial={{ y: 10, opacity: 0 }}
+                                animate={{ y: 0, opacity: 1 }}
+                                transition={{ duration: 0.6, delay: 0.3 }}
+                            >
+                                <Card className="shadow-md hover:shadow-lg border border-gray-200 dark:border-gray-700 backdrop-blur-md transition-all">
+                                    <CardHeader>
+                                        <CardTitle>Lịch học hôm nay</CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="space-y-3">
+                                        {todaySchedules.length === 0 ? (
+                                            <EmptyState
+                                                icon={<Calendar className="w-10 h-10" />}
+                                                text="Hôm nay không có lịch học nào."
+                                            />
+                                        ) : (
+                                            todaySchedules.map((s, i) => (
+                                                <motion.div
+                                                    key={i}
+                                                    className="group p-4 border rounded-xl bg-background flex items-center justify-between cursor-pointer hover:shadow-md hover:border-primary/30 transition-all duration-200"
+                                                    whileHover={{ scale: 1.02 }}
+                                                    onClick={() =>
+                                                        router.push(`/lecturer/classes/${s.offeringId}`)
+                                                    }
+                                                >
+                                                    <div className="flex flex-col justify-center">
+                                                        <div className="flex flex-wrap items-center gap-2">
+                                                            <span className="font-semibold text-foreground text-lg">
+                                                                {s.courseName}{" "}
+                                                                <span className="text-muted-foreground text-sm">
+                                                                    ({s.classCode})
+                                                                </span>
+                                                            </span>
+                                                            <Badge
+                                                                variant="outline"
+                                                                className={cn(
+                                                                    "px-2 py-0.5 text-xs font-medium rounded-full",
+                                                                    s.isPractice
+                                                                        ? "bg-orange-500/10 text-orange-600 border-orange-500/20"
+                                                                        : "bg-blue-500/10 text-blue-600 border-blue-500/20"
+                                                                )}
+                                                            >
+                                                                {s.isPractice ? "Thực hành" : "Lý thuyết"}
+                                                            </Badge>
+                                                            {s.isPractice && s.groupNumber && s.isMyPractice && (
+                                                                <Badge className="px-2 py-0.5 text-xs font-medium rounded-full bg-emerald-500/10 text-emerald-600 border-emerald-500/20">
+                                                                    Nhóm {s.groupNumber}
+                                                                </Badge>
+                                                            )}
+                                                        </div>
+
+                                                        <div className="flex items-center text-sm text-muted-foreground mt-1">
+                                                            <span>
+                                                                {s.building}-{s.classroom} • Tiết {s.start_period} →{" "}
+                                                                {s.start_period + s.period_count - 1}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+
+                                                    <motion.div
+                                                        initial={{ opacity: 0 }}
+                                                        whileHover={{ opacity: 1 }}
+                                                        transition={{ duration: 0.2 }}
+                                                        className="flex items-center justify-center"
+                                                    >
+                                                        <ArrowRight className="w-5 h-5 text-muted-foreground" />
+                                                    </motion.div>
+                                                </motion.div>
+                                            ))
                                         )}
-                                    </div>
-                                ))
-                            )}
-                        </CardContent>
-                    </Card>
-                </div>
+                                    </CardContent>
+                                </Card>
+                            </motion.div>
+
+                            {/* Lịch hẹn hôm nay */}
+                            <motion.div
+                                className={cn("flex-1 w-full lg:w-1/2")}
+                                initial={{ y: 10, opacity: 0 }}
+                                animate={{ y: 0, opacity: 1 }}
+                                transition={{ duration: 0.6, delay: 0.4 }}
+                            >
+                                <Card className="shadow-md hover:shadow-lg border border-gray-200 dark:border-gray-700 backdrop-blur-md transition-all">
+                                    <CardHeader>
+                                        <CardTitle>Lịch hẹn hôm nay</CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="space-y-3">
+                                        {groupedAppointments.length === 0 ? (
+                                            <EmptyState
+                                                icon={<CalendarDays className="w-10 h-10" />}
+                                                text="Hôm nay không có lịch hẹn nào."
+                                            />
+                                        ) : (
+                                            groupedAppointments.map((a) => (
+                                                <motion.div
+                                                    key={a.id + a.start_time}
+                                                    className="group p-4 border rounded-xl bg-background hover:bg-secondary/80 transition-all duration-200 space-y-2 cursor-pointer hover:shadow-md hover:border-primary/30"
+                                                    whileHover={{ scale: 1.02 }}
+                                                    onClick={() => router.push(`/lecturer/appointments`)}
+                                                >
+                                                    <div className="flex justify-between items-center">
+                                                        <span className="font-semibold">{a.title}</span>
+                                                        <Badge className="bg-blue-500/10 text-blue-600 border-blue-500/20">
+                                                            {new Date(a.start_time).toLocaleTimeString("vi-VN", {
+                                                                hour: "2-digit",
+                                                                minute: "2-digit",
+                                                            })}{" "}
+                                                            -{" "}
+                                                            {new Date(a.end_time).toLocaleTimeString("vi-VN", {
+                                                                hour: "2-digit",
+                                                                minute: "2-digit",
+                                                            })}
+                                                        </Badge>
+                                                    </div>
+                                                    <p className="text-sm text-muted-foreground">
+                                                        Phụ huynh:{" "}
+                                                        <span className="font-medium text-foreground">
+                                                            {a.parents.join(", ")}
+                                                        </span>{" "}
+                                                        • Học sinh:{" "}
+                                                        <span className="font-medium text-foreground">
+                                                            {a.student.users.full_name}
+                                                        </span>
+                                                    </p>
+                                                    {a.location && (
+                                                        <p className="text-sm text-muted-foreground">
+                                                            Địa điểm: {a.location}
+                                                        </p>
+                                                    )}
+                                                </motion.div>
+                                            ))
+                                        )}
+                                    </CardContent>
+                                </Card>
+                            </motion.div>
+                        </div>
+                    </>
+                )}
             </div>
-        </div>
+        </motion.div>
     );
 }
