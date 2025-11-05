@@ -51,7 +51,7 @@ export function ResetPasswordModal({
         const token = localStorage.getItem("token");
         const res = await fetch(`${API_BASE}/api/auth/admin/reset-password`, {
         method: "POST",
-        credentials: "include",
+        // credentials: "include",
         headers: { 
           "Content-Type": "application/json",
           "Authorization": `Bearer ${token}`,
