@@ -369,7 +369,7 @@ export function AccountManagement() {
     try {
       setRowActionId(accountId);
       setError(null);
-      const res = await fetch(`${API_BASE}/api/users/${accountId}/status`, {
+      const res = await fetch(`/api/users/${accountId}/status`, {
         method: "PATCH",
         credentials: "include",
         headers: {
