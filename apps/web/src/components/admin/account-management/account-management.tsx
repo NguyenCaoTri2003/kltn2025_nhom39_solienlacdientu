@@ -212,7 +212,10 @@ export function AccountManagement() {
   const [bulkTargetStatus, setBulkTargetStatus] =
     useState<Account["status"]>("inactive");
 
+  const user = localStorage.getItem("user") ? JSON.parse(localStorage.getItem("user")!) : null;
 
+  console.log("Current user:", user);
+  console.log("User role:", user?.role);
 
   // Hàm gọi API server-side pagination
   const loadAccounts = async (
@@ -228,6 +231,7 @@ export function AccountManagement() {
     }
   ) => {
     const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
+    const token = localStorage.getItem("token");
     try {
       setLoading(true);
       setError(null);
@@ -245,6 +249,7 @@ export function AccountManagement() {
         credentials: "include",
         headers: {
           "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
         },
       });
       const result = await res.json().catch(() => ({}));
@@ -372,7 +377,7 @@ export function AccountManagement() {
       const token = localStorage.getItem("token");
       const res = await fetch(`${API_BASE}/api/users/${accountId}/status`, {
         method: "PATCH",
-        // credentials: "include",
+        credentials: "include",
         headers: {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${token}`,

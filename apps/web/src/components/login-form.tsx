@@ -36,6 +36,8 @@ export function LoginForm() {
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || "Đăng nhập thất bại")
 
+      console.log("Login successful:", data)
+
       localStorage.setItem("user", JSON.stringify(data.user))
       localStorage.setItem("token", data.token)
 
