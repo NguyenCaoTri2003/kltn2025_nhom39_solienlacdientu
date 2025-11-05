@@ -55,13 +55,17 @@ export async function POST(req: NextRequest) {
       httpOnly: true,
       path: "/",
       maxAge: 60 * 60 * 24,
-      sameSite: "lax",
+      // sameSite: "lax",
+      sameSite: "none", 
+      secure: true,
     });
     res.cookies.set("user", JSON.stringify(user), {
       httpOnly: false,
       path: "/",
       maxAge: 60 * 60 * 24,
-      sameSite: "lax",
+      // sameSite: "lax",
+      sameSite: "none",
+      secure: true,
     });
 
     return res;
