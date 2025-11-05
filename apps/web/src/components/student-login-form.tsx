@@ -61,7 +61,7 @@ export function StudentLoginForm() {
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          credentials: "include", // bắt buộc nếu có cookie
+          credentials: "include",
           body: JSON.stringify({ identifier: account, password, role }),
         }
       );
@@ -70,17 +70,13 @@ export function StudentLoginForm() {
       try {
         data = await res.json();
       } catch {
-        console.warn("⚠️ API không trả JSON hợp lệ");
+        console.warn("API không trả JSON hợp lệ");
       }
-
-      console.log("📩 Login response:", data);
-      console.log("📡 Status:", res.status);
 
       if (!res.ok) {
         throw new Error(data?.error || "Đăng nhập thất bại");
       }
 
-      // ✅ Lưu thông tin user
       if (data?.user) {
         localStorage.setItem("user", JSON.stringify(data.user));
       }
@@ -88,19 +84,16 @@ export function StudentLoginForm() {
         localStorage.setItem("token", data.token);
       }
 
-      // ✅ refreshUser có thể lỗi — bọc riêng
       try {
         await refreshUser();
-        console.log("✅ refreshUser thành công");
       } catch (e) {
-        console.warn("⚠️ refreshUser lỗi:", e);
+        console.warn("refreshUser lỗi:", e);
       }
 
-      console.log("➡️ Redirecting to /portal ...");
-      router.push("/portal"); // thêm await để đảm bảo điều hướng
+      router.push("/portal"); 
 
     } catch (err: any) {
-      console.error("❌ Login error:", err);
+      console.error("Login error:", err);
       setError(err?.message || "Đăng nhập thất bại");
     } finally {
       setIsLoading(false);
