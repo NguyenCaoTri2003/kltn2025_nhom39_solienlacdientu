@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { PageBreadcrumb } from "@/components/page-breadcrumb";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,9 @@ import { RowActionsLearningDataOverview } from "@/components/admin/modals_UI/Row
 import { WarningHistoryModal } from "@/components/admin/modals_UI/WarningHistoryModal";
 import { CreateWarningModal } from "@/components/admin/modals_UI/CreateWarningModal";
 import { translateWarningLevel } from "@packages/utils/translations";
+import { createAcademicWarningsApi } from "@/services/academicWarnings";
+import { WarningSummaryStats } from "./WarningSummaryStats";
+import { WarningDistributionChart } from "./WarningDistributionChart";
 
 type V2Row = {
   user_id?: number | string;
@@ -31,34 +34,21 @@ type V2Row = {
   previous_warnings_count: number;
   proposed_warning_level: "FIRST" | "SECOND" | "FINAL" | null;
   violation_reasons: string[];
-  is_warned?: boolean; // New field to track warning status
+  is_warned?: boolean; 
 };
 
 type Meta = { total: number; page: number; pageSize: number };
 
 export default function LearningDataOverview_V2() {
   const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
-  const getToken = () => {
-    try {
-      if (typeof document !== "undefined") {
-        const cookieToken = document.cookie
-          .split("; ")
-          .find((row) => row.startsWith("token="))
-          ?.split("=")[1];
-        const lsToken = typeof localStorage !== "undefined" ? localStorage.getItem("token") : null;
-        return cookieToken || lsToken || null;
-      }
-    } catch {}
-    return null;
-  };
+  const api = useMemo(() => createAcademicWarningsApi(API_BASE), [API_BASE]);
 
-  // Filters
   const [searchText, setSearchText] = useState("");
   const [classroom, setClassroom] = useState<string>("");
   const [academicYear, setAcademicYear] = useState<string>("");
   const [semester, setSemester] = useState<string>("");
 
-  // Data state
+
   const [rows, setRows] = useState<V2Row[]>([]);
   const [meta, setMeta] = useState<Meta>({ total: 0, page: 1, pageSize: 20 });
   const [loading, setLoading] = useState(false);
@@ -66,7 +56,9 @@ export default function LearningDataOverview_V2() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
 
-  // Actions/modals state
+
+
+
   const [warningOpen, setWarningOpen] = useState(false);
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
   const [openModal, setOpenModal] = useState(false);
@@ -74,7 +66,6 @@ export default function LearningDataOverview_V2() {
   const [selectedSemesterIdForCreate, setSelectedSemesterIdForCreate] = useState<number | null>(null);
   const [selectedStudentDataForCreate, setSelectedStudentDataForCreate] = useState<V2Row | null>(null);
 
-  // Lookup datasets
   const [semestersData, setSemestersData] = useState<Array<{ id: number; name: string; academic_year: string | null }>>([]);
   const [classesData, setClassesData] = useState<Array<{ id: number; class_code: string }>>([]);
   const academicYears = useMemo(() => {
@@ -97,31 +88,18 @@ export default function LearningDataOverview_V2() {
     let alive = true;
     const loadSemesters = async () => {
       try {
-        const token = localStorage.getItem("token");
-        const res = await fetch(`${API_BASE}/api/semesters`, {
-          method: "GET",
-          headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-        });
-        const json = await res.json();
+        const controller = new AbortController();
+        const data = await api.fetchSemesters(controller.signal);
         if (!alive) return;
-        if (json?.returnCode === 0 && Array.isArray(json.data)) setSemestersData(json.data);
+        setSemestersData(data);
       } catch {}
     };
     const loadClasses = async () => {
       try {
-        const token = localStorage.getItem("token");
-        const res = await fetch(`${API_BASE}/api/classes`, {
-          method: "GET",
-          headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-        });
-        const json = await res.json();
+        const controller = new AbortController();
+        const data = await api.fetchClasses(controller.signal);
         if (!alive) return;
-        if (json?.returnCode === 0 && Array.isArray(json.data)) {
-          type C = { id: number; class_code: string };
-          const items: C[] = (json.data as Array<{ id?: number | string; class_code?: string }>)
-            .map((c) => ({ id: Number(c.id), class_code: String(c.class_code || "") }));
-          setClassesData(items);
-        }
+        setClassesData(data);
       } catch {}
     };
     loadSemesters();
@@ -129,13 +107,13 @@ export default function LearningDataOverview_V2() {
     return () => {
       alive = false;
     };
-  }, [API_BASE]);
+  }, [API_BASE, api]);
 
   useEffect(() => {
     setSemester("");
   }, [academicYear]);
 
-  const buildUrl = (overrides?: { p?: number; ps?: number; search?: string; semId?: string }) => {
+  const buildParams = useCallback((overrides?: { p?: number; ps?: number; search?: string; semId?: string }) => {
     const params = new URLSearchParams();
     const currentPage = overrides?.p ?? page;
     const currentPageSize = overrides?.ps ?? pageSize;
@@ -147,20 +125,16 @@ export default function LearningDataOverview_V2() {
     if (classroom && classroom !== "all") params.set("classCode", classroom);
     params.set("page", String(currentPage));
     params.set("pageSize", String(currentPageSize));
-    return `${API_BASE}/api/academic-warnings/v2?${params.toString()}`;
-  };
+    return params;
+  }, [page, pageSize, searchText, semester, academicYear, classroom]);
 
   const fetchData = async (overrides?: { p?: number; ps?: number; search?: string; semId?: string }) => {
     setLoading(true);
     setError(null);
+    const controller = new AbortController();
     try {
-      const url = buildUrl(overrides);
-      const token = localStorage.getItem("token");
-      const res = await fetch(url, {
-        method: "GET",
-        headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-      });
-      const json = await res.json();
+      const params = buildParams(overrides);
+      const json = await api.fetchV2List(params, controller.signal);
       if (json?.returnCode !== 0) throw new Error(json?.message || "Fetch failed");
       const data: V2Row[] = Array.isArray(json.data) ? json.data : [];
       setRows(data);
@@ -176,6 +150,7 @@ export default function LearningDataOverview_V2() {
       setLoading(false);
     }
   };
+
 
   const handleClearFilters = () => {
     setClassroom("");
@@ -200,30 +175,21 @@ export default function LearningDataOverview_V2() {
     }
 
     try {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        alert("Vui lòng đăng nhập lại");
-        return;
-      }
 
-      const response = await fetch(`${API_BASE}/api/academic-warnings/mark-warned`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          studentId: Number(studentId),
-          semesterId: Number(semesterId),
-          level: "FIRST", // Default level, có thể cải thiện sau
-        }),
+      const levelInput = prompt("Chọn mức cảnh cáo (FIRST, SECOND, FINAL):", "FIRST");
+      const level = (levelInput || "FIRST").toUpperCase();
+      const valid = ["FIRST", "SECOND", "FINAL"]; 
+      const chosen = (valid.includes(level) ? level : "FIRST") as "FIRST" | "SECOND" | "FINAL";
+
+      const result = await api.markWarned({
+        studentId: Number(studentId),
+        semesterId: Number(semesterId),
+        level: chosen,
       });
-
-      const result = await response.json();
       
       if (result.returnCode === 0) {
-        alert(`Đã đánh dấu ${studentName} là đã cảnh cáo`);
-        // Refresh data để cập nhật UI
+        alert(`Đã đánh dấu ${studentName} là đã cảnh cáo (${chosen})`);
+
         await fetchData();
       } else {
         alert(`Lỗi: ${result.message}`);
@@ -243,7 +209,7 @@ export default function LearningDataOverview_V2() {
 
   return (
     <div className="space-y-6">
-      <PageBreadcrumb items={[{ label: "Quản lý học tập", href: "/admin" }, { label: "Cảnh cáo học tập V2" }]} />
+      {/* <PageBreadcrumb items={[{ label: "Quản lý học tập", href: "/admin" }, { label: "Cảnh cáo học tập V2" }]} /> */}
 
       <div className="border rounded-xl p-4 bg-white shadow-sm space-y-4">
         <div className="flex justify-between items-center">
@@ -316,7 +282,7 @@ export default function LearningDataOverview_V2() {
             {loading ? "Đang tìm..." : "Tìm kiếm"}
           </Button>
         </div>
-      </div>
+       </div>
 
       {/* Table (auto height, no vertical scrollbar) */}
       <div className="overflow-x-auto border rounded-xl shadow-sm bg-white">
@@ -350,6 +316,13 @@ export default function LearningDataOverview_V2() {
             <tr>
               <td className="px-4 py-6 text-gray-500" colSpan={15}>
                 <p>Vui lòng nhấn tìm kiếm để xem kết quả.</p>
+              </td>
+            </tr>
+          )}
+          {!error && loading && (
+            <tr>
+              <td className="px-4 py-6 text-gray-500" colSpan={15}>
+                Đang tải dữ liệu...
               </td>
             </tr>
           )}
@@ -417,6 +390,10 @@ export default function LearningDataOverview_V2() {
         }}
       />
 
+      {/* Stats & Charts (teacher-like) - below pagination */}
+      <WarningSummaryStats rows={rows} />
+      <WarningDistributionChart rows={rows} />
+
       {/* Warning History Modal */}
       <WarningHistoryModal
         open={warningOpen}
@@ -424,6 +401,7 @@ export default function LearningDataOverview_V2() {
         studentId={selectedStudentId || undefined}
         semesterId={semester || undefined}
         apiBase={API_BASE}
+        semesters={semestersData}
       />
       {/* Create Warning Modal */}
       <CreateWarningModal
@@ -443,7 +421,7 @@ export default function LearningDataOverview_V2() {
           cum_avg_score_4: selectedStudentDataForCreate.cum_avg_score_4,
           total_credit_failed: selectedStudentDataForCreate.total_credit_failed,
           total_credit_failed_cumulative: selectedStudentDataForCreate.total_credit_failed_cumulative,
-          academic_status: null, // Có thể thêm field này vào V2Row nếu cần
+          academic_status: null, 
         } : undefined}
         onCreated={() => {
           fetchData();
