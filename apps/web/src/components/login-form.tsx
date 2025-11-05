@@ -20,11 +20,17 @@ export function LoginForm() {
     setIsLoading(true)
     setError("")
 
+    const API_BASE =
+      process.env.NEXT_PUBLIC_API_URL ||
+      (typeof window !== "undefined"
+        ? window.location.origin
+        : "http://localhost:3000");
+
     try {
-      const res = await fetch(`/api/auth/login/lectureroradmin`, {
+      const res = await fetch(`${API_BASE}/api/auth/login/lectureroradmin`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        credentials: "include", 
+        credentials: "include",
         body: JSON.stringify({ identifier: account, password }),
       })
       const data = await res.json()

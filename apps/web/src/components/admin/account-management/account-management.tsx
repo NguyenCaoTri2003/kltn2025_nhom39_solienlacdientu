@@ -203,7 +203,7 @@ export function AccountManagement() {
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [rowActionId, setRowActionId] = useState<string | null>(null);
-  
+
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [selectedStatus, setSelectedStatus] = useState<
     Account["status"] | null
@@ -369,11 +369,13 @@ export function AccountManagement() {
     try {
       setRowActionId(accountId);
       setError(null);
-      const res = await fetch(`/api/users/${accountId}/status`, {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`${API_BASE}/api/users/${accountId}/status`, {
         method: "PATCH",
-        credentials: "include",
+        // credentials: "include",
         headers: {
           "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
         },
         body: JSON.stringify({ status: nextStatus }),
       });
@@ -696,8 +698,7 @@ export function AccountManagement() {
                     return;
                   }
                   const ok = await confirmWithToast(
-                    `Cập nhật ${
-                      selectedIds.length
+                    `Cập nhật ${selectedIds.length
                     } tài khoản sang trạng thái '${translateStatus(
                       bulkTargetStatus
                     )}'?`
@@ -809,8 +810,7 @@ export function AccountManagement() {
                       selectedIds.includes(id)
                     );
                     const ok = await confirmWithToast(
-                      `${
-                        allSelected ? "Bỏ chọn" : "Chọn"
+                      `${allSelected ? "Bỏ chọn" : "Chọn"
                       } tất cả tài khoản trạng thái '${translateStatus(
                         selectedStatus
                       )}' trên trang hiện tại?`
@@ -844,8 +844,8 @@ export function AccountManagement() {
               roleFilter === "lecturer"
                 ? "Khoa"
                 : roleFilter === "student"
-                ? "Lớp"
-                : "",
+                  ? "Lớp"
+                  : "",
               "Trạng thái",
               "Đăng nhập cuối",
               "Thao tác",
@@ -915,7 +915,7 @@ export function AccountManagement() {
                           setSelectedIds((prev) =>
                             prev.filter((id) => id !== account.id)
                           );
-                
+
                           setTimeout(() => {
                             if (
                               selectedIds.filter((id) => id !== account.id)
