@@ -212,11 +212,6 @@ export function AccountManagement() {
   const [bulkTargetStatus, setBulkTargetStatus] =
     useState<Account["status"]>("inactive");
 
-  const user = localStorage.getItem("user") ? JSON.parse(localStorage.getItem("user")!) : null;
-
-  console.log("Current user:", user);
-  console.log("User role:", user?.role);
-
   // Hàm gọi API server-side pagination
   const loadAccounts = async (
     nextPage: number,
@@ -245,6 +240,11 @@ export function AccountManagement() {
       if (extra?.classId) params.set("class_id", String(extra.classId));
       if (extra?.semesterId)
         params.set("semester_id", String(extra.semesterId));
+      const user = localStorage.getItem("user") ? JSON.parse(localStorage.getItem("user")!) : null;
+
+      console.log("Current user:", user);
+      console.log("User role:", user?.role);
+
       const res = await fetch(`${API_BASE}/api/users?${params.toString()}`, {
         credentials: "include",
         headers: {
