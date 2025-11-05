@@ -17,35 +17,90 @@ export function StudentLoginForm() {
   const router = useRouter()
   const { refreshUser } = useUser();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
-    setError("")
+  // const handleSubmit = async (e: React.FormEvent) => {
+  //   e.preventDefault()
+  //   setIsLoading(true)
+  //   setError("")
 
-    const role = isParent ? "parent" : "student"
+  //   const role = isParent ? "parent" : "student"
+
+  //   try {
+  //     const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/login/studentorparent`, {
+  //       method: "POST",
+  //       headers: { "Content-Type": "application/json" },
+  //       credentials: "include",
+  //       body: JSON.stringify({ identifier: account, password, role }),
+  //     })
+
+  //     const data = await res.json()
+  //     console.log("Login response:", data);
+  //     if (!res.ok) throw new Error(data.error || "Đăng nhập thất bại")
+
+  //       localStorage.setItem("user", JSON.stringify(data.user))
+  //       localStorage.setItem("token", data.token)
+  //       await refreshUser();
+
+  //     router.push("/portal")
+  //   } catch (err: any) {
+  //     setError(err.message)
+  //   } finally {
+  //     setIsLoading(false)
+  //   }
+  // }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError("");
+
+    const role = isParent ? "parent" : "student";
 
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/login/studentorparent`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ identifier: account, password, role }),
-      })
+      const res = await fetch(
+        `/api/auth/login/studentorparent`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ identifier: account, password, role }),
+        }
+      );
 
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error || "Đăng nhập thất bại")
+      let data: any = {};
+      try {
+        data = await res.json();
+      } catch {
+        console.warn("API không trả JSON hợp lệ");
+      }
 
-        localStorage.setItem("user", JSON.stringify(data.user))
-        localStorage.setItem("token", data.token)
+      if (!res.ok) {
+        throw new Error(data?.error || "Đăng nhập thất bại");
+      }
+
+      if (data?.user) {
+        localStorage.setItem("user", JSON.stringify(data.user));
+      }
+      if (data?.token) {
+        localStorage.setItem("token", data.token);
+      }
+
+      try {
         await refreshUser();
+      } catch (e) {
+        console.warn("refreshUser lỗi:", e);
+      }
 
-      router.push("/portal")
+      router.push("/portal"); 
+
     } catch (err: any) {
-      setError(err.message)
+      console.error("Login error:", err);
+      setError(err?.message || "Đăng nhập thất bại");
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
+
+  console.log("Render StudentLoginForm");
 
   return (
     <div className="flex items-center justify-center p-6">

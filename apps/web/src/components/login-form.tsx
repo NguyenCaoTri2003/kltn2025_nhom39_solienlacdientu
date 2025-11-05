@@ -20,15 +20,23 @@ export function LoginForm() {
     setIsLoading(true)
     setError("")
 
+    // const API_BASE =
+    //   process.env.TYPE === "production"
+    //     ? "" 
+    //     : process.env.NEXT_PUBLIC_API_URL; 
+
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/login/lectureroradmin`, {
+      // const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/login/lectureroradmin`, {
+      const res = await fetch(`/api/auth/login/lectureroradmin`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        credentials: "include", 
+        credentials: "include",
         body: JSON.stringify({ identifier: account, password }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || "Đăng nhập thất bại")
+
+      console.log("Login successful:", data)
 
       localStorage.setItem("user", JSON.stringify(data.user))
       localStorage.setItem("token", data.token)

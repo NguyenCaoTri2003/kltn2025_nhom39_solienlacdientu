@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
       // Ghi log hành động hệ thống
       await logUserChange({
         user_id: user.id,
-        changed_by: null, 
+        changed_by: null,
         change_type: "status_change",
         changes: {
           old_status: oldStatus,
@@ -42,21 +42,25 @@ export async function POST(req: NextRequest) {
 
       user.status = updatedUser.status;
     }
-//
+    //
 
-     const res = NextResponse.json({ user, token }, { status: 200 });
-      res.cookies.set("token", token, {
-        httpOnly: true,
-        path: "/",
-        maxAge: 60 * 60 * 24, 
-        sameSite: "lax",
-      });
-      res.cookies.set("user", JSON.stringify(user), {
-        httpOnly: false, 
-        path: "/",
-        maxAge: 60 * 60 * 24,
-        sameSite: "lax",
-      });
+    const res = NextResponse.json({ user, token }, { status: 200 });
+    res.cookies.set("token", token, {
+      httpOnly: true,
+      path: "/",
+      maxAge: 60 * 60 * 24,
+      // sameSite: "lax",
+      sameSite: "none",
+      secure: true,
+    });
+    res.cookies.set("user", JSON.stringify(user), {
+      httpOnly: false,
+      path: "/",
+      maxAge: 60 * 60 * 24,
+      // sameSite: "lax",
+      sameSite: "none", 
+      secure: true,
+    });
 
     return res;
   } catch (e: any) {

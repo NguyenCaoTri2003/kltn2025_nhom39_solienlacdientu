@@ -203,7 +203,7 @@ export function AccountManagement() {
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [rowActionId, setRowActionId] = useState<string | null>(null);
-  
+
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [selectedStatus, setSelectedStatus] = useState<
     Account["status"] | null
@@ -211,8 +211,6 @@ export function AccountManagement() {
   const [bulkLoading, setBulkLoading] = useState<boolean>(false);
   const [bulkTargetStatus, setBulkTargetStatus] =
     useState<Account["status"]>("inactive");
-
-
 
   // Hàm gọi API server-side pagination
   const loadAccounts = async (
@@ -228,6 +226,7 @@ export function AccountManagement() {
     }
   ) => {
     const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
+    const token = localStorage.getItem("token");
     try {
       setLoading(true);
       setError(null);
@@ -241,10 +240,16 @@ export function AccountManagement() {
       if (extra?.classId) params.set("class_id", String(extra.classId));
       if (extra?.semesterId)
         params.set("semester_id", String(extra.semesterId));
+      const user = localStorage.getItem("user") ? JSON.parse(localStorage.getItem("user")!) : null;
+
+      console.log("Current user:", user);
+      console.log("User role:", user?.role);
+
       const res = await fetch(`${API_BASE}/api/users?${params.toString()}`, {
         credentials: "include",
         headers: {
           "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
         },
       });
       const result = await res.json().catch(() => ({}));
@@ -369,11 +374,13 @@ export function AccountManagement() {
     try {
       setRowActionId(accountId);
       setError(null);
+      const token = localStorage.getItem("token");
       const res = await fetch(`${API_BASE}/api/users/${accountId}/status`, {
         method: "PATCH",
         credentials: "include",
         headers: {
           "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
         },
         body: JSON.stringify({ status: nextStatus }),
       });
@@ -696,8 +703,7 @@ export function AccountManagement() {
                     return;
                   }
                   const ok = await confirmWithToast(
-                    `Cập nhật ${
-                      selectedIds.length
+                    `Cập nhật ${selectedIds.length
                     } tài khoản sang trạng thái '${translateStatus(
                       bulkTargetStatus
                     )}'?`
@@ -809,8 +815,7 @@ export function AccountManagement() {
                       selectedIds.includes(id)
                     );
                     const ok = await confirmWithToast(
-                      `${
-                        allSelected ? "Bỏ chọn" : "Chọn"
+                      `${allSelected ? "Bỏ chọn" : "Chọn"
                       } tất cả tài khoản trạng thái '${translateStatus(
                         selectedStatus
                       )}' trên trang hiện tại?`
@@ -844,8 +849,8 @@ export function AccountManagement() {
               roleFilter === "lecturer"
                 ? "Khoa"
                 : roleFilter === "student"
-                ? "Lớp"
-                : "",
+                  ? "Lớp"
+                  : "",
               "Trạng thái",
               "Đăng nhập cuối",
               "Thao tác",
@@ -915,7 +920,7 @@ export function AccountManagement() {
                           setSelectedIds((prev) =>
                             prev.filter((id) => id !== account.id)
                           );
-                
+
                           setTimeout(() => {
                             if (
                               selectedIds.filter((id) => id !== account.id)

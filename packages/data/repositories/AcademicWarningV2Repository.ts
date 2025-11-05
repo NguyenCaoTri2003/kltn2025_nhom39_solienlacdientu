@@ -291,6 +291,7 @@ export class AcademicWarningV2Repository {
         violation_reasons: [],
         proposed_warning_level: null,
         expulsion_candidate: false,
+        is_warned: false,
       };
     });
 

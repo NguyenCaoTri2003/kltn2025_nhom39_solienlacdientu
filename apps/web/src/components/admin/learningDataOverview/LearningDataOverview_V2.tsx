@@ -37,7 +37,7 @@ type V2Row = {
 type Meta = { total: number; page: number; pageSize: number };
 
 export default function LearningDataOverview_V2() {
-  const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
+  const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
   const getToken = () => {
     try {
       if (typeof document !== "undefined") {
@@ -97,7 +97,7 @@ export default function LearningDataOverview_V2() {
     let alive = true;
     const loadSemesters = async () => {
       try {
-        const token = getToken();
+        const token = localStorage.getItem("token");
         const res = await fetch(`${API_BASE}/api/semesters`, {
           method: "GET",
           headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
@@ -109,7 +109,7 @@ export default function LearningDataOverview_V2() {
     };
     const loadClasses = async () => {
       try {
-        const token = getToken();
+        const token = localStorage.getItem("token");
         const res = await fetch(`${API_BASE}/api/classes`, {
           method: "GET",
           headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
@@ -155,7 +155,7 @@ export default function LearningDataOverview_V2() {
     setError(null);
     try {
       const url = buildUrl(overrides);
-      const token = getToken();
+      const token = localStorage.getItem("token");
       const res = await fetch(url, {
         method: "GET",
         headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
@@ -200,7 +200,7 @@ export default function LearningDataOverview_V2() {
     }
 
     try {
-      const token = getToken();
+      const token = localStorage.getItem("token");
       if (!token) {
         alert("Vui lòng đăng nhập lại");
         return;

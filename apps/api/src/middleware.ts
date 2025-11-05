@@ -5,6 +5,7 @@ const FRONTEND_ORIGIN = process.env.NEXT_PUBLIC_FRONTEND_URL || "http://localhos
 
 export function middleware(req: NextRequest) {
   console.log("Middleware API - CORS");
+  console.log("CORS origin:", FRONTEND_ORIGIN);
 
   if (req.nextUrl.pathname.startsWith("/api")) {
     if (req.method === "OPTIONS") {

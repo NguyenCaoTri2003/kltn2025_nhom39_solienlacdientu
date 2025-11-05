@@ -6,6 +6,9 @@ const nextConfig: NextConfig = {
     config.resolve.alias['@packages'] = path.resolve(__dirname, 'packages');
     return config;
   },
+  eslint: {
+    ignoreDuringBuilds: true
+  }
 };
 
 export default nextConfig;

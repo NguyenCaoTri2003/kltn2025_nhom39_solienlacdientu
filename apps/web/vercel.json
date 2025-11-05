@@ -1,0 +1,9 @@
+{
+  "buildCommand": "pnpm run build",
+  "installCommand": "pnpm install --no-frozen-lockfile",
+  "outputDirectory": ".next",
+  "framework": "nextjs",
+  "env": {
+    "NEXT_TELEMETRY_DISABLED": "1"
+  }
+}

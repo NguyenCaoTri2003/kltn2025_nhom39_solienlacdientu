@@ -65,7 +65,11 @@ export class StudentUseCase {
                     student_code: student.student_code,
                     date_of_birth: student.date_of_birth,
                     contact_address: student.contact_address,
-                    class: student.classes ? (Array.isArray(student.classes) ? student.classes[0].name : student.classes.name) : null,
+                    class: student.classes
+                        ? Array.isArray(student.classes)
+                            ? (student.classes[0] as any)?.name
+                            : (student.classes as any)?.name
+                        : null,
                     academic_status: student.academic_status,
                     type_of_tranning: student.type_of_tranning,
                     training_level: student.training_level,
@@ -98,8 +102,6 @@ export class StudentUseCase {
                 },
                 practice_groups:
                     grades?.practice_group ??
-                    grades?.practiceGroups ??
-                    grades?.practice_group_info ??
                     null,
             }
 

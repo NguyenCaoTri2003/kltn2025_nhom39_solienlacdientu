@@ -384,7 +384,7 @@ export default function NotificationDetail({ notificationId }: NotificationDetai
         </Button>
       </div>
 
-      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog} className="z-50 w-3">
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Xóa thông báo</DialogTitle>
