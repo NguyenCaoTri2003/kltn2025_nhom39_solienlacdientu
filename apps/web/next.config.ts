@@ -30,6 +30,14 @@ const nextConfig: NextConfig = {
   experimental: {
     esmExternals: "loose",
   },
+  async rewrites() {
+    return [
+      {
+        source: "/api/:path*",
+        destination: "https://kltn2025-nhom39-solienlacdientu.onrender.com/api/:path*", // ← BE Render
+      },
+    ];
+  },
 };
 
 export default nextConfig;

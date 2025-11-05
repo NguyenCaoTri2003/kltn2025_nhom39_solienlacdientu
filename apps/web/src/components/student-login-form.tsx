@@ -57,7 +57,7 @@ export function StudentLoginForm() {
 
     try {
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/auth/login/studentorparent`,
+        `/api/auth/login/studentorparent`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
