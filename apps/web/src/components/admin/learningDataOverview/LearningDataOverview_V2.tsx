@@ -37,7 +37,7 @@ type V2Row = {
 type Meta = { total: number; page: number; pageSize: number };
 
 export default function LearningDataOverview_V2() {
-  const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
+  const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
   const getToken = () => {
     try {
       if (typeof document !== "undefined") {
