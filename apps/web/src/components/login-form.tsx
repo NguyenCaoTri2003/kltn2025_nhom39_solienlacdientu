@@ -21,10 +21,9 @@ export function LoginForm() {
     setError("")
 
     const API_BASE =
-      process.env.NEXT_PUBLIC_API_URL ||
-      (typeof window !== "undefined"
-        ? window.location.origin
-        : "http://localhost:3000");
+      process.env.TYPE === "production"
+        ? "" 
+        : process.env.NEXT_PUBLIC_API_URL; 
 
     try {
       const res = await fetch(`${API_BASE}/api/auth/login/lectureroradmin`, {
