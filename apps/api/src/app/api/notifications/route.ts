@@ -1,8 +1,121 @@
 import { NextRequest, NextResponse } from "next/server";
 import { authenticate } from "@packages/utils/auth";
+import { supabase } from "@packages/data/supabaseClient";
 import { NotificationsUseCase } from "@packages/core/usecases/NotificationsUseCase";
 
+export const runtime = 'nodejs';
 const notificationsUseCase = new NotificationsUseCase();
+
+// GET /api/notifications?grouped=true&page=1&pageSize=20
+export async function GET(req: NextRequest) {
+  try {
+    const url = new URL(req.url);
+    const grouped = true; // mặc định là grouped true, không cho phép override via URL
+    //const grouped = (url.searchParams.get('grouped') ?? 'true') === 'true';  // cho phép override via URL
+    const page = Math.max(1, Number(url.searchParams.get('page') ?? '1'));
+    const pageSize = Math.min(100, Math.max(1, Number(url.searchParams.get('pageSize') ?? '20')));
+    const title = (url.searchParams.get('title') || '').trim();
+    const content = (url.searchParams.get('content') || '').trim();
+    const type = (url.searchParams.get('type') || '').trim();
+    const category = (url.searchParams.get('category') || '').trim();
+    const status = (url.searchParams.get('status') || '').trim();
+    const fromAt = (url.searchParams.get('from') || '').trim();
+    const toAt = (url.searchParams.get('to') || '').trim();
+
+    let user;
+    try {
+      user = await authenticate(req as unknown as Request);
+    } catch {
+      return NextResponse.json(
+        { returnCode: -1, message: "Invalid or missing token", data: null },
+        { status: 401 }
+      );
+    }
+    if (user.role !== 'admin') {
+      return NextResponse.json(
+        { returnCode: -1, message: "Permission denied: Admin only", data: null },
+        { status: 403 }
+      );
+    }
+
+    const { items, meta } = await notificationsUseCase.listNotifications({
+      grouped,
+      page,
+      pageSize,
+      title: title || undefined,
+      content: content || undefined,
+      type: (type || undefined) as unknown as 'university' | 'lecturer' | 'system' | null | undefined,
+      category: category || undefined,
+      from: fromAt || undefined,
+      to: toAt || undefined,
+      status: (status || undefined) as unknown as 'sent' | 'deleted' | null | undefined,
+    });
+    return NextResponse.json({ returnCode: 0, message: 'OK', data: items, meta });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : 'Internal error';
+    return NextResponse.json({ returnCode: -1, message: msg, data: null }, { status: 500 });
+  }
+}
+
+// PUT /api/notifications  { notificationId?: number, broadcast_group_id?: string }
+export async function PUT(req: NextRequest) {
+  try {
+ 
+    let user;
+    try {
+      user = await authenticate(req as unknown as Request);
+    } catch {
+      return NextResponse.json(
+        { returnCode: -1, message: "Invalid or missing token", data: null },
+        { status: 401 }
+      );
+    }
+    if (user.role !== 'admin') {
+      return NextResponse.json(
+        { returnCode: -1, message: "Permission denied: Admin only", data: null },
+        { status: 403 }
+      );
+    }
+
+    const body = await req.json();
+    const { notificationId, broadcast_group_id } = body as { notificationId?: number; broadcast_group_id?: string };
+    if (!notificationId && !broadcast_group_id) {
+      return NextResponse.json({ returnCode: -1, message: 'Missing notificationId or broadcast_group_id', data: null }, { status: 400 });
+    }
+
+    let groupId = broadcast_group_id ?? null;
+    if (!groupId && notificationId) {
+      const { data: row, error } = await supabase
+        .from('notifications')
+        .select('id, broadcast_group_id')
+        .eq('id', notificationId)
+        .maybeSingle();
+      if (error) throw error;
+      if (!row) return NextResponse.json({ returnCode: -1, message: 'Notification not found', data: null }, { status: 404 });
+      groupId = row.broadcast_group_id ?? null;
+      if (!groupId) {
+        const { error: upErr } = await supabase
+          .from('notifications')
+          .update({ is_deleted: true, is_read: true, status: 'deleted' })
+          .eq('id', notificationId);
+        if (upErr) throw upErr;
+        return NextResponse.json({ returnCode: 0, message: 'Deleted', data: { affected: 1 } });
+      }
+    }
+
+    const { data: affectedRows, error: delErr } = await supabase
+      .from('notifications')
+      .update({ is_deleted: true, is_read: true, status: 'deleted' })
+      .eq('broadcast_group_id', groupId!)
+      .select('id');
+    if (delErr) throw delErr;
+
+    return NextResponse.json({ returnCode: 0, message: 'Deleted broadcast', data: { affected: affectedRows?.length ?? 0 } });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : 'Internal error';
+    return NextResponse.json({ returnCode: -1, message: msg, data: null }, { status: 500 });
+  }
+}
 
 export async function POST(req: NextRequest) {
   try {

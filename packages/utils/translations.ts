@@ -114,3 +114,51 @@ export function translateRelationship(relationship?: string): string {
       return relationship || "";
   }
 }
+
+export function translateNotificationCategory(category?: string): string {
+  switch (category) {
+    case "all":
+      return "Tất cả";
+    case "GENERAL":
+      return "Chung";
+    case "ACADEMIC":
+      return "Học vụ";
+    case "SYSTEM":
+      return "Hệ thống";
+    case "FINANCE":
+      return "Tài chính";
+    case "APPOINTMENT":
+      return "Lịch hẹn";
+    default:
+      return category || "";
+  }
+}
+
+
+export function translateSenderType(sender?: string): string {
+  switch (sender) {
+    case "all":
+      return "Tất cả";
+    case "university":
+      return "Đại học";
+    case "lecturer":
+      return "Giảng viên";
+    case "system":
+      return "Hệ thống";
+    default:
+      return sender || "";
+  }
+}
+
+
+
+export function statusNotification(status?: string): string {
+  switch (status) {
+    case "sent":
+      return "Đã gửi";
+    case "deleted":
+      return "Đã xóa";
+    default:
+      return status || "";
+  }
+}

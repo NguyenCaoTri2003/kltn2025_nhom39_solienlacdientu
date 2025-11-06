@@ -439,7 +439,6 @@ export function AccountManagement() {
     }
   };
 
-  // Đã bỏ icon vai trò để gọn giao diện danh sách
 
   const activeCount = accounts.filter((a) => a.status === "active").length;
   const inactiveCount = accounts.filter((a) => a.status === "inactive").length;
@@ -458,13 +457,11 @@ export function AccountManagement() {
         </p>
       </div>
 
-      {/* Role Tabs on top (left) and Add-user on right */}
       <div className="flex items-center justify-between mb-3">
         <Tabs
           value={roleFilter}
           onValueChange={(v: string) => {
             setRoleFilter(v as RoleOption);
-            // Reset extra filters and selection when switching role
             setFacultyFilter("all");
             setClassFilter("all");
             setSemesterFilter("all");
@@ -489,7 +486,6 @@ export function AccountManagement() {
         </Button>
       </div>
 
-      {/* Search & Filters */}
       <Card className="bg-card border-border mb-6">
         <CardHeader>
           <CardTitle className="text-card-foreground">
@@ -501,7 +497,7 @@ export function AccountManagement() {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {/* Grid fields */}
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
               <div>
                 <Label className="mb-1 block">Từ khóa</Label>
@@ -595,7 +591,7 @@ export function AccountManagement() {
                 )}
               </div>
             </div>
-            {/* Actions */}
+
             <div className="flex items-center justify-end gap-2">
               <Button
                 variant="outline"
@@ -653,7 +649,6 @@ export function AccountManagement() {
         </CardContent>
       </Card>
 
-      {/* Account Management Table */}
       <Card className="bg-card border-border">
         <CardHeader>
           <div className="flex items-center justify-between flex-wrap gap-3">
@@ -665,7 +660,7 @@ export function AccountManagement() {
                 Quản lý tất cả tài khoản trong hệ thống
               </CardDescription>
             </div>
-            {/* Bulk status updater moved here for better UX */}
+
             <div className="flex items-center gap-2">
               <span className="text-sm text-muted-foreground">
                 Cập nhật trạng thái:
@@ -770,7 +765,7 @@ export function AccountManagement() {
           </div>
         </CardHeader>
         <CardContent>
-          {/* Error banner */}
+
           {error && (
             <div className="mb-4 rounded-md border border-red-500/40 bg-red-500/10 text-red-400 px-4 py-3 flex items-start justify-between gap-3">
               <div>
@@ -791,7 +786,6 @@ export function AccountManagement() {
           )}
           <DataTable
             headers={[
-              // Header with button to select all by current selectedStatus
               <div
                 className="flex items-center justify-center gap-2"
                 key="col-select"
@@ -876,7 +870,6 @@ export function AccountManagement() {
                   <td className="px-4 py-2">
                     <Skeleton className="h-4 w-64" />
                   </td>
-                  {/* Extra column skeleton for role-specific info */}
                   <td className="px-4 py-2">
                     <Skeleton className="h-4 w-28" />
                   </td>
