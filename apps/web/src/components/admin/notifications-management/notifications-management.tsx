@@ -9,10 +9,12 @@ import { NotificationDetailModal } from "./NotificationDetailModal";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Loader2, SlidersHorizontal, Search } from "lucide-react";
+import { Plus, Loader2, SlidersHorizontal, Search, Trash2 } from "lucide-react";
 import { translateNotificationCategory, translateSenderType, statusNotification } from "@packages/utils/translations";
 import { CreateNotificationModal } from "./CreateNotificationModal";
 import { NotificationRowActions } from "@/components/admin/modals_UI/NotificationRowActions";
+import { Checkbox } from "@/components/ui/checkbox";
+import { confirmWithToast } from "@/components/ui/confirm-with-toast";
 
 type NotificationType = "university" | "lecturer" | "system";
 
@@ -39,6 +41,9 @@ export function NotificationsManagement() {
 
   const [detailOpen, setDetailOpen] = useState(false);
   const [detailItem, setDetailItem] = useState<NotificationRow | null>(null);
+
+  // selection
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
 
   // filters
   const [title, setTitle] = useState("");
@@ -92,10 +97,12 @@ export function NotificationsManagement() {
       }
       setItems(data.data || []);
       setTotal(data.meta?.total || 0);
+      setSelectedIds(new Set());
     } catch (e) {
       console.error("Fetch notifications failed:", e);
       setItems([]);
       setTotal(0);
+      setSelectedIds(new Set());
     } finally {
       setLoading(false);
     }
@@ -146,7 +153,69 @@ export function NotificationsManagement() {
     }
   };
 
+  const handleDeleteMultiple = async () => {
+    if (selectedIds.size === 0) {
+      toast.error("Vui lòng chọn ít nhất một thông báo để xóa");
+      return;
+    }
+
+    const confirmMessage = `Bạn có chắc chắn muốn xóa ${selectedIds.size} thông báo đã chọn?`;
+    const confirmed = await confirmWithToast(confirmMessage);
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const token = getToken();
+      const notificationIds = Array.from(selectedIds);
+      const res = await fetch(`${API_BASE}/api/notifications`, {
+        method: "PUT",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({ notificationIds }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || data?.returnCode !== 0) {
+        throw new Error(data?.message || `Delete failed (${res.status})`);
+      }
+      const affectedCount = data?.data?.affected || selectedIds.size;
+      toast.success(`Đã xóa ${affectedCount} thông báo`);
+      setSelectedIds(new Set());
+      fetchList();
+    } catch (e) {
+      console.error("Delete multiple notifications failed:", e);
+      toast.error(e instanceof Error ? e.message : "Xóa thông báo thất bại");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
+
+  const toggleSelectAll = (checked: boolean | "indeterminate") => {
+    if (checked === true || checked === "indeterminate") {
+      setSelectedIds(new Set(items.map((it) => it.id)));
+    } else {
+      setSelectedIds(new Set());
+    }
+  };
+
+  const toggleSelectItem = (id: number, checked: boolean | "indeterminate") => {
+    if (checked === true) {
+      setSelectedIds(new Set([...selectedIds, id]));
+    } else {
+      const newSelected = new Set(selectedIds);
+      newSelected.delete(id);
+      setSelectedIds(newSelected);
+    }
+  };
+
+  const allSelected = items.length > 0 && items.every((it) => selectedIds.has(it.id));
+  const someSelected = items.some((it) => selectedIds.has(it.id)) && !allSelected;
 
   const renderStatusBadge = (s?: "sent" | "deleted" | null) => {
     const label = statusNotification(s || undefined) || "-";
@@ -287,33 +356,58 @@ export function NotificationsManagement() {
   </div>
 
   {/* Buttons row */}
-  <div className="flex flex-wrap justify-end items-center gap-3 pt-2">
-  <Button
-    onClick={() => setCreateModalOpen(true)}
-    className="bg-primary hover:bg-primary/90 text-primary-foreground flex items-center gap-2"
-  >
-    <Plus className="h-4 w-4" />
-    Tạo thông báo
-  </Button>
+  <div className="flex flex-wrap justify-between items-center gap-3 pt-2">
+    <div className="flex items-center gap-2">
+      {selectedIds.size > 0 && (
+        <Button
+          onClick={handleDeleteMultiple}
+          disabled={loading}
+          variant="destructive"
+          className="flex items-center gap-2"
+        >
+          {loading ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Đang xóa...
+            </>
+          ) : (
+            <>
+              <Trash2 className="h-4 w-4" />
+              Xóa đã chọn ({selectedIds.size})
+            </>
+          )}
+        </Button>
+      )}
+    </div>
 
-  <Button
-    onClick={onSearch}
-    disabled={loading}
-    className="bg-primary hover:bg-primary/90 text-primary-foreground flex items-center gap-2"
-  >
-    {loading ? (
-      <>
-        <Loader2 className="h-4 w-4 animate-spin" />
-        Đang tìm...
-      </>
-    ) : (
-      <>
-        <Search className="h-4 w-4" />
-        Tìm kiếm
-      </>
-    )}
-  </Button>
-</div>
+    <div className="flex flex-wrap items-center gap-3">
+      <Button
+        onClick={() => setCreateModalOpen(true)}
+        className="bg-primary hover:bg-primary/90 text-primary-foreground flex items-center gap-2"
+      >
+        <Plus className="h-4 w-4" />
+        Tạo thông báo
+      </Button>
+
+      <Button
+        onClick={onSearch}
+        disabled={loading}
+        className="bg-primary hover:bg-primary/90 text-primary-foreground flex items-center gap-2"
+      >
+        {loading ? (
+          <>
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Đang tìm...
+          </>
+        ) : (
+          <>
+            <Search className="h-4 w-4" />
+            Tìm kiếm
+          </>
+        )}
+      </Button>
+    </div>
+  </div>
 
 </div>
 
@@ -326,17 +420,37 @@ export function NotificationsManagement() {
         </CardHeader>
         <CardContent>
           <DataTable
-            headers={["Tiêu đề", "Loại", "Danh mục", "Trạng thái", "Thời gian", "Thao tác"]}
+            headers={[
+              <Checkbox
+                key="select-all"
+                checked={allSelected ? true : someSelected ? "indeterminate" : false}
+                onCheckedChange={toggleSelectAll}
+                disabled={loading || items.length === 0}
+              />,
+              "Tiêu đề",
+              "Loại",
+              "Danh mục",
+              "Trạng thái",
+              "Thời gian",
+              "Thao tác",
+            ]}
             maxHeight="auto"
             maxWidth="100%"
           >
             {items.length === 0 && (
               <tr>
-                <td className="px-4 py-4 text-muted-foreground" colSpan={6}>Không có thông báo</td>
+                <td className="px-4 py-4 text-muted-foreground" colSpan={7}>Không có thông báo</td>
               </tr>
             )}
             {items.map((it) => (
               <tr key={it.id} className="border-b last:border-b-0">
+                <td className="px-4 py-2">
+                  <Checkbox
+                    checked={selectedIds.has(it.id)}
+                    onCheckedChange={(checked) => toggleSelectItem(it.id, checked)}
+                    disabled={loading}
+                  />
+                </td>
                 <td className="px-4 py-2 max-w-[420px] truncate" title={it.title || it.content || undefined}>
                   {it.title || <span className="text-muted-foreground">(Không tiêu đề)</span>}
                 </td>

@@ -277,4 +277,64 @@ export class NotificationsRepository {
     if (error) throw error;
   }
 
+  /**
+   * Xóa nhiều notifications theo danh sách IDs
+   * Cập nhật status thành 'deleted', is_deleted = true, is_read = true
+   */
+  async deleteMultiple(notificationIds: number[]): Promise<number> {
+    if (!notificationIds || notificationIds.length === 0) return 0;
+    
+
+    const { data: notifications, error: fetchError } = await supabase
+      .from("notifications")
+      .select("id, broadcast_group_id, status")
+      .in("id", notificationIds);
+    
+    if (fetchError) throw fetchError;
+    if (!notifications || notifications.length === 0) return 0;
+
+    const alreadyDeleted = notifications.filter(n => n.status === 'deleted');
+    if (alreadyDeleted.length > 0) {
+      const deletedIds = alreadyDeleted.map(n => n.id).join(', ');
+      throw new Error(`Không thể xóa các thông báo đã bị xóa. Vui lòng kiểm tra lại.`);
+    }
+
+    const groupIds = new Set<string>();
+    const individualIds: number[] = [];
+    
+    for (const notif of notifications) {
+      if (notif.broadcast_group_id) {
+        groupIds.add(notif.broadcast_group_id);
+      } else {
+        individualIds.push(notif.id);
+      }
+    }
+
+    let affectedCount = 0;
+
+    if (groupIds.size > 0) {
+      const { data: groupDeleted, error: groupError } = await supabase
+        .from("notifications")
+        .update({ is_deleted: true, is_read: true, status: "deleted" })
+        .in("broadcast_group_id", Array.from(groupIds))
+        .select("id");
+      
+      if (groupError) throw groupError;
+      affectedCount += groupDeleted?.length || 0;
+    }
+
+    if (individualIds.length > 0) {
+      const { data: individualDeleted, error: individualError } = await supabase
+        .from("notifications")
+        .update({ is_deleted: true, is_read: true, status: "deleted" })
+        .in("id", individualIds)
+        .select("id");
+      
+      if (individualError) throw individualError;
+      affectedCount += individualDeleted?.length || 0;
+    }
+
+    return affectedCount;
+  }
+
 }

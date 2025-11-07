@@ -223,6 +223,25 @@ export class NotificationsUseCase {
     await this.repo.deleteAll(uid);
   }
 
+  /**
+   * Xóa nhiều notifications theo danh sách IDs
+   * Trả về số lượng notifications đã bị xóa
+   */
+  async deleteMultiple(notificationIds: (number | string)[]): Promise<number> {
+    if (!notificationIds || notificationIds.length === 0) return 0;
+    
+
+    const validIds: number[] = [];
+    for (const id of notificationIds) {
+      const nid = this.toPositiveInt(id);
+      if (nid) validIds.push(nid);
+    }
+    
+    if (validIds.length === 0) return 0;
+    
+    return await this.repo.deleteMultiple(validIds);
+  }
+
 
   private toPositiveInt(v: any): number | undefined {
     const n = Number(v);

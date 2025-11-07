@@ -57,7 +57,8 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// PUT /api/notifications  { notificationId?: number, broadcast_group_id?: string }
+// PUT /api/notifications  
+// Body: { notificationId?: number, broadcast_group_id?: string, notificationIds?: number[] }
 export async function PUT(req: NextRequest) {
   try {
  
@@ -78,20 +79,56 @@ export async function PUT(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { notificationId, broadcast_group_id } = body as { notificationId?: number; broadcast_group_id?: string };
+    const { notificationId, broadcast_group_id, notificationIds } = body as { 
+      notificationId?: number; 
+      broadcast_group_id?: string; 
+      notificationIds?: number[];
+    };
+
+    // Xóa nhiều notifications
+    if (notificationIds && Array.isArray(notificationIds) && notificationIds.length > 0) {
+      try {
+        const affected = await notificationsUseCase.deleteMultiple(notificationIds);
+        return NextResponse.json({ 
+          returnCode: 0, 
+          message: `Deleted ${affected} notification(s)`, 
+          data: { affected } 
+        });
+      } catch (deleteError) {
+        const errorMessage = deleteError instanceof Error ? deleteError.message : 'Internal error';
+        if (errorMessage.includes('đã bị xóa') || errorMessage.includes('already deleted')) {
+          return NextResponse.json({ 
+            returnCode: -1, 
+            message: errorMessage, 
+            data: null 
+          }, { status: 400 });
+        }
+        throw deleteError;
+      }
+    }
+
     if (!notificationId && !broadcast_group_id) {
-      return NextResponse.json({ returnCode: -1, message: 'Missing notificationId or broadcast_group_id', data: null }, { status: 400 });
+      return NextResponse.json({ returnCode: -1, message: 'Missing notificationId, broadcast_group_id, or notificationIds', data: null }, { status: 400 });
     }
 
     let groupId = broadcast_group_id ?? null;
     if (!groupId && notificationId) {
       const { data: row, error } = await supabase
         .from('notifications')
-        .select('id, broadcast_group_id')
+        .select('id, broadcast_group_id, status')
         .eq('id', notificationId)
         .maybeSingle();
       if (error) throw error;
       if (!row) return NextResponse.json({ returnCode: -1, message: 'Notification not found', data: null }, { status: 404 });
+      
+      if (row.status === 'deleted') {
+        return NextResponse.json({ 
+          returnCode: -1, 
+          message: 'Không thể xóa thông báo đã bị xóa. Vui lòng kiểm tra lại.', 
+          data: null 
+        }, { status: 400 });
+      }
+      
       groupId = row.broadcast_group_id ?? null;
       if (!groupId) {
         const { error: upErr } = await supabase

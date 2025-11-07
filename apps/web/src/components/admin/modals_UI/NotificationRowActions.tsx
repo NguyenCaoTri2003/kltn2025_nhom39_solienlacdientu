@@ -35,11 +35,6 @@ export function NotificationRowActions({ item, isBusy, onViewDetail, onDelete }:
         <DropdownMenuItem className="text-popover-foreground hover:bg-accent" onClick={() => onViewDetail(item)}>
           <Eye className="w-4 h-4 mr-2" /> Xem chi tiết
         </DropdownMenuItem>
-        {item.url ? (
-          <DropdownMenuItem className="text-popover-foreground hover:bg-accent" onClick={() => navigator.clipboard.writeText(item.url || "")}>
-            <LinkIcon className="w-4 h-4 mr-2" /> Sao chép liên kết ảnh
-          </DropdownMenuItem>
-        ) : null}
         <DropdownMenuItem
           className="text-red-400 hover:bg-accent"
           onClick={async () => {
