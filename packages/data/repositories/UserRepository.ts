@@ -925,93 +925,27 @@ export class UserRepository {
           // Nếu có phụ huynh đi kèm
           if (parents && parents.length > 0) {
             for (const p of parents) {
-              const citizenId = (p.user.citizen_id_card ?? "").trim();
-              const fullName = (p.user.full_name ?? "").trim().toLowerCase();
-
-              // Kiểm tra phụ huynh đã tồn tại chưa
-              const { data: existingParent, error: findError } = await supabase
-                .from("users")
-                .select("id, full_name, citizen_id_card")
-                .eq("role", "parent")
-                .or(
-                  `citizen_id_card.eq.${citizenId},and(citizen_id_card.eq.${citizenId},full_name.ilike.${fullName})`
-                )
-                .maybeSingle();
-
-              if (findError) throw findError;
-
-              let parentUserId: number;
-
-              if (existingParent) {
-                parentUserId = existingParent.id;
-                console.log(
-                  `Dùng lại phụ huynh có sẵn: ${existingParent.full_name} (${citizenId})`
-                );
-              } else {
-                // Nếu chưa có thì tạo mới phụ huynh
-                const passwordParent = await bcrypt.hash("11111111", 10);
-                const { data: parentUser, error: parentUserError } =
-                  await supabase
-                    .from("users")
-                    .insert({
-                      full_name: p.user.full_name,
-                      password_hash: passwordParent,
-                      role: "parent",
-                      phone: p.user.phone,
-                      email: p.user.email,
-                      status: "suspended",
-                      citizen_id_card: citizenId || null,
-                      address: p.user.address ?? null,
-                      ethnic: p.user.ethnic ?? null,
-                    })
-                    .select("id, role")
-                    .single();
-
-                if (parentUserError) throw parentUserError;
-
-                parentUserId = parentUser.id;
-                createdUsers.push({ id: parentUserId, role: "parent" });
-                const { error: parentError } = await supabase
-                  .from("parents")
-                  .insert({
-                    id: parentUserId,
-                    occupation: p.parent.occupation ?? null,
-                  });
-                if (parentError) throw parentError;
-
-                console.log(
-                  `👶 Tạo mới phụ huynh: ${p.user.full_name} (${citizenId})`
-                );
+              // Validate các trường bắt buộc
+              if (!p.user.full_name || !p.user.phone) {
+                throw new Error("Thiếu thông tin bắt buộc: full_name và phone");
               }
 
-              // Tạo liên kết student–parent (nếu chưa có)
-              const { data: existingLink, error: linkError } = await supabase
-                .from("student_parent")
-                .select("student_id")
-                .eq("student_id", newUserId)
-                .eq("parent_id", parentUserId)
-                .maybeSingle();
-
-              if (linkError) throw linkError;
-
-              if (!existingLink) {
-                const { error: spError } = await supabase
-                  .from("student_parent")
-                  .insert({
-                    student_id: newUserId,
-                    parent_id: parentUserId,
-                    relationship: p.relationship,
-                  });
-
-                if (spError) throw spError;
-                console.log(
-                  `Tạo liên kết student-parent thành công: ${newUserId} ↔ ${parentUserId}`
-                );
-              } else {
-                console.log(
-                  `Liên kết đã tồn tại: student ${newUserId} ↔ parent ${parentUserId}`
-                );
-
+              const result = await this.addParentToStudent(newUserId, {
+                user: {
+                  full_name: p.user.full_name,
+                  email: p.user.email,
+                  phone: p.user.phone,
+                  citizen_id_card: p.user.citizen_id_card,
+                  address: p.user.address,
+                  ethnic: p.user.ethnic,
+                },
+                parent: p.parent,
+                relationship: p.relationship,
+              });
+              
+              // Nếu là phụ huynh mới, thêm vào danh sách createdUsers
+              if (result.is_new) {
+                createdUsers.push({ id: result.parent_id, role: "parent" });
               }
             }
           }
@@ -1070,6 +1004,158 @@ export class UserRepository {
       await supabase.from("users").delete().eq("id", newUserId);
       throw new Error(err.message);
     }
+  }
+
+  /**
+   * Thêm phụ huynh vào sinh viên hiện có
+   * - Kiểm tra phụ huynh đã tồn tại chưa (theo citizen_id_card, email, phone)
+   * - Nếu có thì dùng lại, nếu chưa thì tạo mới
+   * - Liên kết phụ huynh với sinh viên (cập nhật relationship nếu đã có liên kết)
+   */
+  async addParentToStudent(
+    studentId: number,
+    parentData: {
+      user: {
+        full_name: string;
+        email?: string;
+        phone: string;
+        citizen_id_card?: string;
+        address?: string;
+        ethnic?: string;
+      };
+      parent: {
+        occupation?: string;
+      };
+      relationship: "father" | "mother" | "guardian";
+    }
+  ): Promise<{ parent_id: number; is_new: boolean }> {
+    const { user, parent, relationship } = parentData;
+    const citizenId = (user.citizen_id_card ?? "").trim();
+    const phoneTrimmed = (user.phone ?? "").trim();
+    const emailTrimmed = (user.email ?? "").trim();
+
+    // Tạo danh sách điều kiện tìm kiếm phụ huynh
+    const searchConditions: string[] = [];
+    
+    if (citizenId) {
+      searchConditions.push(`citizen_id_card.eq.${citizenId}`);
+    }
+    if (emailTrimmed) {
+      searchConditions.push(`email.eq.${emailTrimmed}`);
+    }
+    if (phoneTrimmed) {
+      searchConditions.push(`phone.eq.${phoneTrimmed}`);
+    }
+    
+    let existingParent = null;
+    if (searchConditions.length > 0) {
+      const { data, error } = await supabase
+        .from("users")
+        .select("id, full_name, citizen_id_card, email, phone")
+        .eq("role", "parent")
+        .or(searchConditions.join(","))
+        .maybeSingle();
+      
+      if (error) throw error;
+      existingParent = data;
+    }
+
+    let parentUserId: number;
+    let isNew = false;
+
+    if (existingParent) {
+      // Phụ huynh đã tồn tại, dùng lại
+      parentUserId = existingParent.id;
+      console.log(
+        `Dùng lại phụ huynh có sẵn: ${existingParent.full_name} (ID: ${parentUserId})`
+      );
+    } else {
+      // Tạo mới phụ huynh
+      isNew = true;
+      const passwordHash = await bcrypt.hash("11111111", 10);
+      const { data: parentUser, error: parentUserError } = await supabase
+        .from("users")
+        .insert({
+          full_name: user.full_name,
+          password_hash: passwordHash,
+          role: "parent",
+          phone: phoneTrimmed,
+          email: emailTrimmed || null,
+          status: "suspended",
+          citizen_id_card: citizenId || null,
+          address: user.address ?? null,
+          ethnic: user.ethnic ?? null,
+        })
+        .select("id, role")
+        .single();
+
+      if (parentUserError) {
+        console.error("❌ Lỗi khi tạo user phụ huynh:", parentUserError);
+        this.throwFriendlyForUnique(parentUserError);
+      }
+
+      parentUserId = parentUser.id;
+
+      const { error: parentError } = await supabase
+        .from("parents")
+        .insert({
+          id: parentUserId,
+          occupation: parent.occupation ?? null,
+        });
+
+      if (parentError) {
+        await supabase.from("users").delete().eq("id", parentUserId);
+        throw parentError;
+      }
+
+      console.log(`Tạo mới phụ huynh: ${user.full_name} (ID: ${parentUserId})`);
+    }
+
+    // Kiểm tra xem liên kết đã tồn tại chưa
+    const { data: existingLink, error: linkCheckError } = await supabase
+      .from("student_parent")
+      .select("student_id, parent_id, relationship")
+      .eq("student_id", studentId)
+      .eq("parent_id", parentUserId)
+      .maybeSingle();
+
+    if (linkCheckError) throw linkCheckError;
+
+    if (existingLink) {
+      // Nếu đã có liên kết, cập nhật quan hệ (nếu khác)
+      if (existingLink.relationship !== relationship) {
+        const { error: updateError } = await supabase
+          .from("student_parent")
+          .update({ relationship })
+          .eq("student_id", studentId)
+          .eq("parent_id", parentUserId);
+
+        if (updateError) throw updateError;
+        console.log(
+          `Cập nhật quan hệ: student ${studentId} ↔ parent ${parentUserId} (${relationship})`
+        );
+      } else {
+        console.log(
+          `Liên kết đã tồn tại: student ${studentId} ↔ parent ${parentUserId} (${relationship})`
+        );
+      }
+    } else {
+      // Tạo liên kết student-parent mới
+      const { error: spError } = await supabase
+        .from("student_parent")
+        .insert({
+          student_id: studentId,
+          parent_id: parentUserId,
+          relationship,
+        });
+
+      if (spError) throw spError;
+      console.log(
+        `Tạo liên kết student-parent thành công: ${studentId} ↔ ${parentUserId} (${relationship})`
+      );
+    }
+
+    return { parent_id: parentUserId, is_new: isNew };
   }
 
   async createManyUsersFromExcel(

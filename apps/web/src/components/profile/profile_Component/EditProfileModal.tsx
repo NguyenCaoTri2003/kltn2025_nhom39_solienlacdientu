@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import AddParentModal, { ParentFormData } from "./AddParentModal";
 
 type EditFields = {
   phone?: string | null;
@@ -23,6 +24,7 @@ export default function EditProfileModal({
   onSubmit,
   submitting = false,
   role,
+  onAddParent,
 }: {
   open: boolean;
   initial?: EditFields;
@@ -30,11 +32,13 @@ export default function EditProfileModal({
   onSubmit: (data: SubmitPayload) => void | Promise<void>;
   submitting?: boolean;
   role?: string;
+  onAddParent?: (data: ParentFormData) => void | Promise<void>;
 }) {
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [address, setAddress] = useState("");
   const [contactAddress, setContactAddress] = useState("");
+  const [showAddParentModal, setShowAddParentModal] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -128,6 +132,31 @@ export default function EditProfileModal({
           <span className="text-sm text-muted-foreground text-center italic block">
             Vui lòng liên hệ Phòng Đào tạo để được hỗ trợ sửa các thông tin khác
           </span>
+
+          {/* Nút thêm phụ huynh - chỉ hiện với student */}
+          {role === "student" && (
+            <div className="pt-4 border-t border-gray-200">
+              <button
+                type="button"
+                onClick={() => setShowAddParentModal(true)}
+                className="w-full px-4 py-2 rounded-lg bg-green-500 text-white hover:bg-green-600 transition flex items-center justify-center gap-2"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+                Thêm thông tin phụ huynh
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Nút hành động */}
@@ -147,6 +176,19 @@ export default function EditProfileModal({
           </button>
         </div>
       </div>
+
+      {/* Modal thêm phụ huynh */}
+      <AddParentModal
+        open={showAddParentModal}
+        onClose={() => setShowAddParentModal(false)}
+        onSubmit={async (data: ParentFormData) => {
+          if (onAddParent) {
+            await onAddParent(data);
+          }
+          setShowAddParentModal(false);
+        }}
+        submitting={submitting}
+      />
     </div>
   );
 }
