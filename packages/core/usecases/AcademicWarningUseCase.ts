@@ -36,5 +36,9 @@ export class AcademicWarningUseCase {
 	async isStudentWarned(studentId: number, semesterId: number) {
 		return this.repo.isStudentWarned(studentId, semesterId);
 	}
+
+	async getTotalCount(): Promise<number> {
+		return this.repo.getTotalCount();
+	}
 }
 

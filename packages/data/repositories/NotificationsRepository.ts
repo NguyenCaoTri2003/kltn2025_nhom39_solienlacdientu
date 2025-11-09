@@ -2,6 +2,7 @@ import { supabase } from "@packages/data/supabaseClient";
 import { NotificationCategory } from "@packages/core/entities/Notifications";
 
 export type NotificationType = "university" | "lecturer" | "system";
+export type NotificationStatus = "sent" | "deleted";
 
 export interface NotificationRow {
   id: number;
@@ -15,6 +16,8 @@ export interface NotificationRow {
   is_deleted: boolean;
   created_at?: string;
   url?: string | null;
+  broadcast_group_id?: string | null;
+  status?: NotificationStatus | null;
 }
 
 
@@ -33,6 +36,75 @@ export interface ListResult {
 }
 
 export class NotificationsRepository {
+  async search(params: {
+    page?: number;
+    pageSize?: number;
+    title?: string;
+    content?: string;
+    type?: NotificationType | null;
+    category?: string | null;
+    from?: string; // UTC ISO
+    to?: string;   // UTC ISO
+    status?: NotificationStatus | null;
+  }): Promise<ListResult> {
+    const page = Math.max(1, Math.floor(params.page ?? 1));
+    const pageSize = Math.min(100, Math.max(1, Math.floor(params.pageSize ?? 20)));
+    const fromIdx = (page - 1) * pageSize;
+    const toIdx = fromIdx + pageSize - 1;
+
+    let query = supabase
+      .from("notifications")
+      .select("id, user_id, title, content, type, category, target_student_id, is_read, is_deleted, created_at, url, broadcast_group_id, status", { count: "exact" })
+      .order("created_at", { ascending: false });
+
+    if (params.title) query = query.ilike('title', `%${params.title}%`);
+    if (params.content) query = query.ilike('content', `%${params.content}%`);
+    if (params.type) query = query.eq('type', params.type);
+    if (params.category) query = query.eq('category', params.category);
+    if (params.from) query = query.gte('created_at', params.from);
+    if (params.to) query = query.lte('created_at', params.to);
+    if (params.status) query = query.eq('status', params.status);
+
+    const { data, count, error } = await query.range(fromIdx, toIdx);
+    if (error) throw error;
+
+    return {
+      items: (data ?? []) as NotificationRow[],
+      total: count || 0,
+      page,
+      pageSize,
+      totalPages: Math.max(1, Math.ceil((count || 0) / pageSize)),
+    };
+  }
+
+  async searchRaw(params: {
+    title?: string;
+    content?: string;
+    type?: NotificationType | null;
+    category?: string | null;
+    from?: string; // UTC ISO
+    to?: string;   // UTC ISO
+    limit?: number;
+    status?: NotificationStatus | null;
+  }): Promise<NotificationRow[]> {
+    let query = supabase
+      .from("notifications")
+      .select("id, user_id, title, content, type, category, target_student_id, is_read, is_deleted, created_at, url, broadcast_group_id, status")
+      .order("created_at", { ascending: false })
+      .limit(Math.max(1, Math.min(10000, Math.floor(params.limit ?? 2000))));
+
+    if (params.title) query = query.ilike('title', `%${params.title}%`);
+    if (params.content) query = query.ilike('content', `%${params.content}%`);
+    if (params.type) query = query.eq('type', params.type);
+    if (params.category) query = query.eq('category', params.category);
+    if (params.from) query = query.gte('created_at', params.from);
+    if (params.to) query = query.lte('created_at', params.to);
+    if (params.status) query = query.eq('status', params.status);
+
+    const { data, error } = await query;
+    if (error) throw error;
+    return (data ?? []) as NotificationRow[];
+  }
   async create(payload: {
     user_id?: number | null;
     title?: string | null;
@@ -41,6 +113,8 @@ export class NotificationsRepository {
     category?: NotificationCategory | null;
     target_student_id?: number | null;
     url?: string | null;
+    broadcast_group_id?: string | null;
+    status?: NotificationStatus | null;
   }): Promise<NotificationRow> {
     const insertData = {
       user_id: payload.user_id ?? null,
@@ -50,11 +124,13 @@ export class NotificationsRepository {
       category: payload.category ?? null,
       target_student_id: payload.target_student_id ?? null,
       url: payload.url ?? null,
+      broadcast_group_id: payload.broadcast_group_id ?? null,
+      status: payload.status ?? "sent",
     } as const;
     const { data, error } = await supabase
       .from("notifications")
       .insert(insertData)
-      .select("id, user_id, title, content, type, category, target_student_id, is_read, is_deleted, created_at, url")
+      .select("id, user_id, title, content, type, category, target_student_id, is_read, is_deleted, created_at, url, broadcast_group_id, status")
       .single();
     if (error) throw error;
     return data as NotificationRow;
@@ -68,6 +144,8 @@ export class NotificationsRepository {
     category?: NotificationCategory | null;
     target_student_id?: number | null;
     url?: string | null;
+    broadcast_group_id?: string | null;
+    status?: NotificationStatus | null;
   }>): Promise<number> {
     if (!rows || rows.length === 0) return 0;
     const { data, error } = await supabase
@@ -80,6 +158,8 @@ export class NotificationsRepository {
         category: r.category ?? null,
         target_student_id: r.target_student_id ?? null,
         url: r.url ?? null,
+        broadcast_group_id: r.broadcast_group_id ?? null,
+        status: r.status ?? "sent",
       })))
       .select("id");
     if (error) throw error;
@@ -89,7 +169,7 @@ export class NotificationsRepository {
   async getById(id: number): Promise<NotificationRow | null> {
     const { data, error } = await supabase
       .from("notifications")
-      .select("id, user_id, title, content, type, category, target_student_id, is_read, is_deleted, created_at, url")
+      .select("id, user_id, title, content, type, category, target_student_id, is_read, is_deleted, created_at, url, broadcast_group_id, status")
       .eq("id", id)
       .single();
     if (error) {
@@ -110,7 +190,7 @@ export class NotificationsRepository {
 
     let query = supabase
       .from("notifications")
-      .select("id, user_id, content, type, category, created_at, url", { count: "exact" })
+      .select("id, user_id, content, type, category, created_at, url, broadcast_group_id, status", { count: "exact" })
       .order("created_at", { ascending: false });
 
     if (params.userId != null) {
@@ -145,7 +225,7 @@ export class NotificationsRepository {
       .from("notifications")
       .select(`
         id, user_id, title, content, type, category, target_student_id, 
-        is_read, is_deleted, created_at, url
+        is_read, is_deleted, created_at, url, broadcast_group_id, status
       `, { count: "exact" })
       .eq("user_id", userId)
       .eq("is_deleted", false)
@@ -195,6 +275,66 @@ export class NotificationsRepository {
       .eq("user_id", userId)
       .eq("is_deleted", false);
     if (error) throw error;
+  }
+
+  /**
+   * Xóa nhiều notifications theo danh sách IDs
+   * Cập nhật status thành 'deleted', is_deleted = true, is_read = true
+   */
+  async deleteMultiple(notificationIds: number[]): Promise<number> {
+    if (!notificationIds || notificationIds.length === 0) return 0;
+    
+
+    const { data: notifications, error: fetchError } = await supabase
+      .from("notifications")
+      .select("id, broadcast_group_id, status")
+      .in("id", notificationIds);
+    
+    if (fetchError) throw fetchError;
+    if (!notifications || notifications.length === 0) return 0;
+
+    const alreadyDeleted = notifications.filter(n => n.status === 'deleted');
+    if (alreadyDeleted.length > 0) {
+      const deletedIds = alreadyDeleted.map(n => n.id).join(', ');
+      throw new Error(`Không thể xóa các thông báo đã bị xóa. Vui lòng kiểm tra lại.`);
+    }
+
+    const groupIds = new Set<string>();
+    const individualIds: number[] = [];
+    
+    for (const notif of notifications) {
+      if (notif.broadcast_group_id) {
+        groupIds.add(notif.broadcast_group_id);
+      } else {
+        individualIds.push(notif.id);
+      }
+    }
+
+    let affectedCount = 0;
+
+    if (groupIds.size > 0) {
+      const { data: groupDeleted, error: groupError } = await supabase
+        .from("notifications")
+        .update({ is_deleted: true, is_read: true, status: "deleted" })
+        .in("broadcast_group_id", Array.from(groupIds))
+        .select("id");
+      
+      if (groupError) throw groupError;
+      affectedCount += groupDeleted?.length || 0;
+    }
+
+    if (individualIds.length > 0) {
+      const { data: individualDeleted, error: individualError } = await supabase
+        .from("notifications")
+        .update({ is_deleted: true, is_read: true, status: "deleted" })
+        .in("id", individualIds)
+        .select("id");
+      
+      if (individualError) throw individualError;
+      affectedCount += individualDeleted?.length || 0;
+    }
+
+    return affectedCount;
   }
 
 }

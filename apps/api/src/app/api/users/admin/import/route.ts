@@ -170,10 +170,18 @@ function parseTypeOfTraining(value: unknown): "regular" | "advanced" | undefined
 
 export async function POST(req: NextRequest) {
   try {
-    const authUser = await authenticate(req);
-    if (!authUser || authUser.role !== "admin") {
+    let authUser;
+    try {
+      authUser = await authenticate(req);
+    } catch {
       return NextResponse.json(
-        { error: "Bạn không có quyền thực hiện hành động này." },
+        { returnCode: -1, message: "Invalid or missing token", data: null },
+        { status: 401 }
+      );
+    }
+    if (authUser.role !== "admin") {
+      return NextResponse.json(
+        { returnCode: -1, message: "Permission denied: Admin only", data: null },
         { status: 403 }
       );
     }

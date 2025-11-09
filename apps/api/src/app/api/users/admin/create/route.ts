@@ -26,10 +26,18 @@ const userRepo = new UserRepository();
  */
 export async function POST(req: NextRequest) {
   try {
-    const authUser = await authenticate(req);
-    if (!authUser || authUser.role !== "admin") {
+    let authUser;
+    try {
+      authUser = await authenticate(req);
+    } catch {
       return NextResponse.json(
-        { error: "Bạn không có quyền thực hiện hành động này." },
+        { returnCode: -1, message: "Invalid or missing token", data: null },
+        { status: 401 }
+      );
+    }
+    if (authUser.role !== "admin") {
+      return NextResponse.json(
+        { returnCode: -1, message: "Permission denied: Admin only", data: null },
         { status: 403 }
       );
     }
@@ -165,9 +173,7 @@ export async function POST(req: NextRequest) {
       student_parent,
     });
 
-    const createdUsers = Array.isArray(result)
-      ? (result as { id: number; role: string }[])
-      : [{ id: (result as any).id, role: (result as any).role }];
+    const createdUsers: { id: number; role: string }[] = result;
 
     // Ghi log tạo user
     try {
@@ -195,9 +201,20 @@ export async function POST(req: NextRequest) {
       { status: 201 }
     );
   } catch (e: unknown) {
-    console.error("❌ Lỗi hệ thống:", e);
+    console.error("Lỗi hệ thống:", e);
     const err = e as { status?: number; message?: string; code?: string; field?: string };
-    const status = typeof err?.status === "number" ? err.status : 500;
+    const status = typeof err?.status === "number"
+      ? err.status
+      : (err?.message === "No token" || err?.message === "Invalid token")
+        ? 401
+        : 500;
+
+    if (status === 401) {
+      return NextResponse.json(
+        { returnCode: -1, message: "Invalid or missing token", data: null },
+        { status }
+      );
+    }
 
     return NextResponse.json(
       {
@@ -206,7 +223,7 @@ export async function POST(req: NextRequest) {
         field: err?.field,
       },
       { status }
-    ); 
+    );
   }
 }
 
