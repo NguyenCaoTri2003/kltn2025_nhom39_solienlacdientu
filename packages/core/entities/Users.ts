@@ -14,4 +14,5 @@ export interface User {
   created_at?: string;
   last_login?: string;
 }
+
 export type UserPublic = Omit<User, "password_hash">;
