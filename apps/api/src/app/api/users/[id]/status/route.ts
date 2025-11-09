@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { UserRepository } from "@packages/data/repositories/UserRepository";
 import { authenticate } from "@packages/utils/auth";
 import { logUserChange } from "@packages/core/usecases/UserAuditLogUseCase";
-import { sendEmail } from "../../../../email/mailer";
+import { sendEmailViaSendGrid } from "../../../../email/resendMailer";
 import { renderTemplate } from "../../../../email/templates";
 
 const STATUS_LABEL_VI: Record<string, string> = {
@@ -83,7 +83,7 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
             fullName: targetUser.full_name || 'Người dùng',
             newStatus: STATUS_LABEL_VI[updatedUser.status] || updatedUser.status,
           });
-          await sendEmail({
+          await sendEmailViaSendGrid({
             to: targetUser.email,
             subject: tpl.subject,
             html: tpl.html,

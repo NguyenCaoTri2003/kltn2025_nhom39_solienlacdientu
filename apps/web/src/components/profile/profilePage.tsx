@@ -6,6 +6,7 @@ import ProfileByRole, { AnyUser } from "./profileByRole";
 import EditProfileModal, { SubmitPayload } from "./profile_Component/EditProfileModal";
 import ProfileHeader from "./profile_Component/ProfileHeader";
 import Loading from "@/components/ui/loading";
+import { ParentFormData } from "./profile_Component/AddParentModal";
 
 export default function ProfilePage() {
     const [user, setUser] = useState<AnyUser | null>(null);
@@ -82,6 +83,53 @@ export default function ProfilePage() {
             setSubmitting(false);
         }
     };
+
+    const handleAddParent = async (data: ParentFormData) => {
+        if (!user) return;
+        try {
+            setSubmitting(true);
+            const token = typeof document !== "undefined"
+                ? (document.cookie.split("; ").find((row) => row.startsWith("token="))?.split("=")[1] || localStorage.getItem("token"))
+                : null;
+            const apiBase = process.env.NEXT_PUBLIC_API_URL || "";
+            
+            const res = await fetch(`${apiBase}/api/students/me/parents`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify(data),
+            });
+            
+            const result = await res.json();
+            if (!res.ok) {
+                throw new Error(result?.error || result?.message || "Thêm phụ huynh thất bại");
+            }
+            
+            toast.success(result.message || "Thêm phụ huynh thành công");
+            
+            // Refresh user data để lấy thông tin phụ huynh mới
+            const raw = typeof window !== "undefined" ? localStorage.getItem("user") : null;
+            if (raw && token) {
+                const me = JSON.parse(raw);
+                const refreshRes = await fetch(`${apiBase}/api/users/detail/${me.id}`, {
+                    headers: { Authorization: `Bearer ${token}` },
+                    cache: "no-store",
+                });
+                const refreshedData = await refreshRes.json();
+                if (refreshRes.ok) {
+                    setUser(refreshedData);
+                }
+            }
+        } catch (e) {
+            console.error(e);
+            const errorMessage = e instanceof Error ? e.message : "Không thể thêm phụ huynh. Vui lòng thử lại.";
+            toast.error(errorMessage);
+        } finally {
+            setSubmitting(false);
+        }
+    };
     return (
         <div className="min-h-screen bg-[#f7f8fa] p-10">
             <div className="max-w-4xl mx-auto">
@@ -119,6 +167,7 @@ export default function ProfilePage() {
                                     address: data.address ?? "",
                                     contact_address: data.contact_address ?? "",
                                 })}
+                                onAddParent={handleAddParent}
                             />
                         </>
                     ) : (

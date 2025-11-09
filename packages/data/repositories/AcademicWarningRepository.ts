@@ -194,4 +194,13 @@ export class AcademicWarningRepository {
     if (error) throw error;
     return (data && data.length > 0);
   }
+
+  async getTotalCount(): Promise<number> {
+    const { count, error } = await supabase
+      .from("academic_warnings")
+      .select("id", { count: "exact", head: true });
+
+    if (error) throw error;
+    return count || 0;
+  }
 }
