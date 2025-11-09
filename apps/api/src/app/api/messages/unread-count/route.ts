@@ -6,11 +6,10 @@ export async function GET(req: NextRequest) {
   try {
     const user = await authenticate(req);
 
-
     const { count, error } = await supabase
-      .from("messages")
+      .from("messages_with_conversations")
       .select("id", { count: "exact", head: true })
-      .or(`conversations.user1_id.eq.${user.id},conversations.user2_id.eq.${user.id}`)
+      .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`)
       .neq("sender_id", user.id)
       .eq("is_read", false);
 
