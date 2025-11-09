@@ -4,6 +4,7 @@ import { Student, StudentWithUser } from "@packages/core/entities/Student";
 import { Lecturers } from "@packages/core/entities/Lecturers";
 import { Parent } from "@packages/core/entities/Parent";
 import bcrypt from "bcryptjs";
+import { ExistingParent } from "./ExistingParent";
 
 type RoleSpecificData = {
   student?: Student;
@@ -1047,7 +1048,7 @@ export class UserRepository {
       searchConditions.push(`phone.eq.${phoneTrimmed}`);
     }
     
-    let existingParent = null;
+    let existingParent: ExistingParent | null = null;
     if (searchConditions.length > 0) {
       const { data, error } = await supabase
         .from("users")
