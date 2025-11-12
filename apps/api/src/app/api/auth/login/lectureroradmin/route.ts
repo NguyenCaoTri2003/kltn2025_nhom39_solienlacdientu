@@ -99,13 +99,14 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { identifier, password } = body;
 
-    const ip = req.headers.get("x-forwarded-for") || "unknown";
+    const forwardedFor = req.headers.get("x-forwarded-for")
+    const ip = forwardedFor ? forwardedFor.split(",")[0].trim() : req.headers.get("x-real-ip") || "unknown"
 
     try {
       await rateLimiter.consume(ip)
     } catch (rlRes: any) {
       const retrySecs = Math.round(rlRes.msBeforeNext / 1000) || 300
-      const retryMins = Math.ceil(retrySecs / 60) 
+      const retryMins = Math.ceil(retrySecs / 60)
       return NextResponse.json(
         { error: `Bạn đã thử quá nhiều lần. Vui lòng thử lại sau ${retryMins} phút.` },
         { status: 429 }
