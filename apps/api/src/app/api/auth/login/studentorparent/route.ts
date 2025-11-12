@@ -92,9 +92,9 @@ redis.on("error", (err) => {
 const rateLimiter = new RateLimiterRedis({
   storeClient: redis,
   keyPrefix: "login_fail_student_parent",
-  points: 5, 
+  points: 5,
   duration: 300,
-  blockDuration: 300, 
+  blockDuration: 300,
 })
 
 const userRepo = new UserRepository()
@@ -109,7 +109,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Vai trò không hợp lệ" }, { status: 400 })
     }
 
-    const ip = req.headers.get("x-forwarded-for") || "unknown"
+    const forwardedFor = req.headers.get("x-forwarded-for")
+    const ip = forwardedFor ? forwardedFor.split(",")[0].trim() : req.headers.get("x-real-ip") || "unknown"
+
     try {
       await rateLimiter.consume(ip)
     } catch (rlRes: any) {
