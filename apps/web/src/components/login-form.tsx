@@ -20,11 +20,6 @@ export function LoginForm() {
     setIsLoading(true)
     setError("")
 
-    // const API_BASE =
-    //   process.env.TYPE === "production"
-    //     ? "" 
-    //     : process.env.NEXT_PUBLIC_API_URL; 
-
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/login/lectureroradmin`, {
       // const res = await fetch(`/api/auth/login/lectureroradmin`, {
