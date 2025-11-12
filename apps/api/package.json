@@ -10,8 +10,10 @@
   },
   "dependencies": {
     "@sendgrid/mail": "^8.1.6",
+    "ioredis": "^5.8.2",
     "next": "15.5.2",
     "nodemailer": "^7.0.9",
+    "rate-limiter-flexible": "^8.2.0",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "resend": "^6.4.1"
