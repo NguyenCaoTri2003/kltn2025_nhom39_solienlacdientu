@@ -8,10 +8,19 @@ import { LabelRequired } from "@/components/ui/label-requied";
 import { toast } from "sonner";
 import { useState } from "react";
 
+interface AppointmentFormData {
+  title: string;
+  date: string;
+  start: string;
+  end: string;
+  content: string;
+  location: string;
+}
+
 interface AppointmentModalBaseProps {
   open: boolean;
   onOpenChange: (v: boolean) => void;
-  onSubmit: (data: any) => Promise<void>;
+  onSubmit: (data: AppointmentFormData) => Promise<void>;
   title?: string;
 }
 
@@ -69,7 +78,7 @@ export function AppointmentModalBase({
       await onSubmit(form);
       onOpenChange(false);
       toast.success("Tạo lịch hẹn thành công!");
-    } catch (e) {
+    } catch {
       toast.error("Có lỗi xảy ra khi gửi lịch hẹn.");
     } finally {
       setLoading(false);
@@ -80,9 +89,9 @@ export function AppointmentModalBase({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl flex flex-col">
-        <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
+      <DialogContent className="max-w-3xl flex flex-col max-h-[90vh] border border-border/60 bg-card/95 backdrop-blur-xl shadow-[0_30px_80px_-40px_rgba(15,23,42,0.45)]">
+        <DialogHeader className="flex-shrink-0 border-b border-border/60 pb-4">
+          <DialogTitle className="text-2xl font-semibold">{title}</DialogTitle>
         </DialogHeader>
 
         <div className="flex-1 overflow-y-auto pr-2 space-y-4 mt-4">
@@ -93,6 +102,7 @@ export function AppointmentModalBase({
               value={form.title}
               onChange={(e) => handleChange("title", e.target.value)}
               placeholder="Nhập tiêu đề buổi hẹn..."
+              className="rounded-xl border border-border/50 bg-background/80 focus-visible:ring-2 focus-visible:ring-primary/40"
             />
             {errors.title && (
               <p className="text-red-500 text-sm mt-1">{errors.title}</p>
@@ -108,6 +118,7 @@ export function AppointmentModalBase({
                 value={form.date}
                 min={today}
                 onChange={(e) => handleChange("date", e.target.value)}
+                className="rounded-xl border border-border/50 bg-background/80 focus-visible:ring-2 focus-visible:ring-primary/40"
               />
               {errors.date && (
                 <p className="text-red-500 text-sm mt-1">{errors.date}</p>
@@ -120,6 +131,7 @@ export function AppointmentModalBase({
                 type="time"
                 value={form.start}
                 onChange={(e) => handleChange("start", e.target.value)}
+                className="rounded-xl border border-border/50 bg-background/80 focus-visible:ring-2 focus-visible:ring-primary/40"
               />
               {errors.start && (
                 <p className="text-red-500 text-sm mt-1">{errors.start}</p>
@@ -132,6 +144,7 @@ export function AppointmentModalBase({
                 type="time"
                 value={form.end}
                 onChange={(e) => handleChange("end", e.target.value)}
+                className="rounded-xl border border-border/50 bg-background/80 focus-visible:ring-2 focus-visible:ring-primary/40"
               />
               {errors.end && (
                 <p className="text-red-500 text-sm mt-1">{errors.end}</p>
@@ -147,6 +160,7 @@ export function AppointmentModalBase({
               value={form.content}
               onChange={(e) => handleChange("content", e.target.value)}
               placeholder="Nội dung buổi hẹn..."
+              className="rounded-xl border border-border/50 bg-background/80 focus-visible:ring-2 focus-visible:ring-primary/40"
             />
           </div>
 
@@ -157,15 +171,16 @@ export function AppointmentModalBase({
               value={form.location}
               onChange={(e) => handleChange("location", e.target.value)}
               placeholder="Phòng họp, Google Meet,..."
+              className="rounded-xl border border-border/50 bg-background/80 focus-visible:ring-2 focus-visible:ring-primary/40"
             />
           </div>
         </div>
 
-        <DialogFooter className="flex-shrink-0 border-t pt-2 mt-4">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+        <DialogFooter className="flex-shrink-0 border-t border-border/60 pt-4 mt-4">
+          <Button variant="outline" onClick={() => onOpenChange(false)} className="rounded-full">
             Hủy
           </Button>
-          <Button onClick={handleSubmit} disabled={loading}>
+          <Button onClick={handleSubmit} disabled={loading} className="rounded-full">
             {loading ? "Đang gửi..." : "Gửi lịch hẹn"}
           </Button>
         </DialogFooter>

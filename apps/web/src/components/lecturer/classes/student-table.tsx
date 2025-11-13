@@ -18,16 +18,13 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import {
-  Calendar,
   Eye,
-  Mail,
   MessageCircle,
   MessageSquare,
   MoreHorizontal,
   X,
   Search,
   Loader2,
-  CalendarRange,
   CalendarPlus,
 } from "lucide-react";
 import Pagination from "@/components/pagination";
@@ -36,19 +33,17 @@ import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { normalize } from "@/utils/normalize";
-import AttendanceModal from "../attendance/attendance-modal";
 import { toast } from "sonner";
 import { PracticeGroup } from "@packages/core/entities/PracticeGroup";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { LabelRequired } from "@/components/ui/label-requied";
 import AppointmentModal from "../appointment/appointment-modal";
 
 export function StudentTable({
   classId,
-  type,
-  enrollments,
+  type: _type,
+  enrollments: _enrollments,
   practiceGroups,
   students,
   pageSize = 10,
@@ -66,6 +61,9 @@ export function StudentTable({
   const [isLoading, setIsLoading] = useState(false);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const router = useRouter();
+
+  void _type;
+  void _enrollments;
 
   const [singleTargetId, setSingleTargetId] = useState<number | null>(null);
 
@@ -487,34 +485,43 @@ export function StudentTable({
           />
         )}
 
-        {messageModalOpen && (
-          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
-            <div className="bg-white rounded-xl shadow-lg w-full max-w-lg p-6 space-y-4">
-              <h2 className="text-lg font-semibold">
+        <Dialog open={messageModalOpen} onOpenChange={setMessageModalOpen}>
+          <DialogContent className="max-w-lg flex flex-col gap-4">
+            <DialogHeader className="border-b pb-2">
+              <DialogTitle>
                 {messageTarget === "student" ? "Nhắn tin cho sinh viên" : "Nhắn tin cho phụ huynh"}
-              </h2>
+              </DialogTitle>
+              <DialogDescription>
+                Tin nhắn sẽ được gửi trực tiếp đến {messageTarget === "student" ? "các sinh viên đã chọn" : "phụ huynh của các sinh viên đã chọn"}.
+              </DialogDescription>
+            </DialogHeader>
 
-              <textarea
-                className="w-full border rounded-md p-2 h-32 focus:outline-none focus:ring-2 focus:ring-primary"
-                placeholder="Nhập nội dung tin nhắn..."
-                value={messageContent}
-                onChange={(e) => setMessageContent(e.target.value)}
-              />
-
-              <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setMessageModalOpen(false)}>
-                  Hủy
-                </Button>
-                <Button
-                  disabled={!messageContent.trim()}
-                  onClick={handleSendMessages}
-                >
-                  Gửi
-                </Button>
+            <div className="space-y-4">
+              <div>
+                <LabelRequired required>Nội dung tin nhắn</LabelRequired>
+                <Textarea
+                  className="mt-2"
+                  placeholder="Nhập nội dung tin nhắn..."
+                  value={messageContent}
+                  onChange={(e) => setMessageContent(e.target.value)}
+                  rows={6}
+                />
               </div>
             </div>
-          </div>
-        )}
+
+            <DialogFooter className="border-t pt-2">
+              <Button variant="outline" onClick={() => setMessageModalOpen(false)}>
+                Hủy
+              </Button>
+              <Button
+                disabled={!messageContent.trim() || isLoading}
+                onClick={handleSendMessages}
+              >
+                {isLoading ? "Đang gửi..." : "Gửi tin nhắn"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         <AppointmentModal 
           appointmentModalOpen={appointmentModalOpen} 

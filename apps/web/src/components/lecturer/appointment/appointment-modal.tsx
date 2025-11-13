@@ -203,9 +203,9 @@ export default function AppointmentModal({
 
     return (
         <Dialog open={appointmentModalOpen} onOpenChange={setAppointmentModalOpen}>
-            <DialogContent className="max-w-4xl flex flex-col max-h-[90vh]">
-                <DialogHeader className="flex-shrink-0 border-b pb-2">
-                    <DialogTitle>Đặt lịch hẹn với phụ huynh</DialogTitle>
+            <DialogContent className="max-w-4xl flex flex-col max-h-[90vh] border border-border/60 bg-card/95 backdrop-blur-xl shadow-[0_30px_80px_-40px_rgba(15,23,42,0.45)]">
+                <DialogHeader className="flex-shrink-0 border-b border-border/60 pb-4">
+                    <DialogTitle className="text-2xl font-semibold">Đặt lịch hẹn với phụ huynh</DialogTitle>
                 </DialogHeader>
 
                 {/* Nội dung cuộn */}
@@ -219,6 +219,7 @@ export default function AppointmentModal({
                             onBlur={() => handleBlur("title")}
                             placeholder="Nhập tiêu đề buổi hẹn..."
                             aria-invalid={!!errors.title && touched.title}
+                            className="rounded-xl border border-border/50 bg-background/80 focus-visible:ring-2 focus-visible:ring-primary/40"
                         />
                         {errors.title && touched.title && (
                             <p className="text-sm text-red-500 mt-1">{errors.title}</p>
@@ -235,6 +236,7 @@ export default function AppointmentModal({
                             onBlur={() => handleBlur("date")}
                             min={new Date().toISOString().split("T")[0]}
                             aria-invalid={!!errors.date && touched.date}
+                            className="rounded-xl border border-border/50 bg-background/80 focus-visible:ring-2 focus-visible:ring-primary/40"
                         />
                         {errors.date && touched.date && (
                             <p className="text-sm text-red-500 mt-1">{errors.date}</p>
@@ -251,6 +253,7 @@ export default function AppointmentModal({
                                 onChange={(e) => updateAppointmentData("start", e.target.value)}
                                 onBlur={() => handleBlur("start")}
                                 aria-invalid={!!errors.start && touched.start}
+                                className="rounded-xl border border-border/50 bg-background/80 focus-visible:ring-2 focus-visible:ring-primary/40"
                             />
                             {errors.start && touched.start && (
                                 <p className="text-sm text-red-500 mt-1">{errors.start}</p>
@@ -264,6 +267,7 @@ export default function AppointmentModal({
                                 onChange={(e) => updateAppointmentData("end", e.target.value)}
                                 onBlur={() => handleBlur("end")}
                                 aria-invalid={!!errors.end && touched.end}
+                                className="rounded-xl border border-border/50 bg-background/80 focus-visible:ring-2 focus-visible:ring-primary/40"
                             />
                             {errors.end && touched.end && (
                                 <p className="text-sm text-red-500 mt-1">{errors.end}</p>
@@ -280,6 +284,7 @@ export default function AppointmentModal({
                             onChange={(e) => updateAppointmentData("content", e.target.value)}
                             onBlur={() => handleBlur("content")}
                             placeholder="Nội dung buổi hẹn..."
+                            className="rounded-xl border border-border/50 bg-background/80 focus-visible:ring-2 focus-visible:ring-primary/40"
                         />
                     </div>
 
@@ -291,6 +296,7 @@ export default function AppointmentModal({
                             onChange={(e) => updateAppointmentData("location", e.target.value)}
                             onBlur={() => handleBlur("location")}
                             placeholder="Phòng họp, Google Meet,..."
+                            className="rounded-xl border border-border/50 bg-background/80 focus-visible:ring-2 focus-visible:ring-primary/40"
                         />
                     </div>
 
@@ -306,8 +312,8 @@ export default function AppointmentModal({
                                 if (!s) return null;
                                 const parents = s.student_parent?.flatMap(sp => sp.parents) || [];
                                 return (
-                                    <div key={sid} className="border p-2 rounded-md">
-                                        <p className="font-semibold">{s.users?.full_name}</p>
+                                    <div key={sid} className="rounded-2xl border border-border/50 bg-muted/20 p-4">
+                                        <p className="font-semibold text-foreground">{s.users?.full_name}</p>
                                         {parents.length > 0 ? (
                                             <div className="flex flex-col ml-4 mt-1">
                                                 {parents.map((p) =>
@@ -334,11 +340,11 @@ export default function AppointmentModal({
                     )}
                 </div>
 
-                <DialogFooter className="flex-shrink-0 border-t pt-2 mt-4">
-                    <Button variant="outline" onClick={() => setAppointmentModalOpen(false)}>
+                <DialogFooter className="flex-shrink-0 border-t border-border/60 pt-4 mt-4">
+                    <Button variant="outline" onClick={() => setAppointmentModalOpen(false)} className="rounded-full">
                         Hủy
                     </Button>
-                    <Button onClick={handleSendAppointment} disabled={!isValidForm || isLoading}>
+                    <Button onClick={handleSendAppointment} disabled={!isValidForm || isLoading} className="rounded-full">
                         {isLoading ? "Đang gửi..." : "Gửi lịch hẹn"}
                     </Button>
                 </DialogFooter>

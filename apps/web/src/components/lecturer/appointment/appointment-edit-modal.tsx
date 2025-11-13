@@ -1,5 +1,7 @@
 "use client";
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -82,9 +84,9 @@ export function AppointmentEditModal({
 
     return (
         <Dialog open={true} onOpenChange={onClose}>
-            <DialogContent className="max-w-lg">
-                <DialogHeader>
-                    <DialogTitle>Chỉnh sửa lịch hẹn</DialogTitle>
+            <DialogContent className="max-w-lg border border-border/60 bg-card/95 backdrop-blur-xl shadow-[0_30px_80px_-40px_rgba(15,23,42,0.45)]">
+                <DialogHeader className="border-b border-border/60 pb-4">
+                    <DialogTitle className="text-2xl font-semibold">Chỉnh sửa lịch hẹn</DialogTitle>
                 </DialogHeader>
 
                 <div className="space-y-4 py-2">
@@ -95,6 +97,7 @@ export function AppointmentEditModal({
                             placeholder="Nhập tiêu đề..."
                             value={form.title}
                             onChange={(e) => handleChange("title", e.target.value)}
+                            className="rounded-xl border border-border/50 bg-background/80 focus-visible:ring-2 focus-visible:ring-primary/40"
                         />
                         {errors.title && (
                             <p className="text-sm text-red-500 mt-1">{errors.title}</p>
@@ -108,6 +111,7 @@ export function AppointmentEditModal({
                             placeholder="Nhập nội dung cuộc hẹn..."
                             value={form.content ?? ""}
                             onChange={(e) => handleChange("content", e.target.value)}
+                            className="rounded-xl border border-border/50 bg-background/80 focus-visible:ring-2 focus-visible:ring-primary/40"
                         />
                     </div>
 
@@ -125,6 +129,7 @@ export function AppointmentEditModal({
                                     : ""
                             }
                             onChange={(e) => handleChange("start_time", e.target.value)}
+                            className="rounded-xl border border-border/50 bg-background/80 focus-visible:ring-2 focus-visible:ring-primary/40"
                         />
                         {errors.start_time && (
                             <p className="text-sm text-red-500 mt-1">{errors.start_time}</p>
@@ -145,6 +150,7 @@ export function AppointmentEditModal({
                                     : ""
                             }
                             onChange={(e) => handleChange("end_time", e.target.value)}
+                            className="rounded-xl border border-border/50 bg-background/80 focus-visible:ring-2 focus-visible:ring-primary/40"
                         />
                         {errors.end_time && (
                             <p className="text-sm text-red-500 mt-1">{errors.end_time}</p>
@@ -158,6 +164,7 @@ export function AppointmentEditModal({
                             placeholder="Ví dụ: Phòng họp A1"
                             value={form.location ?? ""}
                             onChange={(e) => handleChange("location", e.target.value)}
+                            className="rounded-xl border border-border/50 bg-background/80 focus-visible:ring-2 focus-visible:ring-primary/40"
                         />
                     </div>
 
@@ -169,7 +176,7 @@ export function AppointmentEditModal({
                                 handleChange("status", value as Appointment["status"])
                             }
                         >
-                            <SelectTrigger id="status">
+                            <SelectTrigger id="status" className="rounded-xl border border-border/50 bg-background/80 focus:ring-2 focus:ring-primary/40">
                                 <SelectValue placeholder="Chọn trạng thái" />
                             </SelectTrigger>
                             <SelectContent>
@@ -182,11 +189,11 @@ export function AppointmentEditModal({
                     </div>
                 </div>
 
-                <DialogFooter>
-                    <Button variant="outline" onClick={onClose}>
+                <DialogFooter className="border-t border-border/60 pt-4">
+                    <Button variant="outline" onClick={onClose} className="rounded-full">
                         Hủy
                     </Button>
-                    <Button onClick={handleSubmit} disabled={saving || hasError}>
+                    <Button onClick={handleSubmit} disabled={saving || hasError} className="rounded-full">
                         {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                         Lưu thay đổi
                     </Button>
