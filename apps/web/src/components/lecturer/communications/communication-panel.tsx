@@ -297,8 +297,8 @@ export default function CommunicationPanel() {
   const userRole = user.role;
 
   return (
-    <div className="w-80 border-r border-border flex flex-col bg-background overflow-hidden">
-      <div className="shrink-0 px-5 py-4 border-b border-border bg-background font-semibold text-foreground">Tin nhắn</div>
+    <div className="w-80 border-r border-border flex flex-col">
+      <div className="p-4 border-b font-semibold">Tin nhắn</div>
 
       {loading ? (
         <div className="flex items-center justify-center text-muted-foreground">
