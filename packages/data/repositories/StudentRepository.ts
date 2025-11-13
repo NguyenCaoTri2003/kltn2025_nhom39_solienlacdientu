@@ -72,6 +72,17 @@ export class StudentRepository {
     return data
   }
 
+  async getPracticeGroupsByOfferingAndLecturer(offeringId: number, lecturerId: number) {
+    const { data, error } = await supabase
+      .from("practice_groups")
+      .select("*")
+      .eq("offering_id", offeringId)
+      .eq("lecturer_id", lecturerId);
+
+    if (error) throw error;
+    return data;
+  }
+
   //Lấy danh sách sinh viên (id, student_code, full_name, class_name, faculty_name, academic_status)
   async getListStudent() {
     const { data, error } = await supabase
@@ -176,7 +187,7 @@ export class StudentRepository {
     };
   }
 
-  
+
 
   async getStudentParents(studentId: number): Promise<Array<{ parent_id: number; full_name: string; email: string }>> {
     const { data, error } = await supabase
