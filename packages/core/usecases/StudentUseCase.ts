@@ -23,7 +23,12 @@ export class StudentUseCase {
                 }
             }
 
-            if (offering.lecturer_id !== lecturerId) {
+            const isLecturerOfOffering = offering.lecturer_id === lecturerId;
+
+            const practiceGroups = await this.studentRepo.getPracticeGroupsByOfferingAndLecturer(offeringId, lecturerId);
+            const isPracticeLecturer = practiceGroups?.length > 0;
+
+            if (!isLecturerOfOffering && !isPracticeLecturer) {
                 return {
                     returnCode: 1,
                     message: "Bạn không có quyền xem sinh viên này.",
