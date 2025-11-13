@@ -53,7 +53,7 @@ interface GradeRow {
 }
 
 interface GradeTableCardProps {
-  grades: GradeRow[];
+  grades: any[];
   pageSize?: number;
   offeringName?: string;
 }
