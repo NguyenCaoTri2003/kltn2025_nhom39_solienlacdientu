@@ -9,12 +9,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Semester } from "@packages/core/entities/Semesters";
+import { cn } from "@/lib/utils";
 
 interface SemesterSelectorProps {
   onChange: (semester: Semester | null) => void;
+  className?: string;
 }
 
-export default function SemesterSelector({ onChange }: SemesterSelectorProps) {
+export default function SemesterSelector({ onChange, className }: SemesterSelectorProps) {
   const [semesters, setSemesters] = useState<Semester[]>([]);
   const [selectedYear, setSelectedYear] = useState<string | null>(null);
   const [selectedSemesterId, setSelectedSemesterId] = useState<number | null>(null);
@@ -67,7 +69,7 @@ export default function SemesterSelector({ onChange }: SemesterSelectorProps) {
   );
 
   return (
-    <div className="flex flex-wrap gap-4">
+    <div className={cn("flex flex-wrap gap-4", className)}>
       <Select
         value={selectedYear || ""}
         onValueChange={(val: string) => {

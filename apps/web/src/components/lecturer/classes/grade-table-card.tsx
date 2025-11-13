@@ -33,16 +33,33 @@ import {
 import * as XLSX from "xlsx";
 import { getClassificationLabel } from "./get-classification-label";
 
+interface GradeSummaryInfo {
+  total_score?: number | null;
+  gpa4?: number | null;
+  letter_grade?: string | null;
+  classification?: string | null;
+  passed?: boolean | null;
+  note?: string | null;
+}
+
+interface GradeRow {
+  student_id?: number;
+  student_code?: string;
+  student_name?: string;
+  practice_group_number?: number | null;
+  theoryScores?: Grade[] | null;
+  practiceScores?: Grade[] | null;
+  summary?: GradeSummaryInfo | null;
+}
+
 interface GradeTableCardProps {
-  grades: any[];
-  title?: string;
+  grades: GradeRow[];
   pageSize?: number;
   offeringName?: string;
 }
 
 export function GradeTableCard({
   grades = [],
-  title = "Bảng điểm chi tiết",
   pageSize = 10,
   offeringName,
 }: GradeTableCardProps) {
@@ -86,7 +103,7 @@ export function GradeTableCard({
       "Tổng kết": s.summary?.total_score ?? "",
       "Thang 4": s.summary?.gpa4 ?? "",
       "Điểm chữ": s.summary?.letter_grade ?? "",
-      "Xếp loại": getClassificationLabel(s.summary?.classification) ?? "",
+      "Xếp loại": getClassificationLabel(s.summary?.classification ?? undefined) ?? "",
       "Đạt":
         s.summary?.passed === true
           ? "Đạt"
@@ -104,7 +121,11 @@ export function GradeTableCard({
 
   const practiceGroups = useMemo(() => {
     const unique = Array.from(
-      new Set(grades.map((s) => s.practice_group_number).filter(Boolean))
+      new Set(
+        grades
+          .map((s) => s.practice_group_number)
+          .filter((num): num is number => typeof num === "number")
+      )
     );
     return unique.sort((a, b) => a - b);
   }, [grades]);
@@ -136,8 +157,8 @@ export function GradeTableCard({
     }
 
     return [...data].sort((a, b) => {
-      const nameA = a.student_name?.trim().split(" ").slice(-1)[0] || "";
-      const nameB = b.student_name?.trim().split(" ").slice(-1)[0] || "";
+      const nameA = (a.student_name ?? "").trim().split(" ").slice(-1)[0] || "";
+      const nameB = (b.student_name ?? "").trim().split(" ").slice(-1)[0] || "";
       return nameA.localeCompare(nameB, "vi", { sensitivity: "base" });
     });
   }, [grades, query, filter, groupFilter]);
@@ -153,7 +174,7 @@ export function GradeTableCard({
       {/* Thanh công cụ */}
       <div className="flex flex-wrap items-center gap-2">
         {/* Ô tìm kiếm */}
-        <div className="relative w-full sm:max-w-sm">
+        <div className="relative w-full sm:max-w-[260px]">
           <Input
             placeholder="Tìm theo tên hoặc mã sinh viên..."
             value={searchTerm}
@@ -342,7 +363,7 @@ export function GradeTableCard({
                     {student.summary?.letter_grade ?? "-"}
                   </TableCell>
                   <TableCell className="text-center">
-                    {getClassificationLabel(student.summary?.classification)}
+                    {getClassificationLabel(student.summary?.classification ?? undefined)}
                   </TableCell>
 
                   <TableCell className="text-center">
