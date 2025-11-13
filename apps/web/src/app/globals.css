@@ -167,3 +167,26 @@ body {
     @apply bg-background text-foreground;
   }
 }
+
+/* Custom scrollbar for chat messages */
+.chat-messages-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.5) transparent;
+}
+
+.chat-messages-scrollbar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.chat-messages-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.chat-messages-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(148, 163, 184, 0.5);
+  border-radius: 4px;
+}
+
+.chat-messages-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(148, 163, 184, 0.7);
+}

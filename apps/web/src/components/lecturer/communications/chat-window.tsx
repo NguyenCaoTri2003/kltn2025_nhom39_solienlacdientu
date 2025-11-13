@@ -12,6 +12,7 @@ import { getAvatarColor } from "@/utils/color-hash";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import EmptyState from "@/components/empty-state";
 import { formatDateLabel } from "@/utils/format-date-label";
+import Image from "next/image";
 
 interface ChatWindowProps {
     selectedConversation: Conversation | null;
@@ -23,8 +24,10 @@ interface ChatWindowProps {
 
 export default function ChatWindow({
     selectedConversation,
-    setSelectedConversation,
-    conversations,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    setSelectedConversation: _setSelectedConversation,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    conversations: _conversations,
     setConversations,
     myId,
 }: ChatWindowProps) {
@@ -230,7 +233,7 @@ export default function ChatWindow({
 
     if (!selectedConversation)
         return (
-            <div className="flex h-full flex-1 flex-col overflow-hidden rounded-2xl border border-border/40 bg-background/80 shadow-[0_28px_80px_-50px_rgba(15,23,42,0.5)]">
+            <div className="flex h-full flex-1 flex-col overflow-hidden bg-background">
                 <div className="flex flex-1 items-center justify-center text-muted-foreground">
                     <EmptyState
                         icon={<MessageSquare className="w-10 h-10" />}
@@ -255,9 +258,9 @@ export default function ChatWindow({
     }
 
     return (
-        <div className="flex h-full flex-1 flex-col overflow-hidden rounded-2xl border border-border/40 bg-background/80 shadow-[0_28px_80px_-50px_rgba(15,23,42,0.5)]">
+        <div className="flex h-full flex-1 flex-col overflow-hidden bg-background">
             {/* Header */}
-            <div className="flex items-center justify-between border-b border-border/40 bg-background/90 px-5 py-4">
+            <div className="flex shrink-0 items-center justify-between border-b border-border/40 bg-background/90 px-5 py-4">
                 <div className="flex items-center gap-3">
                     <Avatar className="h-11 w-11 border border-border/60">
                         {partner.avatar_url ? (
@@ -280,7 +283,7 @@ export default function ChatWindow({
             </div>
 
             {/* Danh sách tin nhắn với scrollbar */}
-            <div className="flex-1 overflow-y-auto bg-background/60 px-5 py-6 scrollbar-thin scrollbar-thumb-border/60 scrollbar-track-transparent hover:scrollbar-thumb-border/80">
+            <div className="flex-1 overflow-y-auto bg-background/60 px-5 py-6 chat-messages-scrollbar min-h-0">
                 <div className="space-y-4">
                     {messages.map((msg, index) => {
                     const prevMsg = messages[index - 1];
@@ -311,9 +314,11 @@ export default function ChatWindow({
                                         }`}
                                 >
                                     {msg.type === "image" ? (
-                                        <img
+                                        <Image
                                             src={msg.content}
                                             alt="image"
+                                            width={256}
+                                            height={256}
                                             className="rounded-lg max-w-full max-h-64 object-cover"
                                         />
                                     ) : msg.type === "file" ? (
@@ -368,14 +373,16 @@ export default function ChatWindow({
 
             {/* Xem trước file */}
             {files.length > 0 && (
-                <div className="border-t border-border/40 bg-background px-5 py-3">
+                <div className="shrink-0 border-t border-border/40 bg-background px-5 py-3">
                     <div className="flex flex-wrap gap-3">
                     {files.map((file, idx) => (
                         <div key={idx} className="relative">
                             {previewUrls[idx] ? (
-                                <img
+                                <Image
                                     src={previewUrls[idx]}
                                     alt="preview"
+                                    width={80}
+                                    height={80}
                                     className="w-20 h-20 object-cover rounded-lg border"
                                 />
                             ) : (
@@ -404,7 +411,7 @@ export default function ChatWindow({
             )}
 
             {/* Ô nhập */}
-            <div className="border-t border-border/40 bg-background/95 px-5 py-4">
+            <div className="shrink-0 border-t border-border/40 bg-background/95 px-5 py-4">
                 <div className="flex items-center gap-2">
                 <Input
                     value={message}
