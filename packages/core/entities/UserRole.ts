@@ -1,4 +1,3 @@
-import { JSX } from "react/jsx-runtime";
 import { Class } from "./Classes";
 
 export type Student = {
