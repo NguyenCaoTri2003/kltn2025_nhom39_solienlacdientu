@@ -90,7 +90,7 @@ export default function NavbarClient({ userRole, userName, avatarUrl, userId }: 
     { icon: User, label: "Điểm danh", href: "/portal/attendances" },
     { icon: BarChart3, label: "Kết quả học tập", href: "/portal/grades" },
     { icon: Calendar, label: "Lịch hẹn", href: "/portal/appointments" },
-    // { icon: MessageSquare, label: "Nhắn tin", href: "/portal/communications" },
+    { icon: MessageSquare, label: "Nhắn tin", href: "/portal/communications" },
   ];
 
   const isActiveLink = (href: string) => {

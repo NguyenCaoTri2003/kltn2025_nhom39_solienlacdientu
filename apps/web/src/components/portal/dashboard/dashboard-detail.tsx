@@ -46,10 +46,9 @@ export default function Dashboard() {
     [appointments]
   );
 
-  const todayIndex = new Date().getDay();
-
   const todayClasses = useMemo(() => {
     if (!offerings) return [];
+    const todayIndex = new Date().getDay();
     return offerings.filter((o) =>
       o.detail?.schedule?.some((s: { day_of_week: number }) => {
         const dayOfWeek = Number(s.day_of_week) % 7;
@@ -112,16 +111,19 @@ export default function Dashboard() {
   }
 
   const cardStyle =
-    "bg-white/80 dark:bg-gray-800/80 border border-gray-200 dark:border-gray-700 shadow-md rounded-xl p-5 transition hover:shadow-lg hover:-translate-y-1 duration-300 backdrop-blur-md";
+    "bg-white/80 dark:bg-gray-800/80 border border-gray-200 dark:border-gray-700 shadow-md rounded-xl p-5 transition-all duration-150 backdrop-blur-md hover:shadow-lg hover:-translate-y-1 hover:border-primary/30 hover:bg-white/90 dark:hover:bg-gray-800/90";
 
   return (
-    <motion.div
-      className="relative overflow-hidden"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.8 }}
-    >
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 p-6">
+    <div className="relative">
+      <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(120%_120%_at_50%_0%,rgba(59,130,246,0.12),rgba(59,130,246,0)_60%)] blur-[1px]" />
+      <div className="rounded-3xl border border-border/60 bg-card/50 p-6 sm:p-10 shadow-[0_30px_80px_-40px_rgba(15,23,42,0.45)] backdrop-blur-xl">
+        <motion.div
+          className="relative overflow-hidden"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.8 }}
+        >
+          <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         {/* Greeting */}
         <motion.div
           className="col-span-3 flex items-center gap-3"
@@ -210,8 +212,9 @@ export default function Dashboard() {
                 {userData?.children?.map((child) => (
                   <motion.div
                     key={child.id}
-                    className="p-3 border border-gray-200 dark:border-gray-700 rounded-md bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 transition-all duration-300"
-                    whileHover={{ scale: 1.02 }}
+                    className="p-3 border border-gray-200 dark:border-gray-700 rounded-md bg-gray-50 dark:bg-gray-700 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:border-blue-300 dark:hover:border-blue-700 transition-all duration-150 cursor-pointer"
+                    whileHover={{ scale: 1.02, y: -2 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 25 }}
                   >
                     <p className="font-medium text-gray-900 dark:text-gray-100">
                       {child.users.full_name}
@@ -238,9 +241,9 @@ export default function Dashboard() {
                   todayAppointments.map((a) => (
                     <motion.div
                       key={a.id}
-                      className="p-4 border border-gray-200 dark:border-gray-700 rounded-md bg-gray-50 dark:bg-gray-700 cursor-pointer"
-                      whileHover={{ scale: 1.02, boxShadow: "0 4px 12px rgba(0,0,0,0.2)" }}
-                      transition={{ duration: 0.2 }}
+                      className="p-4 border border-gray-200 dark:border-gray-700 rounded-md bg-gray-50 dark:bg-gray-700 cursor-pointer hover:bg-orange-50 dark:hover:bg-orange-900/20 hover:border-orange-300 dark:hover:border-orange-700 transition-all duration-150"
+                      whileHover={{ scale: 1.02, y: -2 }}
+                      transition={{ type: "spring", stiffness: 400, damping: 25 }}
                       onClick={() => router.push(`/portal/appointments`)}
                     >
                       <p className="font-semibold text-gray-900 dark:text-gray-100">{a.title}</p>
@@ -279,9 +282,9 @@ export default function Dashboard() {
                   todayClasses.map((c) => (
                     <motion.div
                       key={c.id}
-                      className="p-4 border border-gray-200 dark:border-gray-700 rounded-md bg-gray-50 dark:bg-gray-700 cursor-pointer"
-                      whileHover={{ scale: 1.02, boxShadow: "0 4px 12px rgba(0,0,0,0.2)" }}
-                      transition={{ duration: 0.2 }}
+                      className="p-4 border border-gray-200 dark:border-gray-700 rounded-md bg-gray-50 dark:bg-gray-700 cursor-pointer hover:bg-green-50 dark:hover:bg-green-900/20 hover:border-green-300 dark:hover:border-green-700 transition-all duration-150"
+                      whileHover={{ scale: 1.02, y: -2 }}
+                      transition={{ type: "spring", stiffness: 400, damping: 25 }}
                       onClick={() => router.push(`/portal/classes/${c.id}`)}
                     >
                       <p className="font-semibold text-gray-900 dark:text-gray-100">
@@ -324,9 +327,9 @@ export default function Dashboard() {
                   {offerings.map((c) => (
                     <motion.div
                       key={c.id}
-                      className="p-4 border border-gray-200 dark:border-gray-700 rounded-md bg-gray-50 dark:bg-gray-700 cursor-pointer"
-                      whileHover={{ scale: 1.02, boxShadow: "0 4px 12px rgba(0,0,0,0.2)" }}
-                      transition={{ duration: 0.2 }}
+                      className="p-4 border border-gray-200 dark:border-gray-700 rounded-md bg-gray-50 dark:bg-gray-700 cursor-pointer hover:bg-indigo-50 dark:hover:bg-indigo-900/20 hover:border-indigo-300 dark:hover:border-indigo-700 transition-all duration-150"
+                      whileHover={{ scale: 1.02, y: -2 }}
+                      transition={{ type: "spring", stiffness: 400, damping: 25 }}
                       onClick={() => router.push(`/portal/classes/${c.id}`)}
                     >
                       <p className="font-semibold text-gray-900 dark:text-gray-100">
@@ -341,7 +344,7 @@ export default function Dashboard() {
                           c.detail?.lecturer?.full_name ||
                           "Chưa rõ"}
                       </p>
-                      {c.detail?.schedule?.map((s: any, i: number) => (
+                      {c.detail?.schedule?.map((s: { day_of_week: number; start_period: number; period_count: number; classroom: string; building: string }, i: number) => (
                         <p key={i} className="text-sm flex items-center gap-1">
                           <Calendar className="w-4 h-4" />{" "}
                           {getDayName(Number(s.day_of_week))} - Tiết {s.start_period} →{" "}
@@ -361,7 +364,9 @@ export default function Dashboard() {
             </motion.div>
           </>
         )}
+          </div>
+        </motion.div>
       </div>
-    </motion.div>
+    </div>
   );
 }

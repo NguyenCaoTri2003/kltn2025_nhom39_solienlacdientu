@@ -4,23 +4,16 @@ import { useEffect, useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Loader2, Calendar, BookOpen, AlertCircle } from "lucide-react";
-import Loading from "@/components/ui/loading";
+import { Loader2, Calendar, BookOpen, AlertCircle, CalendarDays, GraduationCap } from "lucide-react";
 import { useUser } from "@/context/user-context";
 import { fetchAttendanceByOffering, AttendanceRecord } from "@/services/attendanceService";
 import { fetchOfferingsBySemesterWithStudent, Offering } from "@/services/offeringService";
-import { fetchSemestersByStudentYear, getCurrentSemester, Semester } from "@/services/semesterService";
+import { Semester } from "@/services/semesterService";
 import EmptyState from "@/components/empty-state";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
 import { toast } from "sonner";
+import SemesterSelector from "@/components/lecturer/classes/semester-selector";
 
 const statusMap: Record<string, { label: string; className: string }> = {
   present: { label: "Có mặt", className: "bg-green-100 text-green-700 border-green-200" },
@@ -41,12 +34,11 @@ export default function AttendanceList() {
   const [selectedChildIndex, setSelectedChildIndex] = useState(0);
   const activeChild = isParent ? children[selectedChildIndex] : null;
 
-  const [semesters, setSemesters] = useState<Semester[]>([]);
   const [semester, setSemester] = useState<Semester | null>(null);
   const [offerings, setOfferings] = useState<Offering[]>([]);
   const [selectedOffering, setSelectedOffering] = useState<number | null>(null);
   const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [loadingAttendance, setLoadingAttendance] = useState(false);
 
   const studentId = useMemo(
@@ -54,39 +46,6 @@ export default function AttendanceList() {
     [isParent, activeChild?.id, userData?.student?.id]
   );
 
-  const studentYear = useMemo(
-    () =>
-      isParent
-        ? activeChild?.academic_year
-        : userData?.student?.academic_year,
-    [isParent, activeChild?.academic_year, userData?.student?.academic_year]
-  );
-
-  const studentStartYear = useMemo(() => {
-    if (!studentYear) return undefined;
-    const match = studentYear.match(/(\d{4})/);
-    return match ? Number(match[1]) : undefined;
-  }, [studentYear]);
-
-  useEffect(() => {
-    if (!studentId) return;
-    setLoading(true);
-    fetchSemestersByStudentYear(studentStartYear)
-      .then((data) => {
-        setSemesters(data);
-        const current = getCurrentSemester(data);
-        if (current) {
-          setSemester(current);
-        } else if (data.length > 0) {
-          setSemester(data[data.length - 1]);
-        }
-      })
-      .catch((err: Error) => {
-        console.error("Error fetching semesters:", err);
-        toast.error("Không thể tải danh sách học kỳ");
-      })
-      .finally(() => setLoading(false));
-  }, [studentId, studentStartYear]);
 
   useEffect(() => {
     if (!semester || !studentId) return;
@@ -135,165 +94,217 @@ export default function AttendanceList() {
     }
   };
 
-  if (loading && !semester) {
-    return (
-      <div className="flex justify-center items-center py-20">
-        <Loading text="Đang tải..." />
-      </div>
-    );
-  }
-
   return (
-    <div className="space-y-6">
-      {/* Phần để phụ huynh chọn con*/}
-      {isParent && children.length > 1 && (
-        <div className="flex gap-2 flex-wrap bg-indigo-50 p-2 rounded-lg">
-          {children.map((child, index) => (
-            <button
-              key={child.id}
-              className={`cursor-pointer px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition ${selectedChildIndex === index
-                ? "bg-indigo-600 text-white"
-                : "bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-300"
-                }`}
-              onClick={() => handleSelectChild(index)}
-            >
-              {child.users?.full_name || `Con ${index + 1}`}
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* chọn học kỳ*/}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg flex items-center gap-2">
-            <Calendar className="w-5 h-5" />
-            Chọn học kỳ
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Select
-            value={semester?.id?.toString()}
-            onValueChange={(value: string) => {
-              const selected = semesters.find((s) => s.id.toString() === value);
-              if (selected) setSemester(selected);
-            }}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Chọn học kỳ..." />
-            </SelectTrigger>
-            <SelectContent>
-              {semesters.map((s) => (
-                <SelectItem key={s.id} value={s.id.toString()}>
-                  {s.name} - {s.academic_year}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </CardContent>
-      </Card>
-
-      {/* Phần để chọn lớp học phần*/}
-      {loading ? (
-        <div className="flex justify-center items-center py-10">
-          <Loading text="Đang tải danh sách lớp học phần..." />
-        </div>
-      ) : offerings.length === 0 ? (
-        <EmptyState
-          icon={<BookOpen className="w-12 h-12" />}
-          text="Học kỳ này không có lớp học phần nào"
-        />
-      ) : (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <BookOpen className="w-5 h-5" />
-              Chọn lớp học phần
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex gap-2 flex-wrap">
-              {offerings.map((off) => (
-                <Button
-                  key={off.id}
-                  variant={selectedOffering === off.id ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => loadAttendance(off.id)}
-                  disabled={loadingAttendance}
+    <div className="relative">
+      <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(120%_120%_at_50%_0%,rgba(59,130,246,0.12),rgba(59,130,246,0)_60%)] blur-[1px]" />
+      <div className="space-y-10 rounded-3xl border border-border/60 bg-card/50 p-6 sm:p-10 shadow-[0_30px_80px_-40px_rgba(15,23,42,0.45)] backdrop-blur-xl">
+        {/* Header với tabs và chọn học kỳ trên cùng một hàng */}
+        <div className="flex flex-wrap justify-between items-center gap-4">
+          {/* Phần để phụ huynh chọn con*/}
+          {isParent && children.length > 1 && (
+            <div className="flex gap-2 flex-wrap rounded-2xl border border-border/40 bg-muted/30 p-3">
+              {children.map((child, index) => (
+                <button
+                  key={child.id}
+                  className={`cursor-pointer px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition ${
+                    selectedChildIndex === index
+                      ? "bg-primary text-primary-foreground shadow-sm"
+                      : "bg-background/60 text-foreground hover:bg-muted"
+                  }`}
+                  onClick={() => handleSelectChild(index)}
                 >
-                  {off.name}
-                  {loadingAttendance && selectedOffering === off.id && (
-                    <Loader2 className="w-4 h-4 animate-spin ml-2" />
-                  )}
-                </Button>
+                  {child.users?.full_name || `Con ${index + 1}`}
+                </button>
               ))}
             </div>
-          </CardContent>
-        </Card>
-      )}
+          )}
 
-      {/* hiển thị lịch sử điểm danh*/}
-      {selectedOffering && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Lịch sử điểm danh</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {loadingAttendance ? (
-              <div className="flex justify-center items-center py-10">
-                <Loading text="Đang tải lịch sử điểm danh..." />
-              </div>
-            ) : attendance.length === 0 ? (
-              <EmptyState
-                icon={<AlertCircle className="w-12 h-12" />}
-                text="Lớp học phần này chưa có bản ghi điểm danh nào"
+          {/* Chọn học kỳ */}
+          <div className="flex items-center gap-3 ml-auto">
+            <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/15 text-primary shrink-0">
+              <CalendarDays className="h-5 w-5" />
+            </span>
+            <div className="flex items-center gap-3">
+              <span className="text-lg font-semibold text-foreground whitespace-nowrap">
+                Chọn học kỳ
+              </span>
+              <SemesterSelector
+                onChange={(selected) => {
+                  if (selected) {
+                    // Convert Semester type - handle undefined to null conversion
+                    const localSemester = {
+                      ...selected,
+                      start_date: selected.start_date ?? null,
+                      end_date: selected.end_date ?? null,
+                    } as Semester;
+                    setSemester(localSemester);
+                  } else {
+                    setSemester(null);
+                  }
+                }}
+                className="min-w-[280px] rounded-full border border-border/50 bg-gradient-to-r from-background/90 via-background/80 to-background/70 shadow-[0_12px_32px_-20px_rgba(15,23,42,0.6)] backdrop-blur"
               />
-            ) : (
-              <div className="space-y-3">
-                {[...attendance]
-                  .sort(
-                    (a, b) =>
-                      new Date(b.attendance_date).getTime() -
-                      new Date(a.attendance_date).getTime()
-                  )
-                  .map((att) => (
-                    <div
-                      key={att.id}
-                      className="border rounded-lg p-4 hover:bg-accent/50 transition-colors"
-                    >
-                      <div className="flex items-start justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          <Calendar className="w-4 h-4 text-muted-foreground" />
-                          <span className="font-semibold">
-                            {formatDate(att.attendance_date)}
-                          </span>
-                        </div>
-                        <Badge
-                          variant="outline"
-                          className={statusMap[att.status]?.className}
-                        >
-                          {statusMap[att.status]?.label || att.status}
-                        </Badge>
-                      </div>
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <span className="font-medium">
-                          {typeMap[att.type] || att.type}:
-                        </span>
-                        <span>{statusMap[att.status]?.label || att.status}</span>
-                      </div>
-                      {att.note && (
-                        <div className="mt-2 p-2 bg-muted rounded text-sm">
-                          <span className="font-medium">Ghi chú: </span>
-                          <span>{att.note}</span>
-                        </div>
-                      )}
-                    </div>
-                  ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Phần để chọn lớp học phần*/}
+        {loading ? (
+          <div className="flex justify-center items-center py-20">
+            <div className="flex flex-col items-center gap-4">
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary">
+                <Loader2 className="h-7 w-7 animate-spin" />
               </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
+              <p className="text-sm text-muted-foreground">Đang tải danh sách lớp học phần...</p>
+            </div>
+          </div>
+        ) : offerings.length === 0 ? (
+          <EmptyState
+            icon={<BookOpen className="w-10 h-10" />}
+            text="Học kỳ này không có lớp học phần nào"
+          />
+        ) : (
+          <Card className="rounded-3xl border border-border/60 bg-gradient-to-br from-card/95 via-card/90 to-background/70 p-6 sm:p-8 shadow-[0_24px_80px_-50px_rgba(15,23,42,0.55)] backdrop-blur">
+            <CardHeader className="gap-3 pb-0">
+              <div className="flex items-center gap-3">
+                <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/15 text-primary">
+                  <BookOpen className="h-5 w-5" />
+                </span>
+                <div>
+                  <CardTitle className="text-lg font-semibold text-foreground">
+                    Chọn lớp học phần
+                  </CardTitle>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="mt-6">
+              <div className="flex gap-3 flex-wrap">
+                {offerings.map((off) => (
+                  <Button
+                    key={off.id}
+                    variant={selectedOffering === off.id ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => loadAttendance(off.id)}
+                    disabled={loadingAttendance}
+                    className={`rounded-full transition-all ${
+                      selectedOffering === off.id
+                        ? "shadow-[0_4px_14px_rgba(59,130,246,0.3)] hover:shadow-[0_6px_20px_rgba(59,130,246,0.4)]"
+                        : "border-border/50 bg-background/60 shadow-[0_12px_32px_-20px_rgba(15,23,42,0.6)] backdrop-blur"
+                    }`}
+                  >
+                    {off.name}
+                    {loadingAttendance && selectedOffering === off.id && (
+                      <Loader2 className="w-4 h-4 animate-spin ml-2" />
+                    )}
+                  </Button>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* hiển thị lịch sử điểm danh*/}
+        {selectedOffering && (
+          <Card className="rounded-3xl border border-border/60 bg-gradient-to-br from-card/95 via-card/90 to-background/70 p-6 sm:p-8 shadow-[0_24px_80px_-50px_rgba(15,23,42,0.55)] backdrop-blur">
+            <CardHeader className="gap-3 pb-0">
+              <div className="flex items-center gap-3">
+                <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/15 text-primary">
+                  <GraduationCap className="h-5 w-5" />
+                </span>
+                <div>
+                  <CardTitle className="text-lg font-semibold text-foreground">
+                    Lịch sử điểm danh
+                  </CardTitle>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="mt-6">
+              {loadingAttendance ? (
+                <div className="flex justify-center items-center py-20">
+                  <div className="flex flex-col items-center gap-4">
+                    <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary">
+                      <Loader2 className="h-7 w-7 animate-spin" />
+                    </div>
+                    <p className="text-sm text-muted-foreground">Đang tải lịch sử điểm danh...</p>
+                  </div>
+                </div>
+              ) : attendance.length === 0 ? (
+                <EmptyState
+                  icon={<AlertCircle className="w-10 h-10" />}
+                  text="Lớp học phần này chưa có bản ghi điểm danh nào"
+                />
+              ) : (
+                <div className="space-y-4">
+                  {[...attendance]
+                    .sort(
+                      (a, b) =>
+                        new Date(b.attendance_date).getTime() -
+                        new Date(a.attendance_date).getTime()
+                    )
+                    .map((att) => {
+                      const statusInfo = statusMap[att.status] || { label: att.status, className: "" };
+                      const isPresent = att.status === "present";
+                      const isAbsent = att.status === "absent";
+                      const isLate = att.status === "late";
+                      
+                      return (
+                        <div
+                          key={att.id}
+                          className={`rounded-2xl border p-4 transition-all hover:shadow-md ${
+                            isPresent
+                              ? "border-emerald-500/40 bg-gradient-to-br from-emerald-50/50 via-emerald-50/30 to-background/60"
+                              : isAbsent
+                              ? "border-amber-500/40 bg-gradient-to-br from-amber-50/50 via-amber-50/30 to-background/60"
+                              : isLate
+                              ? "border-orange-500/40 bg-gradient-to-br from-orange-50/50 via-orange-50/30 to-background/60"
+                              : "border-primary/40 bg-gradient-to-br from-primary/10 via-primary/5 to-background/60"
+                          }`}
+                        >
+                          <div className="flex items-start justify-between mb-3">
+                            <div className="flex items-center gap-2">
+                              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-background/60">
+                                <Calendar className="w-4 h-4 text-muted-foreground" />
+                              </div>
+                              <span className="font-semibold text-foreground">
+                                {formatDate(att.attendance_date)}
+                              </span>
+                            </div>
+                            <Badge
+                              variant="outline"
+                              className={`font-semibold ${
+                                isPresent
+                                  ? "border-emerald-500/60 bg-emerald-500/10 text-emerald-700"
+                                  : isAbsent
+                                  ? "border-amber-500/60 bg-amber-500/10 text-amber-700"
+                                  : isLate
+                                  ? "border-orange-500/60 bg-orange-500/10 text-orange-700"
+                                  : "border-primary/60 bg-primary/10 text-primary"
+                              }`}
+                            >
+                              {statusInfo.label}
+                            </Badge>
+                          </div>
+                          <div className="flex items-center gap-2 text-sm mb-2">
+                            <span className="font-medium text-muted-foreground">
+                              {typeMap[att.type] || att.type}:
+                            </span>
+                            <span className="text-foreground">{statusInfo.label}</span>
+                          </div>
+                          {att.note && (
+                            <div className="mt-3 rounded-xl border border-border/40 bg-background/60 px-3 py-2 text-sm">
+                              <span className="font-semibold text-muted-foreground">Ghi chú: </span>
+                              <span className="text-foreground">{att.note}</span>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+      </div>
     </div>
   );
 }

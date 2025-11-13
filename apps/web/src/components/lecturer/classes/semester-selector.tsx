@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import {
   Select,
   SelectTrigger,
@@ -21,6 +21,7 @@ export default function SemesterSelector({ onChange, className }: SemesterSelect
   const [selectedYear, setSelectedYear] = useState<string | null>(null);
   const [selectedSemesterId, setSelectedSemesterId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
+  const isInitializedRef = useRef(false);
 
   useEffect(() => {
     const fetchSemesters = async () => {
@@ -32,25 +33,30 @@ export default function SemesterSelector({ onChange, className }: SemesterSelect
           const data: Semester[] = json.data;
           setSemesters(data);
 
-          const today = new Date();
+          // Chỉ gọi onChange khi chưa được khởi tạo lần đầu
+          if (!isInitializedRef.current) {
+            const today = new Date();
 
-          // Tìm học kỳ hiện tại theo ngày
-          const currentSemester = data.find((s) => {
-            const start = s.start_date ? new Date(s.start_date) : null;
-            const end = s.end_date ? new Date(s.end_date) : null;
-            return start && end && today >= start && today <= end;
-          });
+            // Tìm học kỳ hiện tại theo ngày
+            const currentSemester = data.find((s) => {
+              const start = s.start_date ? new Date(s.start_date) : null;
+              const end = s.end_date ? new Date(s.end_date) : null;
+              return start && end && today >= start && today <= end;
+            });
 
-          if (currentSemester) {
-            setSelectedSemesterId(currentSemester.id);
-            setSelectedYear(currentSemester.academic_year);
-            onChange(currentSemester);
-          } else if (data.length > 0) {
-            // Nếu không có kỳ nào khớp ngày hiện tại thì chọn kỳ mới nhất
-            const latest = data[data.length - 1];
-            setSelectedSemesterId(latest.id);
-            setSelectedYear(latest.academic_year);
-            onChange(latest);
+            if (currentSemester) {
+              setSelectedSemesterId(currentSemester.id);
+              setSelectedYear(currentSemester.academic_year);
+              isInitializedRef.current = true;
+              onChange(currentSemester);
+            } else if (data.length > 0) {
+              // Nếu không có kỳ nào khớp ngày hiện tại thì chọn kỳ mới nhất
+              const latest = data[data.length - 1];
+              setSelectedSemesterId(latest.id);
+              setSelectedYear(latest.academic_year);
+              isInitializedRef.current = true;
+              onChange(latest);
+            }
           }
         }
       } catch (error) {
@@ -61,7 +67,8 @@ export default function SemesterSelector({ onChange, className }: SemesterSelect
     };
 
     fetchSemesters();
-  }, [onChange]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Lọc học kỳ theo năm học được chọn
   const filteredSemesters = semesters.filter(
