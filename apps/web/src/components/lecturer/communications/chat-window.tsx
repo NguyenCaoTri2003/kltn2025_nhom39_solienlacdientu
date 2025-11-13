@@ -1,4 +1,4 @@
-
+﻿
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -230,12 +230,14 @@ export default function ChatWindow({
 
     if (!selectedConversation)
         return (
-            <div className="flex-1 flex items-center justify-center text-muted-foreground">
-                <EmptyState
-                    icon={<MessageSquare className="w-10 h-10" />}
-                    text="Chọn một cuộc trò chuyện để bắt đầu"
-                    className="py-1"
-                />
+            <div className="flex h-full flex-1 flex-col overflow-hidden rounded-2xl border border-border/40 bg-background/80 shadow-[0_28px_80px_-50px_rgba(15,23,42,0.5)]">
+                <div className="flex flex-1 items-center justify-center text-muted-foreground">
+                    <EmptyState
+                        icon={<MessageSquare className="w-10 h-10" />}
+                        text="Chọn một cuộc trò chuyện để bắt đầu"
+                        className="py-1"
+                    />
+                </div>
             </div>
         );
 
@@ -253,11 +255,11 @@ export default function ChatWindow({
     }
 
     return (
-        <div className="flex flex-col flex-1 h-full">
+        <div className="flex h-full flex-1 flex-col overflow-hidden rounded-2xl border border-border/40 bg-background/80 shadow-[0_28px_80px_-50px_rgba(15,23,42,0.5)]">
             {/* Header */}
-            <div className="flex items-center justify-between border-b p-3 bg-background sticky top-0 z-10">
+            <div className="flex items-center justify-between border-b border-border/40 bg-background/90 px-5 py-4">
                 <div className="flex items-center gap-3">
-                    <Avatar className="w-10 h-10 sm:w-10 sm:h-10">
+                    <Avatar className="h-11 w-11 border border-border/60">
                         {partner.avatar_url ? (
                             <AvatarImage src={partner.avatar_url} />
                         ) : (
@@ -269,7 +271,7 @@ export default function ChatWindow({
                         )}
                     </Avatar>
                     <div>
-                        <div className="font-semibold">{partner.full_name}</div>
+                        <div className="text-base font-semibold text-foreground">{partner.full_name}</div>
                         <div className="text-sm text-muted-foreground">
                             {getRoleLabel(partner.role)}
                         </div>
@@ -277,9 +279,10 @@ export default function ChatWindow({
                 </div>
             </div>
 
-            {/* Danh sách tin nhắn */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-background">
-                {messages.map((msg, index) => {
+            {/* Danh sách tin nhắn với scrollbar */}
+            <div className="flex-1 overflow-y-auto bg-background/60 px-5 py-6 scrollbar-thin scrollbar-thumb-border/60 scrollbar-track-transparent hover:scrollbar-thumb-border/80">
+                <div className="space-y-4">
+                    {messages.map((msg, index) => {
                     const prevMsg = messages[index - 1];
                     const msgDate = new Date(msg.created_at);
                     const prevDate = prevMsg ? new Date(prevMsg.created_at) : null;
@@ -358,14 +361,15 @@ export default function ChatWindow({
                             </div>
                         </div>
                     );
-                })}
-
+                    })}
+                </div>
                 <div ref={messagesEndRef} />
             </div>
 
             {/* Xem trước file */}
             {files.length > 0 && (
-                <div className="p-3 border-t bg-muted/30 flex flex-wrap gap-3 overflow-x-auto">
+                <div className="border-t border-border/40 bg-background px-5 py-3">
+                    <div className="flex flex-wrap gap-3">
                     {files.map((file, idx) => (
                         <div key={idx} className="relative">
                             {previewUrls[idx] ? (
@@ -395,11 +399,13 @@ export default function ChatWindow({
                             </button>
                         </div>
                     ))}
+                    </div>
                 </div>
             )}
 
             {/* Ô nhập */}
-            <div className="p-3 border-t flex gap-2 shrink-0 bg-background sticky bottom-0 z-10">
+            <div className="border-t border-border/40 bg-background/95 px-5 py-4">
+                <div className="flex items-center gap-2">
                 <Input
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
@@ -423,9 +429,10 @@ export default function ChatWindow({
                     onClick={handleSend}
                     disabled={sending || (!message.trim() && files.length === 0)}
                 >
-                    {sending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                    {sending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Gửi
                 </Button>
+                </div>
             </div>
         </div>
     );

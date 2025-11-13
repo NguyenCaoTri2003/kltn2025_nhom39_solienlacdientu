@@ -1,4 +1,3 @@
-import { useMemo } from "react";
 import { Conversation } from "./communication-panel";
 import { getAvatarColor } from "@/utils/color-hash";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -71,18 +70,12 @@ export default function ConversationList({
   };
 
   return (
-    <div className="flex-1 overflow-y-auto">
+    <div className="flex-1 overflow-y-auto bg-background">
       {sortedConversations.map((conv) => {
         const other = conv.user1.id === myId ? conv.user2 : conv.user1;
-        const initials = useMemo(() => {
-          const parts = other.full_name.trim().split(" ");
-          return parts[parts.length - 1]?.[0]?.toUpperCase() ?? "?";
-        }, [other.full_name]);
-
-        const bgColor = useMemo(
-          () => getAvatarColor(other.id ? String(other.id) : other.full_name || "?"),
-          [other.id, other.full_name]
-        );
+        const parts = other.full_name.trim().split(" ");
+        const initials = parts[parts.length - 1]?.[0]?.toUpperCase() ?? "?";
+        const bgColor = getAvatarColor(other.id ? String(other.id) : other.full_name || "?");
 
         const isUnread = conv.unreadCount && conv.unreadCount > 0;
         const isActive = selectedConversation?.id === conv.id;

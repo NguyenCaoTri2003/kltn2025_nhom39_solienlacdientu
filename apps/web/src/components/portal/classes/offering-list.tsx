@@ -1,22 +1,18 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useCallback } from "react";
+import { motion } from "framer-motion";
 import { useUser } from "@/context/user-context";
 import { useCourseOfferings } from "@/hooks/useCourseOfferings";
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { Book, Loader2, Search, X } from "lucide-react";
+import { Book, Search, X, BookOpen, CalendarDays, GraduationCap, BookText } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Pagination from "@/components/pagination";
 import EmptyState from "@/components/empty-state";
+import CourseOfferingSkeleton from "@/components/skeleton/course-offering-skeleton";
+import SemesterSelector from "@/components/lecturer/classes/semester-selector";
+import { Semester } from "@packages/core/entities/Semesters";
 
 const DAY_NAMES = [
   "Chủ nhật",
@@ -43,7 +39,6 @@ export default function OfferingsList() {
     : userData?.student?.academic_year;
 
   const {
-    semesters,
     semester,
     setSemester,
     offerings,
@@ -54,42 +49,41 @@ export default function OfferingsList() {
 
   const [searchInput, setSearchInput] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
-  const [isSearching, setIsSearching] = useState(false);
 
   const [page, setPage] = useState(1);
-  const pageSize = 10;
+  const pageSize = 12;
+  const topRef = useRef<HTMLDivElement | null>(null);
 
-  const handleSelectSemester = async (value: string) => {
-    const selected = semesters.find((s) => s.id.toString() === value);
-    if (selected) {
-      setSemester(selected);
-      await loadOfferingsBySemester(selected.id);
+  const handleSelectSemester = useCallback(async (semester: Semester | null) => {
+    if (semester) {
+      setSemester(semester);
+      await loadOfferingsBySemester(semester.id);
       setPage(1);
     }
-  };
+  }, [setSemester, loadOfferingsBySemester]);
 
   const handleSearch = () => {
     if (!searchInput.trim()) return;
     setSearchTerm(searchInput.trim());
-    setIsSearching(true);
     setPage(1);
   };
 
-  const handleResetSearch = () => {
-    setSearchInput("");
-    setSearchTerm("");
-    setIsSearching(false);
-    setPage(1);
-  };
+  function normalizeText(str: string) {
+    return str
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .trim();
+  }
 
   const filteredOfferings = useMemo(() => {
-    if (!searchTerm) return offerings;
-    const keyword = searchTerm.toLowerCase();
-    return offerings.filter(
-      (item) =>
-        item.name.toLowerCase().includes(keyword) ||
-        item.class_code.toLowerCase().includes(keyword)
-    );
+    const term = normalizeText(searchTerm);
+    if (!term) return offerings;
+    return offerings.filter((item) => {
+      const name = normalizeText(item.name || "");
+      const classCode = normalizeText(item.class_code || "");
+      return name.includes(term) || classCode.includes(term);
+    });
   }, [offerings, searchTerm]);
 
   const totalItems = filteredOfferings.length;
@@ -100,199 +94,198 @@ export default function OfferingsList() {
 
   const handlePageChange = (newPage: number) => {
     setPage(newPage);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    if (topRef.current) topRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    else window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   return (
-    <div className="space-y-6">
-      {/* Tabs chọn con (nếu là phụ huynh) */}
-      {isParent && children.length > 1 && (
-        <div className="flex gap-2 flex-wrap bg-indigo-50 p-2 rounded-lg">
-          {children.map((child: any, index: number) => (
-            <button
-              key={child.id}
-              className={`cursor-pointer px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition ${selectedChildIndex === index
-                ? "bg-indigo-600 text-white"
-                : "bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-300"
+    <div className="relative">
+      <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(120%_120%_at_50%_0%,rgba(59,130,246,0.12),rgba(59,130,246,0)_60%)] blur-[1px]" />
+      <div className="space-y-10 rounded-3xl border border-border/60 bg-card/50 p-6 sm:p-10 shadow-[0_30px_80px_-40px_rgba(15,23,42,0.45)] backdrop-blur-xl">
+        {/* Tabs chọn con (nếu là phụ huynh) */}
+        {isParent && children.length > 1 && (
+          <div className="flex gap-2 flex-wrap rounded-2xl border border-border/40 bg-muted/30 p-3">
+            {children.map((child: { id: number; users?: { full_name?: string } }, index: number) => (
+              <button
+                key={child.id}
+                className={`cursor-pointer px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition ${
+                  selectedChildIndex === index
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "bg-background/60 text-foreground hover:bg-muted"
                 }`}
-              onClick={() => setSelectedChildIndex(index)}
-            >
-              {child.users?.full_name || `Con ${index + 1}`}
-            </button>
-          ))}
-        </div>
-      )}
+                onClick={() => setSelectedChildIndex(index)}
+              >
+                {child.users?.full_name || `Con ${index + 1}`}
+              </button>
+            ))}
+          </div>
+        )}
 
-      {/* Chọn học kỳ + Tìm kiếm */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 bg-indigo-50/60 px-4 py-3 rounded-lg border border-indigo-100">
-        <div>
-          <p className="text-sm text-gray-600">Học kỳ hiện tại</p>
-          <h2 className="text-lg font-semibold text-indigo-800">
-            {semester
-              ? `${semester.name} (${semester.academic_year})`
-              : "Chưa chọn học kỳ"}
-          </h2>
-        </div>
-
-        <div className="flex items-center gap-3 flex-wrap">
-          {/* Ô tìm kiếm */}
-          <div className="relative flex items-center">
-            <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-500" />
+        {/* Chọn học kỳ + Tìm kiếm */}
+        <div className="flex flex-wrap justify-between items-center gap-4">
+          <div className="relative w-full sm:w-[420px]">
+            <Search className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
             <Input
-              type="text"
-              placeholder="Nhập tên hoặc mã lớp..."
-              className="pl-9 pr-8 w-52"
+              placeholder="Tìm kiếm theo tên học phần, mã lớp hoặc mã học phần"
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+              className="pl-9 pr-10 h-11 rounded-full border border-border/50 bg-background/80 shadow-[0_12px_32px_-20px_rgba(15,23,42,0.6)] backdrop-blur focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:border-primary/40"
             />
             {searchInput && (
               <button
+                type="button"
                 onClick={() => setSearchInput("")}
-                className="absolute right-2 text-gray-400 hover:text-gray-600"
+                className="absolute right-3 top-2.5 inline-flex h-6 w-6 items-center justify-center rounded-full bg-muted/60 text-muted-foreground transition hover:bg-muted hover:text-foreground"
               >
-                <X className="w-4 h-4" />
+                <X className="w-3.5 h-3.5" />
               </button>
             )}
           </div>
-
-          {/* Nút Tìm kiếm & Hoàn tác */}
-          <div className="flex items-center gap-2">
-            {!isSearching && searchInput.trim() && (
-              <Button onClick={handleSearch} size="sm" className="gap-1">
-                <Search className="w-4 h-4" /> Tìm kiếm
-              </Button>
-            )}
-
-            {isSearching && (
-              <Button
-                onClick={handleResetSearch}
-                variant="outline"
-                size="sm"
-                className="gap-1 text-red-600 border-red-200 hover:bg-red-50"
-              >
-                <X className="w-4 h-4" /> Hoàn tác
-              </Button>
-            )}
+          <div className="w-full sm:w-auto">
+            <SemesterSelector
+              onChange={handleSelectSemester}
+              className="min-w-[240px] rounded-full border border-border/50 bg-background/60 shadow-[0_12px_32px_-20px_rgba(15,23,42,0.6)] backdrop-blur"
+            />
           </div>
-
-          {/* Chọn học kỳ */}
-          <Select
-            onValueChange={handleSelectSemester}
-            value={semester ? semester.id.toString() : ""}
-          >
-            <SelectTrigger className="w-48">
-              <SelectValue placeholder="Chọn học kỳ" />
-            </SelectTrigger>
-            <SelectContent>
-              {semesters.map((s) => (
-                <SelectItem key={s.id} value={s.id.toString()}>
-                  {s.name} - {s.academic_year}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
         </div>
-      </div>
 
-      {/* Danh sách lớp học phần */}
-      {loading ? (
-        <div className="flex justify-center items-center py-20 text-indigo-600">
-          <Loader2 className="animate-spin w-6 h-6 mr-2" />
-          <span>Đang tải lớp học phần...</span>
-        </div>
-      ) : error ? (
-        <p className="text-center text-red-500">{error}</p>
-      ) : paginatedOfferings.length === 0 ? (
-        <EmptyState
-          icon={<Book className="w-10 h-10" />}
-          text="Không có lớp học phần nào."
-          className="py-1"
-        />
-      ) : (
-        <>
-          <div className="grid md:grid-cols-2 gap-6">
-            {paginatedOfferings.map((item) => {
-              const theory = item.detail?.schedule?.[0];
-              const practice = item.detail?.practice_group?.schedule?.[0];
-              const hasPractice = !!item.detail?.practice_group;
-
-              return (
-                <Card
-                  key={item.id}
-                  className="p-5 bg-white border border-gray-200 hover:shadow-lg transition cursor-pointer rounded-xl"
-                  onClick={() => router.push(`/portal/classes/${item.id}`)}
-                >
-                  <div className="mb-4">
-                    <h3 className="font-bold text-xl text-gray-900">
-                      {item.name}
-                    </h3>
-                    <p className="text-sm text-gray-500">
-                      Mã lớp:{" "}
-                      <span className="font-medium">{item.class_code}</span>
-                    </p>
-                  </div>
-
-                  <div
-                    className={`grid gap-3 ${hasPractice ? "md:grid-cols-2" : "grid-cols-1"
-                      }`}
-                  >
-                    {/* Lý thuyết */}
-                    <div className="bg-indigo-50/70 p-3 rounded-lg border border-indigo-100">
-                      <h4 className="font-semibold text-indigo-800 mb-1">
-                        Lý thuyết
-                      </h4>
-                      <p className="text-sm text-gray-700">
-                        Giảng viên: {item.detail?.lecturer?.full_name ?? "—"}
-                      </p>
-                      {theory && (
-                        <p className="text-sm text-gray-700">
-                          {DAY_NAMES[theory.day_of_week]} — Tiết{" "}
-                          {theory.start_period} -{" "}
-                          {theory.start_period + theory.period_count - 1} | Phòng{" "}
-                          {theory.classroom}
-                        </p>
-                      )}
-                    </div>
-
-                    {/* Thực hành */}
-                    {hasPractice && (
-                      <div className="bg-emerald-50/70 p-3 rounded-lg border border-emerald-100">
-                        <h4 className="font-semibold text-emerald-700 mb-1">
-                          Thực hành
-                        </h4>
-                        <p className="text-sm text-gray-700">
-                          Giảng viên:{" "}
-                          {item.detail.practice_group.lecturer.full_name ?? "—"}
-                        </p>
-                        {practice && (
-                          <p className="text-sm text-gray-700">
-                            {DAY_NAMES[practice.day_of_week]} — Tiết{" "}
-                            {practice.start_period} -{" "}
-                            {practice.start_period +
-                              practice.period_count -
-                              1}{" "}
-                            | Phòng {practice.classroom}
-                          </p>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </Card>
-              );
-            })}
-          </div>
-
-          {/* Pagination */}
-          <Pagination
-            totalItems={totalItems}
-            pageSize={pageSize}
-            currentPage={page}
-            onChange={handlePageChange}
-            item="lớp học phần"
+        {loading ? (
+          <CourseOfferingSkeleton items={6} />
+        ) : error ? (
+          <EmptyState
+            icon={<Book className="w-10 h-10" />}
+            text={error}
+            className="py-1"
           />
-        </>
-      )}
+        ) : filteredOfferings.length === 0 ? (
+          <EmptyState
+            icon={<BookText className="w-10 h-10" />}
+            text="Không có lớp học phần nào phù hợp"
+          />
+        ) : (
+          <section ref={topRef} className="space-y-6">
+            {semester && (
+              <div className="flex items-center gap-3 rounded-2xl border border-border/60 bg-background/70 px-4 py-3 shadow-inner shadow-black/5 backdrop-blur-lg">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/15 text-primary">
+                  <CalendarDays className="w-5 h-5" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-semibold text-foreground">
+                    {semester.name}{" "}
+                    {semester.academic_year ? `(${semester.academic_year})` : ""}
+                  </h2>
+                  <p className="text-sm text-muted-foreground">
+                    Danh sách lớp học phần đã đăng ký
+                  </p>
+                </div>
+              </div>
+            )}
+
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 items-stretch">
+              {paginatedOfferings.map((item) => {
+                const theory = item.detail?.schedule?.[0];
+                const practice = item.detail?.practice_group?.schedule?.[0];
+                const hasPractice = !!item.detail?.practice_group;
+
+                return (
+                  <motion.div
+                    key={item.id}
+                    whileHover={{ y: -6 }}
+                    transition={{ type: "spring", stiffness: 260, damping: 20 }}
+                    className="h-full"
+                  >
+                    <Card
+                      className="group h-full flex flex-col justify-between rounded-3xl border border-border/60 bg-gradient-to-br from-card/95 via-card/90 to-background/60 p-5 shadow-[0_20px_60px_-40px_rgba(15,23,42,0.55)] ring-1 ring-transparent transition-all duration-300 hover:-translate-y-1 hover:border-primary/50 hover:shadow-[0_28px_90px_-50px_rgba(59,130,246,0.75)] hover:ring-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 cursor-pointer overflow-hidden"
+                      onClick={() => router.push(`/portal/classes/${item.id}`)}
+                    >
+                      <div className="flex items-center gap-2">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/15 text-primary">
+                          <BookOpen className="w-5 h-5" />
+                        </div>
+                        <div className="flex flex-1 flex-col gap-1">
+                          <h3 className="font-semibold text-foreground text-base line-clamp-1 leading-tight">
+                            {item.name}
+                          </h3>
+                          <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                            {hasPractice ? "Có thực hành" : "Lớp lý thuyết"}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="mt-3 space-y-1.5 rounded-2xl border border-dashed border-border/50 bg-muted/20 px-4 py-3 text-sm text-muted-foreground">
+                        <p>
+                          Mã lớp học phần:{" "}
+                          <span className="font-medium text-foreground">{item.class_code}</span>
+                        </p>
+                      </div>
+
+                      <div className="mt-3 flex-1 rounded-2xl border border-border/40 bg-background/60 px-4 py-3">
+                        <div className="space-y-2">
+                          {/* Lý thuyết */}
+                          <div className="space-y-1">
+                            <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                              Lý thuyết
+                            </h4>
+                            <p className="text-sm text-foreground">
+                              GV: {item.detail?.lecturer?.full_name ?? "—"}
+                            </p>
+                            {theory && (
+                              <p className="text-xs text-muted-foreground">
+                                {DAY_NAMES[theory.day_of_week]} • Tiết {theory.start_period} -{" "}
+                                {theory.start_period + theory.period_count - 1} • Phòng{" "}
+                                {theory.classroom}
+                              </p>
+                            )}
+                          </div>
+
+                          {/* Thực hành */}
+                          {hasPractice && (
+                            <div className="space-y-1 pt-2 border-t border-border/30">
+                              <h4 className="text-xs font-semibold uppercase tracking-wide text-emerald-600">
+                                Thực hành
+                              </h4>
+                              <p className="text-sm text-foreground">
+                                GV: {item.detail?.practice_group?.lecturer?.full_name ?? "—"}
+                              </p>
+                              {practice && (
+                                <p className="text-xs text-muted-foreground">
+                                  {DAY_NAMES[practice.day_of_week]} • Tiết {practice.start_period} -{" "}
+                                  {practice.start_period + practice.period_count - 1} • Phòng{" "}
+                                  {practice.classroom}
+                                </p>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="mt-4 flex justify-between text-sm text-muted-foreground border-t border-border/40 pt-3">
+                        <div className="flex items-center gap-2">
+                          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary">
+                            <GraduationCap className="w-4 h-4" />
+                          </span>
+                          <span className="font-semibold text-foreground">
+                            {item.courses?.credit || "-"} tín chỉ
+                          </span>
+                        </div>
+                      </div>
+                    </Card>
+                  </motion.div>
+                );
+              })}
+            </div>
+
+            <Pagination
+              totalItems={totalItems}
+              pageSize={pageSize}
+              currentPage={page}
+              onChange={handlePageChange}
+              item="lớp học phần"
+            />
+          </section>
+        )}
+      </div>
     </div>
   );
 }

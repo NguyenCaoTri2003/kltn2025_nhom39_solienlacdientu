@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { useNotificationManager } from "@/hooks/useNotificationManager"
 import { usePathname } from "next/navigation"
 import { supabase } from "@packages/data/supabaseClient"
+import { translateNotificationCategory, translateSenderType } from "@packages/utils/translations"
 
 type NotificationItem = {
   id: number
@@ -225,7 +226,7 @@ export default function NotificationDropdown({ userRole }: NotificationDropdownP
                   onClick={() => setOpen(false)}
                 >
                   <div className="flex items-center justify-between">
-                    <div className="text-xs uppercase text-primary font-medium">{item.type || "system"}</div>
+                    <div className="text-xs uppercase text-primary font-medium">{translateSenderType(item.type || "") || "system"}</div>
                     <div className="text-xs text-muted-foreground">{formatTime(item.created_at)}</div>
                   </div>
                   <div className="text-sm text-foreground truncate">
