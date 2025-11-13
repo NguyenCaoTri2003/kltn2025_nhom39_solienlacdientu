@@ -14,6 +14,7 @@ import {
   X,
   CheckCircle2,
   XCircle,
+  CalendarDays,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDateTimeVN, formatTimeVN } from "@/utils/format-time";
@@ -22,7 +23,9 @@ import EmptyState from "@/components/empty-state";
 import { Appointment } from "@packages/core/entities/Appointment";
 import { toast } from "sonner";
 import { AppointmentEditModal } from "@/components/lecturer/appointment/appointment-edit-modal";
-import Loading from "@/components/ui/loading";
+import { motion } from "framer-motion";
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 interface AppointmentWithLecturer extends Appointment {
   lecturer?: { id: number; users?: { full_name: string } };
@@ -244,210 +247,255 @@ export default function ParentAppointmentList() {
 
   if (loading)
     return (
-      <div className="flex justify-center items-center h-full text-muted-foreground">
-        <Loading text="Đang tải danh sách lịch hẹn..." />
+      <div className="relative">
+        <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(120%_120%_at_50%_0%,rgba(59,130,246,0.12),rgba(59,130,246,0)_60%)] blur-[1px]" />
+        <div className="rounded-3xl border border-border/60 bg-card/40 p-10 text-center shadow-[0_30px_80px_-40px_rgba(15,23,42,0.45)] backdrop-blur-xl">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary">
+            <Loader2 className="h-7 w-7 animate-spin" />
+          </div>
+          <p className="mt-4 text-sm text-muted-foreground">Đang tải danh sách lịch hẹn...</p>
+        </div>
       </div>
     );
 
   if (appointments.length === 0)
     return (
-      <div className="flex flex-col items-center text-muted-foreground gap-2 text-center mt-2">
-        <EmptyState
-          icon={<Calendar className="w-10 h-10" />}
-          text="Không có lịch hẹn nào"
-          className="py-1"
-        />
+      <div className="relative">
+        <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(120%_120%_at_50%_0%,rgba(59,130,246,0.12),rgba(59,130,246,0)_60%)] blur-[1px]" />
+        <div className="rounded-3xl border border-border/60 bg-card/40 p-10 shadow-[0_30px_80px_-40px_rgba(15,23,42,0.45)] backdrop-blur-xl">
+          <EmptyState
+            icon={<Calendar className="w-10 h-10" />}
+            text="Không có lịch hẹn nào"
+            className="py-4"
+          />
+        </div>
       </div>
     );
 
   return (
-    <div className="flex flex-col h-full overflow-hidden">
-      <div className="flex items-center gap-2 p-4 border-b bg-background">
-        <div className="relative w-72">
+    <div className="relative">
+      <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(120%_120%_at_50%_0%,rgba(59,130,246,0.12),rgba(59,130,246,0)_60%)] blur-[1px]" />
+      <div className="space-y-6 rounded-3xl border border-border/60 bg-card/50 p-6 sm:p-10 shadow-[0_30px_80px_-40px_rgba(15,23,42,0.45)] backdrop-blur-xl">
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="relative flex-1 min-w-[240px] sm:w-72">
+            <Search className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
+            <Input
+              placeholder="Tìm theo tiêu đề, giảng viên, học sinh..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-9 pr-10 h-11 rounded-full border border-border/50 bg-background/80 shadow-[0_12px_32px_-20px_rgba(15,23,42,0.6)] backdrop-blur focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:border-primary/40"
+            />
+            {search && (
+              <button
+                type="button"
+                onClick={() => setSearch("")}
+                className="absolute right-3 top-2.5 inline-flex h-6 w-6 items-center justify-center rounded-full bg-muted/60 text-muted-foreground transition hover:bg-muted hover:text-foreground"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+
           <Input
-            placeholder="Tìm theo tiêu đề, giảng viên, học sinh..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pr-8"
+            type="date"
+            value={filterDate}
+            onChange={(e) => setFilterDate(e.target.value)}
+            className="h-11 w-full sm:w-40 rounded-full border border-border/50 bg-background/80 shadow-[0_12px_32px_-20px_rgba(15,23,42,0.6)] backdrop-blur focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:border-primary/40"
           />
-          {search && (
-            <button
-              type="button"
-              onClick={() => setSearch("")}
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-            >
-              <X className="w-4 h-4" />
-            </button>
+
+          <Button onClick={handleSearch} disabled={isSearching} className="rounded-full">
+            {isSearching ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Đang tìm...
+              </>
+            ) : (
+              <>
+                <Search className="w-4 h-4 mr-2" /> Tìm kiếm
+              </>
+            )}
+          </Button>
+
+          {hasSearched && (
+            <Button variant="destructive" onClick={handleReset} className="rounded-full">
+              <X className="w-4 h-4 mr-2" /> Đặt lại
+            </Button>
           )}
         </div>
 
-        <Input
-          type="date"
-          value={filterDate}
-          onChange={(e) => setFilterDate(e.target.value)}
-          className="w-40"
-        />
+        {filtered.length === 0 ? (
+          <div className="rounded-3xl border border-border/60 bg-card/40 p-10 shadow-[0_30px_80px_-40px_rgba(15,23,42,0.45)] backdrop-blur-xl">
+            <EmptyState
+              icon={<Calendar className="w-10 h-10" />}
+              text="Không có cuộc hẹn cần tìm"
+              className="py-4"
+            />
+          </div>
+        ) : (
+          <div className="flex flex-col gap-4">
+            {filtered.map((a) => {
+              const isFromLecturer = a.from === "lecturer";
+              const canAcceptReject = isFromLecturer && a.status === "pending";
 
-        <Button onClick={handleSearch} disabled={isSearching}>
-          {isSearching ? (
-            <>
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              Đang tìm...
-            </>
-          ) : (
-            <>
-              <Search className="w-4 h-4 mr-2" /> Tìm kiếm
-            </>
-          )}
-        </Button>
+              return (
+                <motion.div
+                  key={a.id}
+                  whileHover={{ y: -2 }}
+                  transition={{ type: "spring", stiffness: 260, damping: 20 }}
+                >
+                  <Card
+                    onClick={() => setSelected(a)}
+                    className={cn(
+                      "group cursor-pointer rounded-3xl border border-border/60 bg-gradient-to-br from-card/95 via-card/90 to-background/60 p-5 shadow-[0_20px_60px_-40px_rgba(15,23,42,0.55)] ring-1 ring-transparent transition-all duration-300 hover:-translate-y-1 hover:border-primary/50 hover:shadow-[0_28px_90px_-50px_rgba(59,130,246,0.75)] hover:ring-primary/40",
+                      a.status === "pending"
+                        ? "border-l-4 border-l-yellow-500"
+                        : a.status === "confirmed"
+                          ? "border-l-4 border-l-green-500"
+                          : a.status === "cancelled"
+                            ? "border-l-4 border-l-red-500"
+                            : "border-l-4 border-l-gray-400"
+                    )}
+                  >
+                    <CardHeader className="pb-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <CardTitle className="text-lg font-semibold text-foreground line-clamp-2">
+                          {a.title}
+                        </CardTitle>
+                        <div
+                          className={cn(
+                            "flex-shrink-0 rounded-full px-3 py-1 text-xs font-medium",
+                            a.status === "pending"
+                              ? "bg-yellow-500/15 text-yellow-700"
+                              : a.status === "confirmed"
+                                ? "bg-green-500/15 text-green-700"
+                                : a.status === "cancelled"
+                                  ? "bg-red-500/15 text-red-700"
+                                  : "bg-gray-500/15 text-gray-700"
+                          )}
+                        >
+                          {a.status === "pending"
+                            ? "Chờ xác nhận"
+                            : a.status === "confirmed"
+                              ? "Đã xác nhận"
+                              : a.status === "cancelled"
+                                ? "Đã hủy"
+                                : "Hoàn tất"}
+                        </div>
+                      </div>
+                    </CardHeader>
 
-        {hasSearched && (
-          <Button variant="destructive" onClick={handleReset}>
-            <X className="w-4 h-4 mr-2" /> Đặt lại
-          </Button>
+                    <CardContent className="space-y-3 text-sm">
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary">
+                          <User className="w-4 h-4" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="truncate">
+                            <span className="font-medium text-foreground">Giảng viên:</span>{" "}
+                            <span className="text-muted-foreground">
+                              {a.lecturer?.users?.full_name ?? "Không rõ"}
+                            </span>
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-500/10 text-indigo-600">
+                          <User className="w-4 h-4" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="truncate">
+                            <span className="font-medium text-foreground">Học sinh:</span>{" "}
+                            <span className="text-muted-foreground">
+                              {a.student?.users?.full_name ?? "Không rõ"}
+                            </span>
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-500/10 text-blue-600">
+                          <CalendarDays className="w-4 h-4" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="truncate">
+                            <span className="font-medium text-foreground">Thời gian:</span>{" "}
+                            <span className="text-muted-foreground">
+                              {formatTimeVN(a.start_time)} - {formatDateTimeVN(a.end_time)}
+                            </span>
+                          </p>
+                        </div>
+                      </div>
+
+                      {a.location && (
+                        <div className="flex items-center gap-2 text-muted-foreground">
+                          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-600">
+                            <MapPin className="w-4 h-4" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="truncate">
+                              <span className="font-medium text-foreground">Địa điểm:</span>{" "}
+                              <span className="text-muted-foreground">{a.location}</span>
+                            </p>
+                          </div>
+                        </div>
+                      )}
+
+                      {a.content && (
+                        <div className="mt-3 rounded-2xl border border-dashed border-border/50 bg-muted/20 p-3">
+                          <div className="flex items-start gap-2">
+                            <MessageSquare className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+                            <p className="text-sm text-muted-foreground leading-relaxed line-clamp-3">
+                              {a.content}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+
+                      {canAcceptReject && (
+                        <div className="flex gap-2 pt-2 border-t border-border/40">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="flex-1 rounded-full border-green-600/50 text-green-600 hover:bg-green-50 hover:border-green-600"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleAccept(a);
+                            }}
+                            disabled={actionLoading}
+                          >
+                            <CheckCircle2 className="w-4 h-4 mr-1" /> Chấp nhận
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="flex-1 rounded-full border-red-600/50 text-red-600 hover:bg-red-50 hover:border-red-600"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleReject(a);
+                            }}
+                            disabled={actionLoading}
+                          >
+                            <XCircle className="w-4 h-4 mr-1" /> Từ chối
+                          </Button>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              );
+            })}
+          </div>
+        )}
+
+        {selected && (
+          <AppointmentEditModal
+            appointment={selected}
+            onClose={() => setSelected(null)}
+            onSave={handleSave}
+          />
         )}
       </div>
-
-      {filtered.length === 0 ? (
-        <EmptyState
-          icon={<Calendar className="w-10 h-10" />}
-          text="Không có cuộc hẹn cần tìm"
-        />
-      ) : (
-        <div className="flex-1 overflow-y-auto p-6 space-y-4">
-          {filtered.map((a) => {
-            const isFromLecturer = a.from === "lecturer";
-            const canAcceptReject = isFromLecturer && a.status === "pending";
-
-            return (
-              <Card
-                key={a.id}
-                onClick={() => setSelected(a)}
-                className={cn(
-                  "border-l-4 transition-all cursor-pointer",
-                  a.status === "pending"
-                    ? "border-l-yellow-500"
-                    : a.status === "confirmed"
-                      ? "border-l-green-500"
-                      : a.status === "cancelled"
-                        ? "border-l-red-500"
-                        : "border-l-gray-400"
-                )}
-              >
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-base font-semibold">
-                    {a.title}
-                  </CardTitle>
-                </CardHeader>
-
-                <CardContent className="space-y-2 text-sm text-muted-foreground">
-                  <div className="flex items-center gap-2">
-                    <User className="w-4 h-4 text-primary" />
-                    <span>
-                      Giảng viên:{" "}
-                      <strong>{a.lecturer?.users?.full_name ?? "Không rõ"}</strong>
-                    </span>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <User className="w-4 h-4 text-primary" />
-                    <span>
-                      Học sinh:{" "}
-                      <strong>{a.student?.users?.full_name ?? "Không rõ"}</strong>
-                    </span>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <Calendar className="w-4 h-4 text-primary" />
-                    <span>
-                      {formatTimeVN(a.start_time)} -{" "}
-                      {formatDateTimeVN(a.end_time)}
-                    </span>
-                  </div>
-
-                  {a.location && (
-                    <div className="flex items-center gap-2">
-                      <MapPin className="w-4 h-4 text-primary" />
-                      <span>{a.location}</span>
-                    </div>
-                  )}
-
-                  {a.content && (
-                    <div className="flex items-start gap-2 mt-2 bg-muted/30 p-2 rounded-md">
-                      <MessageSquare className="w-4 h-4 text-primary mt-[2px]" />
-                      <p className="text-muted-foreground leading-snug">
-                        {a.content}
-                      </p>
-                    </div>
-                  )}
-
-                  <div className="flex items-center justify-between mt-3">
-                    <span
-                      className={cn(
-                        "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium",
-                        a.status === "pending"
-                          ? "bg-yellow-100 text-yellow-800"
-                          : a.status === "confirmed"
-                            ? "bg-green-100 text-green-800"
-                            : a.status === "cancelled"
-                              ? "bg-red-100 text-red-800"
-                              : "bg-gray-100 text-gray-600"
-                      )}
-                    >
-                      {a.status === "pending"
-                        ? "Chờ xác nhận"
-                        : a.status === "confirmed"
-                          ? "Đã xác nhận"
-                          : a.status === "cancelled"
-                            ? "Đã hủy"
-                            : "Hoàn tất"}
-                    </span>
-
-                    {canAcceptReject && (
-                      <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="text-green-600 border-green-600 hover:bg-green-50"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleAccept(a);
-                          }}
-                          disabled={actionLoading}
-                        >
-                          <CheckCircle2 className="w-4 h-4 mr-1" />
-                          Chấp nhận
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="text-red-600 border-red-600 hover:bg-red-50"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleReject(a);
-                          }}
-                          disabled={actionLoading}
-                        >
-                          <XCircle className="w-4 h-4 mr-1" />
-                          Từ chối
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-      )}
-
-      {selected && (
-        <AppointmentEditModal
-          appointment={selected}
-          onClose={() => setSelected(null)}
-          onSave={handleSave}
-        />
-      )}
     </div>
   );
 }
