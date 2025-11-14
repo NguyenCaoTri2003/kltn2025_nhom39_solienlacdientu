@@ -20,15 +20,17 @@ export class InvoiceRepository {
         )
       `)
       .eq("enrollment.student_id", studentId)
-      .eq("enrollment.offering.semester_id", semesterId);
+      .eq("enrollment.offering.semester_id", semesterId)
 
     if (error) throw new Error(error.message);
 
-    // Lọc những invoice có học kỳ đúng (vì nested filter đôi khi Supabase chưa ổn)
     return (
-      data?.filter(
-        (inv) => inv.enrollment?.offering?.semester_id === semesterId
-      ) ?? []
+      data?.filter((inv) => {
+        const enrollment = inv.enrollment?.[0];
+        const offering = enrollment?.offering?.[0];
+
+        return offering?.semester_id === semesterId;
+      }) ?? []
     );
   }
 }
