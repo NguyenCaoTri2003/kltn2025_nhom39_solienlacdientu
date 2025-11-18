@@ -46,14 +46,22 @@ export default function ConversationList({
     if (!conv.lastMessage) return "Không có tin nhắn";
 
     const msg = conv.lastMessage;
+      
+    
+    console.log("Last message:", msg);
     const sender =
-      msg.sender_id === myId
-        ? "Bạn"
-        : conv.user1.id === msg.sender_id
-        ? conv.user1.full_name
-        : conv.user2.full_name;
-
+    msg.sender_id === myId
+    ? "Bạn"
+    : conv.user1.id === msg.sender_id
+    ? conv.user1.full_name
+    : conv.user2.full_name;
+    
     let contentPreview = "";
+
+    if (msg.is_recalled) {
+      contentPreview = "Tin nhắn đã được thu hồi";
+      return `${sender}: ${contentPreview}`;
+    }
 
     switch (msg.type) {
       case "image":
@@ -92,10 +100,9 @@ export default function ConversationList({
             key={conv.id}
             onClick={() => onSelectConversation(conv)}
             className={`flex items-center gap-3 px-4 py-3 cursor-pointer border-b border-border transition-all duration-200
-              ${
-                isActive
-                  ? "bg-gradient-to-r from-accent/60 to-accent/30 border-l-4 border-l-primary shadow-sm"
-                  : "hover:bg-accent/40 border-l-4 border-l-transparent"
+              ${isActive
+                ? "bg-gradient-to-r from-accent/60 to-accent/30 border-l-4 border-l-primary shadow-sm"
+                : "hover:bg-accent/40 border-l-4 border-l-transparent"
               }`}
           >
             <Avatar className="w-11 h-11 ring-1 ring-border">
@@ -111,9 +118,8 @@ export default function ConversationList({
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-1">
                   <span
-                    className={`truncate max-w-[160px] ${
-                      isUnread ? "font-semibold text-foreground" : "font-medium"
-                    }`}
+                    className={`truncate max-w-[160px] ${isUnread ? "font-semibold text-foreground" : "font-medium"
+                      }`}
                   >
                     {other.full_name}
                   </span>
@@ -130,11 +136,10 @@ export default function ConversationList({
 
               <div className="flex justify-between items-center mt-0.5">
                 <span
-                  className={`truncate max-w-[75%] text-sm ${
-                    isUnread
+                  className={`truncate max-w-[75%] text-sm ${isUnread
                       ? "font-semibold text-foreground"
                       : "text-muted-foreground"
-                  }`}
+                    }`}
                 >
                   {getMessagePreview(conv)}
                 </span>
