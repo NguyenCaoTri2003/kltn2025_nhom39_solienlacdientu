@@ -3,11 +3,12 @@
 import { Loader2, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useCommunicationContext } from "@/context/message-provider";
 import ConversationList from "./conversation-list";
 import EmptyState from "@/components/empty-state";
 import { is } from "date-fns/locale";
+import { useEffect } from "react";
 
 export interface User {
   avatar_url: string;
@@ -50,6 +51,22 @@ export default function CommunicationPanel() {
     : {};
   const userRole = user.role;
 
+  const pathname = usePathname();
+
+  useEffect(() => {
+    if (!conversations.length) return;
+
+    // Lấy id từ URL
+    const parts = pathname.split("/");
+    const convIdStr = parts[parts.length - 1];
+    const convId = Number(convIdStr);
+
+    const conv = conversations.find(c => c.id === convId);
+    if (conv && conv.id !== selectedConversation?.id) {
+      setSelectedConversation(conv);
+    }
+  }, [pathname, conversations, selectedConversation]);
+
   return (
     <div className="w-80 border-r border-border flex flex-col">
       <div className="p-4 border-b font-semibold">Tin nhắn</div>
@@ -70,7 +87,7 @@ export default function CommunicationPanel() {
       ) : (
         <ConversationList
           conversations={conversations}
-          selectedConversation= {selectedConversation}
+          selectedConversation={selectedConversation}
           onSelectConversation={async (conv) => {
             setSelectedConversation(conv);
             if (userRole == "lecturer") router.push(`/lecturer/communications/${conv.id}`);

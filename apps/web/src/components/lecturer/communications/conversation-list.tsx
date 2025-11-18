@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { Conversation } from "./communication-panel";
 import { getAvatarColor } from "@/utils/color-hash";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -93,7 +93,8 @@ export default function ConversationList({
         );
 
         const isUnread = conv.unreadCount && conv.unreadCount > 0;
-        const isActive = selectedConversation?.id === conv.id;
+
+        const isActive = selectedConversation?.id === conv.id;  
 
         return (
           <div

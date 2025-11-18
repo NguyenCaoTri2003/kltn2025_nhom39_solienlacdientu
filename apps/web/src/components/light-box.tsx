@@ -23,11 +23,11 @@ export default function Lightbox({ src, onClose }: LightboxProps) {
     >
       <img
         src={src}
-        className="max-w-[90%] max-h-[90%] rounded-lg shadow-lg cursor-zoom-in"
+        className="max-w-[90%] max-h-[90%] rounded-lg shadow-lg"
         onClick={(e) => e.stopPropagation()} 
       />
       <button
-        className="absolute top-5 right-5 text-white text-3xl font-bold"
+        className="absolute top-5 right-5 text-white text-3xl font-bold cursor-pointer"
         onClick={onClose}
       >
         &times;
