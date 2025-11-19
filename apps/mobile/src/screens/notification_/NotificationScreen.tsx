@@ -303,7 +303,7 @@ export default function NotificationScreen() {
           onScroll={handleScroll}
           onEndReached={handleLoadMore}
           onEndReachedThreshold={0.1}
-          ListEmptyComponent={!loading ? renderEmptyState : null}
+          ListEmptyComponent={!loading ? renderState : null}
           ListFooterComponent={renderFooter}
           showsVerticalScrollIndicator={false}
         />

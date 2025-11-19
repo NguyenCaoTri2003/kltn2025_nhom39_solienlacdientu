@@ -43,4 +43,12 @@ export class MessageUseCase {
   async markAsRead(conversationId: number, userId: number) {
     return await this.repo.markMessagesAsRead(conversationId, userId);
   }
+
+  async recallMessage(messageId: number, userId: number) {
+    return await this.repo.recallMessage(messageId, userId);
+  }
+
+  async deleteMessage(messageId: number, userId: number) {
+    return await this.repo.deleteMessage(messageId, userId);
+  }
 }
