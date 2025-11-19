@@ -461,7 +461,7 @@ export default function ChatWindow({
 
                             {/* Container tin nhắn */}
                             <div className={`group flex ${isMine ? "justify-end" : "justify-start"} items-start gap-2 w-full relative`}>
-                                <div className={`flex ${isMine ? null : "flex-row-reverse"} gap-1 max-w-full`}>
+                                <div className={`flex ${isMine ? null : "flex-row-reverse"} gap-1 max-w-[75%]`}>
 
                                     <div className={`relative`}>
                                         <button
@@ -475,7 +475,7 @@ export default function ChatWindow({
                                             <div
                                                 ref={menuRef}
                                                 className={`absolute top-0 z-50 w-36 bg-white border shadow-lg rounded-lg py-2
-      ${isMine ? "right-full mr-2" : "left-full ml-2"} transition-all`}
+                                                ${isMine ? "right-full mr-2" : "left-full ml-2"} transition-all`}
                                             >
                                                 <button
                                                     onClick={() => deleteMessage(msg.id)}
