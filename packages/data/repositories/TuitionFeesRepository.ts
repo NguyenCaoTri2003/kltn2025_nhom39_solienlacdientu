@@ -21,6 +21,11 @@ export class TuitionFeesRepository {
         status,
         paid_date,
         semester_id,
+        semester:semester_id (
+          id, 
+          name, 
+          academic_year
+        ),
         enrollment:enrollment_id (
           id,
           offering:offering_id (
@@ -43,7 +48,6 @@ export class TuitionFeesRepository {
 
     return (
       data?.filter((f) => {
-        // Nếu có enrollment → check offering.semester_id cho chắc
         const enrollment = f.enrollment?.[0];
         const offering = enrollment?.offering?.[0];
 

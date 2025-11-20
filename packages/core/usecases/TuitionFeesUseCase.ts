@@ -23,6 +23,8 @@ export class TuitionFeesUseCase {
         ? enrollment.offering[0]
         : enrollment?.offering;
 
+      const semester = Array.isArray(item.semester) ? item.semester[0] : item.semester;
+
       return {
         id: item.id,
         fee_type: item.fee_type,
@@ -43,6 +45,8 @@ export class TuitionFeesUseCase {
         course_name: offering?.name ?? null,
         class_code: offering?.class_code ?? null,
         semester_id: item.semester_id,
+        semester_name: semester?.name ?? null,
+        academic_year: semester?.academic_year ?? null,
       };
     });
   }
