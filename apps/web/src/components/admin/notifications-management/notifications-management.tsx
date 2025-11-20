@@ -241,12 +241,11 @@ export function NotificationsManagement() {
   };
 
   return (
-    <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="max-w-full mx-auto py-2">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-foreground mb-2">Quản lý thông báo</h1>
         <p className="text-muted-foreground">Tạo và quản lý thông báo cho người dùng</p>
       </div>
-
 
       <div className="border rounded-xl p-5 bg-white shadow-sm space-y-6 mb-6">
   {/* Header */}

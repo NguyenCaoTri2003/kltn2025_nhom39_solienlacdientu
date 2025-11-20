@@ -16,7 +16,7 @@ interface SemesterSelectorProps {
   className?: string;
 }
 
-export default function SemesterSelector({ onChange, className }: SemesterSelectorProps) {
+export default function SemesterSelector({ onChange, className, studentYear }: SemesterSelectorProps & { studentYear?: string }) {
   const [semesters, setSemesters] = useState<Semester[]>([]);
   const [selectedYear, setSelectedYear] = useState<string | null>(null);
   const [selectedSemesterId, setSelectedSemesterId] = useState<number | null>(null);
@@ -25,15 +25,29 @@ export default function SemesterSelector({ onChange, className }: SemesterSelect
 
   useEffect(() => {
     const fetchSemesters = async () => {
+      const token = localStorage.getItem("token");
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/semesters`);
+        let fromYear: number | undefined = undefined;
+        if (studentYear) {
+          const match = studentYear.match(/(\d{4})/);
+          if (match) fromYear = Number(match[1]);
+        }
+        const url = studentYear
+          ? `${process.env.NEXT_PUBLIC_API_URL}/api/semesters?fromYear=${fromYear}`
+          : `${process.env.NEXT_PUBLIC_API_URL}/api/semesters`;
+
+        console.log("🔵 FETCHING URL:", url);
+
+        const res = await fetch(url, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
         const json = await res.json();
+        console.log("🟢 RAW RESPONSE FROM API:", json);
 
         if (json.returnCode === 0 && Array.isArray(json.data)) {
           const data: Semester[] = json.data;
           setSemesters(data);
 
-          // Chỉ gọi onChange khi chưa được khởi tạo lần đầu
           if (!isInitializedRef.current) {
             const today = new Date();
 
@@ -67,8 +81,7 @@ export default function SemesterSelector({ onChange, className }: SemesterSelect
     };
 
     fetchSemesters();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [studentYear]);
 
   // Lọc học kỳ theo năm học được chọn
   const filteredSemesters = semesters.filter(

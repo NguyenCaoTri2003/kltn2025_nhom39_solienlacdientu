@@ -266,14 +266,24 @@ export default function NavbarClient({ userRole, userName, avatarUrl, userId }: 
                 <button
                   key={item.href}
                   onClick={() => router.push(item.href)}
-                  className={`group w-full flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-all text-left ${active
+                  // className={`max-w-full cursor-pointer group relative flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-all duration-300 backdrop-blur-md ${active
+                  //   ? "text-primary bg-gradient-to-r from-primary/20 to-blue-500/10 border border-primary/40 shadow-[0_4px_20px_rgba(59,130,246,0.2)] scale-[1.05]"
+                  //   : "text-muted-foreground hover:text-foreground hover:bg-accent/30 hover:shadow-[0_2px_8px_rgba(0,0,0,0.1)]"
+                  //   }`}
+                  className={`cursor-pointer group w-full flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-all text-left ${active
                     ? 'bg-primary/15 text-primary border border-primary/40 shadow-sm'
                     : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
                     }`}
                 >
-                  <item.icon className={`w-4 h-4 ${active ? 'text-primary' : 'group-hover:scale-110 transition-transform'}`} />
+                  <item.icon className={`w-4 h-4 mr-2 transition-transform duration-300 ${active
+                    ? "scale-110 text-primary"
+                    : "group-hover:scale-110 group-hover:rotate-[8deg]"
+                    }`} />
 
-                  <span>{item.label}</span>
+                  {item.label}
+                  {/* {active && (
+                    <span className="absolute inset-0 rounded-lg bg-gradient-to-r from-primary/10 to-blue-500/10 animate-pulse pointer-events-none"></span>
+                  )} */}
                 </button>
               );
             })}

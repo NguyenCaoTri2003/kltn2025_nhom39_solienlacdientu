@@ -144,6 +144,7 @@ export default function OfferingsList() {
           </div>
           <div className="w-full sm:w-auto">
             <SemesterSelector
+              studentYear={studentYear}
               onChange={handleSelectSemester}
               className="min-w-[240px] rounded-full border border-border/50 bg-background/60 shadow-[0_12px_32px_-20px_rgba(15,23,42,0.6)] backdrop-blur"
             />
