@@ -15,6 +15,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { CalendarDays, Paperclip, Wallet, PiggyBank, TrendingDown } from "lucide-react";
+import { getFeeStatusLabel } from "@/utils/get-status-label";
 
 const currencyFormatter = new Intl.NumberFormat("vi-VN", {
   style: "currency",
@@ -64,7 +65,7 @@ export default function TuitionFeesList() {
   return (
     <div className="relative py-8 sm:py-10">
       <div className="pointer-events-none absolute inset-x-0 top-0 bottom-0 -z-10 bg-[radial-gradient(120%_120%_at_50%_0%,rgba(59,130,246,0.15),rgba(59,130,246,0)_65%)] blur-[1px]" />
-      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-9xl px-4 sm:px-6 lg:px-8">
         <div className="space-y-8 rounded-3xl border border-border/60 bg-card/60 p-4 sm:p-8 lg:p-10 shadow-[0_30px_80px_-45px_rgba(15,23,42,0.6)] backdrop-blur-2xl">
           {/* Parent select child */}
           {isParent && children.length > 1 && (
@@ -74,11 +75,10 @@ export default function TuitionFeesList() {
                 return (
                   <button
                     key={child.id}
-                    className={`inline-flex items-center justify-center rounded-full border px-4 py-1.5 transition-all ${
-                      isActive
-                        ? "border-primary/60 bg-gradient-to-r from-primary/90 to-primary text-primary-foreground shadow-lg"
-                        : "border-border/50 bg-card/80 text-foreground shadow hover:border-primary/40 hover:text-primary"
-                    }`}
+                    className={`inline-flex items-center justify-center rounded-full border px-4 py-1.5 transition-all ${isActive
+                      ? "border-primary/60 bg-gradient-to-r from-primary/90 to-primary text-primary-foreground shadow-lg"
+                      : "border-border/50 bg-card/80 text-foreground shadow hover:border-primary/40 hover:text-primary"
+                      }`}
                     onClick={() => setSelectedChildIndex(index)}
                   >
                     {child.users?.full_name ?? `Con ${index + 1}`}
@@ -262,13 +262,13 @@ function FeeTable({ tuition, fees }: { tuition: boolean; fees: any[] }) {
                 <>
                   <TableHead className="uppercase tracking-wide text-xs font-semibold text-muted-foreground">STT</TableHead>
                   <TableHead className="uppercase tracking-wide text-xs font-semibold text-muted-foreground">Năm học</TableHead>
-                  <TableHead className="uppercase tracking-wide text-xs font-semibold text-muted-foreground">Tên đợt</TableHead>
                   <TableHead className="uppercase tracking-wide text-xs font-semibold text-muted-foreground">Mã khoản thu</TableHead>
                   <TableHead className="uppercase tracking-wide text-xs font-semibold text-muted-foreground">Tên khoản thu</TableHead>
                   <TableHead className="uppercase tracking-wide text-xs font-semibold text-muted-foreground">Mức nộp</TableHead>
                   <TableHead className="uppercase tracking-wide text-xs font-semibold text-muted-foreground">Ngày nộp</TableHead>
                   <TableHead className="uppercase tracking-wide text-xs font-semibold text-muted-foreground">Số tiền nộp</TableHead>
                   <TableHead className="uppercase tracking-wide text-xs font-semibold text-muted-foreground">Công nợ</TableHead>
+                   <TableHead className="uppercase tracking-wide text-xs font-semibold text-muted-foreground">Trạng thái</TableHead>
                 </>
               )}
             </TableRow>
@@ -283,7 +283,11 @@ function FeeTable({ tuition, fees }: { tuition: boolean; fees: any[] }) {
                 <TableCell className="font-semibold text-foreground">{i + 1}</TableCell>
                 {tuition ? (
                   <>
-                    <TableCell>{f.term_name ?? "-"}</TableCell>
+                    <TableCell>
+                      {f.semester_name && f.academic_year
+                        ? `${f.semester_name} (${f.academic_year})`
+                        : ""}
+                    </TableCell>
                     <TableCell>{f.fee_code}</TableCell>
                     <TableCell>{f.class_code}</TableCell>
                     <TableCell className="max-w-xs whitespace-normal text-foreground">{f.description}</TableCell>
@@ -299,27 +303,47 @@ function FeeTable({ tuition, fees }: { tuition: boolean; fees: any[] }) {
                     <TableCell>{formatCurrency(f.minus_amount)}</TableCell>
                     <TableCell className="font-semibold">{formatCurrency(f.debt_amount)}</TableCell>
                     <TableCell>
-                      <span
-                        className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                          f.status === "paid"
-                            ? "bg-emerald-500/10 text-emerald-600"
-                            : "bg-amber-500/10 text-amber-600"
-                        }`}
-                      >
-                        {f.status}
-                      </span>
+                      {(() => {
+                        const { label, color } = getFeeStatusLabel(f.status);
+                        return (
+                          <span
+                            className="rounded-full px-3 py-1 text-xs font-semibold"
+                            style={{
+                              backgroundColor: `${color}20`, 
+                              color: color,
+                            }}
+                          >
+                            {label}
+                          </span>
+                        );
+                      })()}
                     </TableCell>
                   </>
                 ) : (
                   <>
                     <TableCell>{f.academic_year}</TableCell>
-                    <TableCell>{f.term_name}</TableCell>
                     <TableCell>{f.fee_code}</TableCell>
                     <TableCell className="max-w-xs whitespace-normal text-foreground">{f.description}</TableCell>
                     <TableCell className="text-primary font-semibold">{formatCurrency(f.payable_amount)}</TableCell>
                     <TableCell>{f.paid_date?.split("T")[0] ?? "-"}</TableCell>
                     <TableCell>{formatCurrency(f.paid_amount)}</TableCell>
                     <TableCell className="font-semibold">{formatCurrency(f.debt_amount)}</TableCell>
+                    <TableCell>
+                      {(() => {
+                        const { label, color } = getFeeStatusLabel(f.status);
+                        return (
+                          <span
+                            className="rounded-full px-3 py-1 text-xs font-semibold"
+                            style={{
+                              backgroundColor: `${color}20`, 
+                              color: color,
+                            }}
+                          >
+                            {label}
+                          </span>
+                        );
+                      })()}
+                    </TableCell>
                   </>
                 )}
               </TableRow>

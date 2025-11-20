@@ -25,3 +25,16 @@ export const getStatusAppointmentLabel = (status: string) => {
       return { label: "Chờ xác nhận", color: "#6B7280" };
   }
 };
+
+export const getFeeStatusLabel = (status: string) => {
+  switch (status) {
+    case "unpaid":
+      return { label: "Chưa đóng", color: "#DC2626" };
+    case "partial":
+      return { label: "Đóng một phần", color: "#3B82F6" }; 
+    case "paid":
+      return { label: "Đã đóng", color: "#16A34A" }; 
+    default:
+      return { label: "Không xác định", color: "#6B7280" }; 
+  }
+};
