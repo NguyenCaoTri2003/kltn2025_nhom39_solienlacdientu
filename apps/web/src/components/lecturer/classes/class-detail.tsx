@@ -442,6 +442,8 @@ export default function ClassDetail() {
                     students={offering.students
                       .map((e) => e.students)
                       .filter((s): s is Student => !!s)}
+                    lecturerName={offering.lecturers?.users?.full_name}
+                    className={offering.name}
                   />
                 </div>
               </TabsContent>
@@ -457,6 +459,9 @@ export default function ClassDetail() {
                         .map((e) => ({ id: e.id, students: e.students as Student }))}
                       practiceGroups={practiceGroups}
                       students={mapGroupStudents(g, offering.students)}
+                      lecturerName={offering.lecturers?.users?.full_name}
+                      className={offering.name}
+                      practiceGroupNumber={g.group_number}
                     />
                   </div>
                 </TabsContent>
@@ -486,6 +491,9 @@ export default function ClassDetail() {
                       .map((e) => ({ id: e.id, students: e.students as Student }))}
                     practiceGroups={practiceGroups}
                     students={mapGroupStudents(myPracticeGroup, offering.students)}
+                    lecturerName={offering.lecturers?.users?.full_name}
+                    className={offering.name}
+                    practiceGroupNumber={myPracticeGroup?.group_number}
                   />
                 </div>
               </TabsContent>
@@ -504,6 +512,8 @@ export default function ClassDetail() {
                 students={offering.students
                   .map((e) => e.students)
                   .filter((s): s is Student => !!s)}
+                lecturerName={offering.lecturers?.users?.full_name}
+                className={offering.name}
               />
             </div>
           )}
@@ -527,6 +537,9 @@ export default function ClassDetail() {
             ?.map((e) => e.students)
             .filter((s): s is Student => !!s) || []
         }
+        lecturerName={offering?.lecturers?.users?.full_name}
+        className={offering?.name}
+        practiceGroupNumber={myPracticeGroup?.group_number}
       />
     </div>
   );

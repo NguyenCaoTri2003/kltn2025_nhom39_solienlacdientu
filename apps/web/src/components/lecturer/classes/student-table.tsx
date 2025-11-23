@@ -49,6 +49,9 @@ export function StudentTable({
   practiceGroups,
   students,
   pageSize = 10,
+  lecturerName,
+  className,
+  practiceGroupNumber,
 }: {
   classId: number;
   type: string;
@@ -56,6 +59,9 @@ export function StudentTable({
   practiceGroups: PracticeGroup[];
   students: Student[];
   pageSize?: number;
+  lecturerName?: string;
+  className?: string;
+  practiceGroupNumber?: number;
 }) {
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
@@ -557,6 +563,9 @@ export function StudentTable({
           }}
           selectedStudentIds={selectedIds}
           students={students}
+          lecturerName={lecturerName}
+          className={className}
+          practiceGroupNumber={practiceGroupNumber}
         />
       </div>
     </div>

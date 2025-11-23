@@ -44,6 +44,9 @@ interface CreateNotificationModalProps {
   onSuccess?: () => void;
   selectedStudentIds?: number[]; // Student IDs đã chọn từ bảng
   students?: Student[]; // Danh sách students để map sang user_ids
+  lecturerName?: string;
+  className?: string; 
+  practiceGroupNumber?: number; 
 }
 
 export function CreateNotificationModal({
@@ -52,6 +55,9 @@ export function CreateNotificationModal({
   onSuccess,
   selectedStudentIds = [],
   students = [],
+  lecturerName,
+  className,
+  practiceGroupNumber,
 }: CreateNotificationModalProps) {
   const [loading, setLoading] = useState(false);
   const [title, setTitle] = useState("");
@@ -147,10 +153,29 @@ export function CreateNotificationModal({
         }
       }
 
+      // Tự động thêm thông tin giảng viên, lớp, nhóm thực hành vào đầu nội dung
+      let finalContent = content || "";
+      const headerParts: string[] = [];
+      
+      if (lecturerName) {
+        headerParts.push(`Giảng viên: ${lecturerName}`);
+      }
+      if (className) {
+        headerParts.push(`Lớp: ${className}`);
+      }
+      if (practiceGroupNumber) {
+        headerParts.push(`Nhóm thực hành: ${practiceGroupNumber}`);
+      }
+      
+      if (headerParts.length > 0) {
+        const header = headerParts.join("\n");
+        finalContent = header + (finalContent ? "\n\n" + finalContent : "");
+      }
+
       const payload = {
         user_ids: userIdsToSend,
         title: title || null,
-        content: content || null,
+        content: finalContent || null,
         type,
         category,
         url: imageUrl || null,
@@ -221,6 +246,27 @@ export function CreateNotificationModal({
             {/* Content */}
             <div className="space-y-2">
               <Label htmlFor="content">Nội dung</Label>
+
+              {(lecturerName || className || practiceGroupNumber) && (
+                <div className="border rounded-md bg-gray-50 p-3 space-y-1 text-sm">
+                  {lecturerName && (
+                    <div className="text-muted-foreground">
+                      <span className="font-medium text-foreground">Giảng viên:</span> {lecturerName}
+                    </div>
+                  )}
+                  {className && (
+                    <div className="text-muted-foreground">
+                      <span className="font-medium text-foreground">Lớp:</span> {className}
+                    </div>
+                  )}
+                  {practiceGroupNumber && (
+                    <div className="text-muted-foreground">
+                      <span className="font-medium text-foreground">Nhóm thực hành:</span> {practiceGroupNumber}
+                    </div>
+                  )}
+                </div>
+              )}
+              
               <Textarea
                 id="content"
                 value={content}
@@ -229,6 +275,7 @@ export function CreateNotificationModal({
                 rows={5}
                 className="bg-white"
               />
+
             </div>
 
             {/* Category */}
