@@ -26,6 +26,7 @@ import {
   Search,
   Loader2,
   CalendarPlus,
+  Bell,
 } from "lucide-react";
 import Pagination from "@/components/pagination";
 import { Student } from "@packages/core/entities/Student";
@@ -39,6 +40,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Textarea } from "@/components/ui/textarea";
 import { LabelRequired } from "@/components/ui/label-requied";
 import AppointmentModal from "../appointment/appointment-modal";
+import { CreateNotificationModal } from "./CreateNotificationModal";
 
 export function StudentTable({
   classId,
@@ -65,6 +67,7 @@ export function StudentTable({
   void _type;
   void _enrollments;
 
+
   const [singleTargetId, setSingleTargetId] = useState<number | null>(null);
 
   const [messageModalOpen, setMessageModalOpen] = useState(false);
@@ -72,6 +75,7 @@ export function StudentTable({
   const [messageContent, setMessageContent] = useState("");
 
   const [appointmentModalOpen, setAppointmentModalOpen] = useState(false);
+  const [notificationModalOpen, setNotificationModalOpen] = useState(false);
 
   const practiceGroupMap: Record<number, number> = {};
   practiceGroups.forEach(pg => {
@@ -332,6 +336,19 @@ export function StudentTable({
             )}
           </Button>
 
+          <Button
+            variant="outline"
+            disabled={!hasSelection}
+            className="gap-2"
+            onClick={() => setNotificationModalOpen(true)}
+          >
+            <Bell className="w-4 h-4" />
+            Tạo thông báo
+            {selectedIds.length > 0 && (
+              <span className="ml-1">({selectedIds.length})</span>
+            )}
+          </Button>
+
         </div>
       </div>
 
@@ -527,6 +544,18 @@ export function StudentTable({
           appointmentModalOpen={appointmentModalOpen} 
           setAppointmentModalOpen={setAppointmentModalOpen}
           selectedIds={selectedIds}
+          students={students}
+        />
+
+        <CreateNotificationModal
+          open={notificationModalOpen}
+          onClose={() => setNotificationModalOpen(false)}
+          onSuccess={() => {
+            setNotificationModalOpen(false);
+            setSelectedIds([]);
+            toast.success("Thông báo đã được gửi thành công");
+          }}
+          selectedStudentIds={selectedIds}
           students={students}
         />
       </div>
