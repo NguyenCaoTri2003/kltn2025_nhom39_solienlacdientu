@@ -35,7 +35,8 @@ export class NotificationsUseCase {
   }): Promise<{ items: NotificationRow[]; meta: { total: number; totalPages: number; page: number; pageSize: number } }> {
     const grouped = params.grouped !== false;
     const page = Math.max(1, Math.floor(params.page ?? 1));
-    const pageSize = Math.min(100, Math.max(1, Math.floor(params.pageSize ?? 20)));
+    // Cho phép pageSize lớn hơn để hỗ trợ "chọn tất cả" (tối đa 10000)
+    const pageSize = Math.min(10000, Math.max(1, Math.floor(params.pageSize ?? 20)));
 
     const DATE_ONLY_RE = /^\d{4}-\d{2}-\d{2}$/;
     const toUtcIsoFromLocalDayStart = (dateStr: string): string => new Date(`${dateStr}T00:00:00.000+07:00`).toISOString();
@@ -175,6 +176,72 @@ export class NotificationsUseCase {
     return { created };
   }
 
+  /**
+   * Tạo thông báo cho danh sách user_ids (1 hoặc nhiều người)
+   */
+  async createForUsers(payload: {
+    user_ids: (number | string)[];
+    title: string;
+    content: string;
+    type?: NotificationType | null;
+    category?: NotificationCategory | null;
+    target_student_id?: number | string | null;
+    url?: string | null;
+    status?: NotificationStatus | null;
+  }): Promise<{ created: number }> {
+    const title = String(payload.title || "").trim();
+    const content = String(payload.content || "").trim();
+    if (!title && !content) {
+      throw new Error("Title or content is required");
+    }
+
+    if (!payload.user_ids || !Array.isArray(payload.user_ids) || payload.user_ids.length === 0) {
+      throw new Error("user_ids is required and must be a non-empty array");
+    }
+
+    const type = (payload.type ?? "university") as NotificationType | null;
+    const category = (payload.category ?? "GENERAL") as NotificationCategory | null;
+    const target_student_id = payload.target_student_id != null ? this.toPositiveInt(payload.target_student_id) ?? null : null;
+
+    // Validate và chuyển đổi user_ids thành số
+    const validUserIds: number[] = [];
+    for (const uid of payload.user_ids) {
+      const userId = this.toPositiveInt(uid);
+      if (userId) {
+        validUserIds.push(userId);
+      }
+    }
+
+    if (validUserIds.length === 0) {
+      throw new Error("No valid user_ids provided");
+    }
+
+    // Nếu chỉ có 1 user, dùng broadcast_group_id để có thể group sau này
+    // Nếu có nhiều user, dùng cùng broadcast_group_id để group
+    const groupId = validUserIds.length > 1 ? randomUUID() : null;
+
+    const rows = validUserIds.map(userId => ({
+      user_id: userId,
+      title,
+      content,
+      type,
+      category,
+      target_student_id,
+      url: payload.url ?? null,
+      broadcast_group_id: groupId,
+      status: payload.status ?? "sent",
+    }));
+
+    // Dùng chunking để tránh insert quá lớn
+    const chunkSize = 500;
+    let created = 0;
+    for (let i = 0; i < rows.length; i += chunkSize) {
+      const chunk = rows.slice(i, i + chunkSize);
+      created += await this.repo.createBulk(chunk);
+    }
+    return { created };
+  }
+
   async delete(id: number | string): Promise<void> {
     const nid = this.toPositiveInt(id);
     if (!nid) return;
@@ -182,10 +249,6 @@ export class NotificationsUseCase {
   }
 
 
-  // Không sử dụng bảng User_Notifications nữa (tất cả dùng bảng Notifications)
-  // async createUserNotification(userId: number, notificationId: number): Promise<UserNotificationRow> {
-  //   return await this.repo.createUserNotification(userId, notificationId);
-  // }
 
   async markAsRead(notificationId: number | string): Promise<void> {
     const id = this.toPositiveInt(notificationId);

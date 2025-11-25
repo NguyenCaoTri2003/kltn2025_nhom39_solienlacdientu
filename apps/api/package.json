@@ -9,6 +9,7 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@google/genai": "^1.29.1",
     "@sendgrid/mail": "^8.1.6",
     "ioredis": "^5.8.2",
     "next": "15.5.2",

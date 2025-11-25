@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Loader2, MessageSquare, Paperclip, X } from "lucide-react";
+import { Download, Loader2, MessageSquare, MoreVertical, Paperclip, RotateCw, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@packages/data/supabaseClient";
 import { Conversation, Message } from "./communication-panel";
@@ -12,6 +12,7 @@ import { getAvatarColor } from "@/utils/color-hash";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import EmptyState from "@/components/empty-state";
 import { formatDateLabel } from "@/utils/format-date-label";
+import Lightbox from "@/components/light-box";
 
 interface ChatWindowProps {
     selectedConversation: Conversation | null;
@@ -35,6 +36,24 @@ export default function ChatWindow({
     const [previewUrls, setPreviewUrls] = useState<string[]>([]);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+    const [openMenuId, setOpenMenuId] = useState<number | null>(null);
+    const [previewImage, setPreviewImage] = useState<string | null>(null);
+
+    const menuRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+                setOpenMenuId(null); // Ẩn menu
+            }
+        };
+
+        document.addEventListener("mousedown", handleClickOutside);
+
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, []);
 
     useEffect(() => {
         if (!selectedConversation?.id || !token) return;
@@ -99,10 +118,13 @@ export default function ChatWindow({
                 },
                 (payload) => {
                     const updatedMsg = payload.new as Message;
+                    // setMessages((prev) =>
+                    //     prev.map((m) =>
+                    //         m.id === updatedMsg.id ? { ...m, is_read: updatedMsg.is_read } : m
+                    //     )
+                    // );
                     setMessages((prev) =>
-                        prev.map((m) =>
-                            m.id === updatedMsg.id ? { ...m, is_read: updatedMsg.is_read } : m
-                        )
+                        prev.map((m) => (m.id === updatedMsg.id ? { ...m, ...updatedMsg } : m))
                     );
 
                     setConversations((prev) =>
@@ -228,6 +250,94 @@ export default function ChatWindow({
         [partner.id, partner.full_name]
     );
 
+    const recallMessage = async (messageId: number) => {
+        if (!token) return;
+        try {
+            const res = await fetch(
+                `${process.env.NEXT_PUBLIC_API_URL}/api/messages/${messageId}/recall`,
+                {
+                    method: "PATCH",
+                    headers: { Authorization: `Bearer ${token}` },
+                }
+            );
+
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error);
+
+            toast.success("Đã thu hồi tin nhắn");
+        } catch (err: any) {
+            toast.error(err.message || "Không thể thu hồi tin nhắn");
+        }
+    };
+
+    const deleteMessage = async (messageId: number) => {
+        if (!token || !selectedConversation || myId === null) return;
+        try {
+            const res = await fetch(
+                `${process.env.NEXT_PUBLIC_API_URL}/api/messages/${messageId}/delete`,
+                {
+                    method: "PATCH",
+                    headers: { Authorization: `Bearer ${token}` },
+                }
+            );
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error);
+
+            const updatedMessages = messages.map(msg =>
+                msg.id === messageId
+                    ? { ...msg, deleted_by: [...(msg.deleted_by || []), myId] }
+                    : msg
+            );
+            setMessages(updatedMessages);
+
+            const lastMessage = [...updatedMessages]
+                .reverse()
+                .find(msg => !(msg.deleted_by || []).includes(myId)) || null;
+
+            setConversations(prev =>
+                prev.map(conv =>
+                    conv.id === selectedConversation.id
+                        ? { ...conv, messages: updatedMessages, lastMessage }
+                        : conv
+                )
+            );
+            setSelectedConversation(prev =>
+                prev ? { ...prev, messages: updatedMessages, lastMessage } : null
+            );
+
+            toast.success("Đã xoá tin nhắn");
+        } catch (err: any) {
+            toast.error(err.message || "Không thể xoá tin nhắn");
+        }
+    };
+
+    const canRecall = (msg: Message) => {
+        if (!msg.created_at) return false;
+        const now = new Date();
+        const created = new Date(msg.created_at);
+        const diffMinutes = (now.getTime() - created.getTime()) / 1000 / 60;
+        return diffMinutes <= 5;
+    };
+
+    const downloadFile = async (url: string, filename: string) => {
+        try {
+            const res = await fetch(url);
+            const blob = await res.blob();
+            const blobUrl = window.URL.createObjectURL(blob);
+
+            const a = document.createElement("a");
+            a.href = blobUrl;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+
+            window.URL.revokeObjectURL(blobUrl);
+        } catch (err) {
+            console.error("Tải file thất bại", err);
+        }
+    };
+
     if (!selectedConversation)
         return (
             <div className="flex-1 flex items-center justify-center text-muted-foreground">
@@ -251,6 +361,52 @@ export default function ChatWindow({
                 return "Không xác định";
         }
     }
+
+    const renderMessageContent = (msg: Message, prevMsg: Message | null) => {
+        if (msg.is_recalled) {
+            return (
+                <span className="italic text-gray-500">
+                    Tin nhắn đã được thu hồi
+                </span>
+            );
+        }
+
+        if (msg.is_deleted) return null;
+
+        if (msg.type === "image") {
+            return (
+                <img
+                    src={msg.content}
+                    className="rounded-lg max-w-full max-h-64 object-cover cursor-pointer"
+                    onClick={() => setPreviewImage(msg.content)}
+                />
+            );
+        }
+
+        if (msg.type === "file") {
+            return (
+                <a
+                    href={msg.content}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 p-2 rounded-lg border bg-background hover:bg-muted transition-colors w-fit"
+                >
+                    <div className="w-6 h-6">
+                        <FileIcon
+                            extension={msg.content.split(".").pop()?.toLowerCase() || ""}
+                            {...defaultStyles[msg.content.split(".").pop()?.toLowerCase() || "default"]}
+                        />
+                    </div>
+                    <span className="truncate text-sm text-primary underline">
+                        {msg.content.split("/").pop()}
+                    </span>
+                </a>
+            );
+        }
+
+        return <span>{msg.content}</span>;
+    };
+
 
     return (
         <div className="flex flex-col flex-1 h-full">
@@ -280,16 +436,21 @@ export default function ChatWindow({
             {/* Danh sách tin nhắn */}
             <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-background">
                 {messages.map((msg, index) => {
+
+                    if (myId !== null && msg.deleted_by?.includes(myId)) return null;
+
                     const prevMsg = messages[index - 1];
                     const msgDate = new Date(msg.created_at);
                     const prevDate = prevMsg ? new Date(prevMsg.created_at) : null;
-
                     const isNewDay =
-                        !prevDate ||
-                        msgDate.toDateString() !== prevDate.toDateString();
+                        !prevDate || msgDate.toDateString() !== prevDate.toDateString();
+
+                    const isMine = msg.sender_id === myId;
 
                     return (
-                        <div key={`${msg.id}-${index}`}>
+                        <div key={`${msg.id}-${index}`} className="relative">
+
+                            {/* Hiển thị ngày */}
                             {isNewDay && (
                                 <div className="flex justify-center my-3">
                                     <div className="text-xs text-muted-foreground bg-muted px-3 py-1 rounded-full">
@@ -298,61 +459,82 @@ export default function ChatWindow({
                                 </div>
                             )}
 
-                            <div
-                                className={`flex ${msg.sender_id === myId ? "justify-end" : "justify-start"}`}
-                            >
-                                <div
-                                    className={`rounded-lg px-3 py-2 max-w-[75%] break-anywhere ${msg.sender_id === myId
-                                        ? "bg-[#D6E4FF] text-black"
-                                        : "bg-muted text-foreground"
-                                        }`}
-                                >
-                                    {msg.type === "image" ? (
-                                        <img
-                                            src={msg.content}
-                                            alt="image"
-                                            className="rounded-lg max-w-full max-h-64 object-cover"
-                                        />
-                                    ) : msg.type === "file" ? (
-                                        <a
-                                            href={msg.content}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="flex items-center gap-2 p-2 rounded-lg border bg-background hover:bg-muted transition-colors w-fit max-w-[80%]"
+                            {/* Container tin nhắn */}
+                            <div className={`group flex ${isMine ? "justify-end" : "justify-start"} items-start gap-2 w-full relative`}>
+                                <div className={`flex ${isMine ? null : "flex-row-reverse"} gap-1 max-w-[75%]`}>
+
+                                    <div className={`relative`}>
+                                        <button
+                                            onClick={() => setOpenMenuId(openMenuId === msg.id ? null : msg.id)}
+                                            className={`cursor-pointer opacity-0 group-hover:opacity-100 transition p-1 rounded-full hover:bg-gray-200`}
                                         >
-                                            <div className="w-6 h-6 shrink-0">
-                                                <FileIcon
-                                                    extension={msg.content.split(".").pop()?.toLowerCase() || ""}
-                                                    {...defaultStyles[msg.content.split(".").pop()?.toLowerCase() || "default"]}
-                                                />
+                                            <MoreVertical className="w-5 h-5 text-muted-foreground" />
+                                        </button>
+
+                                        {openMenuId === msg.id && (
+                                            <div
+                                                ref={menuRef}
+                                                className={`absolute top-0 z-50 w-36 bg-white border shadow-lg rounded-lg py-2
+                                                ${isMine ? "right-full mr-2" : "left-full ml-2"} transition-all`}
+                                            >
+                                                <button
+                                                    onClick={() => deleteMessage(msg.id)}
+                                                    className="text-xs cursor-pointer w-full flex items-center gap-2 px-3 py-2 hover:bg-gray-100 text-red-600 font-medium"
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                    Xóa
+                                                </button>
+
+                                                {isMine && !msg.is_recalled && !msg.is_deleted && canRecall(msg) && (
+                                                    <button
+                                                        onClick={() => recallMessage(msg.id)}
+                                                        className="cursor-pointer w-full flex items-center gap-2 px-3 py-2 hover:bg-gray-100 text-xs text-blue-600 font-medium"
+                                                    >
+                                                        <RotateCw className="w-4 h-4" />
+                                                        Thu hồi
+                                                    </button>
+                                                )}
+
+                                                {(msg.type === "image" || msg.type === "file") && (
+                                                    <button
+                                                        onClick={() => downloadFile(msg.content, msg.content.split("/").pop() || "file")}
+                                                        className="text-xs cursor-pointer w-full flex items-center gap-2 px-3 py-2 hover:bg-gray-100 font-medium"
+                                                    >
+                                                        <Download className="w-4 h-4" />
+                                                        Tải về máy
+                                                    </button>
+                                                )}
                                             </div>
-                                            <span className="truncate text-sm text-primary underline">
-                                                {msg.content.split("/").pop()}
-                                            </span>
-                                        </a>
-                                    ) : (
-                                        <span>{msg.content}</span>
-                                    )}
+                                        )}
+                                    </div>
 
                                     <div
-                                        className={`text-xs mt-1 text-right flex items-center justify-end gap-1 ${msg.sender_id === myId ? "opacity-90" : "text-muted-foreground"
+                                        className={`text-sm rounded-lg px-3 py-2 max-w-full break-anywhere group relative ${isMine ? "bg-[#D6E4FF] text-black" : "bg-muted text-foreground"
                                             }`}
                                     >
-                                        <span
-                                            className={
-                                                msg.sender_id === myId ? "text-black" : "text-muted-foreground"
-                                            }
-                                        >
-                                            {formatTime(msg.created_at)}
-                                        </span>
+                                        {renderMessageContent(msg, prevMsg)}
 
-                                        {msg.sender_id === myId && index === messages.length - 1 && (
-                                            msg.is_read ? (
-                                                <span className="text-primary font-medium ml-1">Đã xem</span>
-                                            ) : (
-                                                <span className="text-gray-700 ml-1">Đã gửi</span>
-                                            )
-                                        )}
+                                        {/* Thời gian */}
+                                        <div
+                                            className={`text-[10px] mt-1 text-right flex items-center justify-end gap-1 ${msg.sender_id === myId ? "opacity-90" : "text-muted-foreground"
+                                                }`}
+                                        >
+                                            <span
+                                                className={
+                                                    msg.sender_id === myId ? "text-black" : "text-muted-foreground"
+                                                }
+                                            >
+                                                {formatTime(msg.created_at)}
+                                            </span>
+
+                                            {msg.sender_id === myId && index === messages.length - 1 && (
+                                                msg.is_read ? (
+                                                    <span className="text-primary font-medium ml-1">Đã xem</span>
+                                                ) : (
+                                                    <span className="text-gray-700 ml-1">Đã gửi</span>
+                                                )
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -427,6 +609,8 @@ export default function ChatWindow({
                     Gửi
                 </Button>
             </div>
+
+            <Lightbox src={previewImage} onClose={() => setPreviewImage(null)} />
         </div>
     );
 }

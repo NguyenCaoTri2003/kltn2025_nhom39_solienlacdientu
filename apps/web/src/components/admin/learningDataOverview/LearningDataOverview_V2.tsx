@@ -208,10 +208,13 @@ export default function LearningDataOverview_V2() {
   };
 
   return (
-    <div className="space-y-6">
-      {/* <PageBreadcrumb items={[{ label: "Quản lý học tập", href: "/admin" }, { label: "Cảnh cáo học tập V2" }]} /> */}
+    <div className="max-w-full mx-auto py-2">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-foreground mb-2">Quản lý cảnh cáo học tập</h1>
+        <p className="text-muted-foreground">Tạo và quản lý cảnh cáo học tập</p>
+      </div>
 
-      <div className="border rounded-xl p-4 bg-white shadow-sm space-y-4">
+      <div className="border rounded-xl p-5 bg-white shadow-sm space-y-6 mb-6">
         <div className="flex justify-between items-center">
           <h2 className="text-base font-semibold flex items-center gap-2">
             <SlidersHorizontal className="h-4 w-4 text-gray-600" /> Bộ lọc tìm kiếm
@@ -314,14 +317,14 @@ export default function LearningDataOverview_V2() {
           )}
           {!error && rows.length === 0 && !loading && (
             <tr>
-              <td className="px-4 py-6 text-gray-500" colSpan={15}>
+              <td className="px-4 py-8 text-center text-muted-foreground" colSpan={10}>
                 <p>Vui lòng nhấn tìm kiếm để xem kết quả.</p>
               </td>
             </tr>
           )}
           {!error && loading && (
             <tr>
-              <td className="px-4 py-6 text-gray-500" colSpan={15}>
+              <td className="px-4 py-8 text-center text-muted-foreground" colSpan={10}>
                 Đang tải dữ liệu...
               </td>
             </tr>

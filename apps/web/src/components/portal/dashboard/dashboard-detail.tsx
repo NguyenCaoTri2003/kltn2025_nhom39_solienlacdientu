@@ -17,6 +17,10 @@ import {
   CloudSun,
   Moon,
   Book,
+  CheckCircle,
+  CreditCard,
+  User,
+  Settings2,
 } from "lucide-react";
 import { getAvatarColor } from "@/utils/color-hash";
 import Loading from "@/components/ui/loading";
@@ -124,246 +128,279 @@ export default function Dashboard() {
           transition={{ duration: 0.8 }}
         >
           <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        {/* Greeting */}
-        <motion.div
-          className="col-span-3 flex items-center gap-3"
-          initial={{ y: -20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.6 }}
-        >
-          <motion.div
-            className={iconColor}
-            animate={{ rotate: [0, 15, -15, 0] }}
-            transition={{ duration: 2, repeat: Infinity, repeatType: "loop" }}
-          >
-            {greeting.icon}
-          </motion.div>
-          <h1 className="text-2xl sm:text-3xl font-semibold text-indigo-800 dark:text-indigo-300 drop-shadow">
-            {greeting.text}, {nameToShow}!
-          </h1>
-        </motion.div>
-
-        {/* Thông tin người dùng */}
-        <motion.div
-          className={`${cardStyle} col-span-3 flex flex-col md:flex-row gap-6`}
-          initial={{ scale: 0.95, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ duration: 0.6, delay: 0.2 }}
-        >
-          <div className="flex-shrink-0">
-            {userData?.avatar_url ? (
-              <Image
-                src={userData.avatar_url}
-                alt={userData.full_name || "Avatar"}
-                width={120}
-                height={120}
-                className="rounded-full object-cover border border-gray-200 dark:border-gray-700 shadow"
-              />
-            ) : (
-              <div
-                className={`${bgColor} w-28 h-28 rounded-full flex items-center justify-center text-white font-bold text-3xl shadow`}
+            {/* Greeting */}
+            <motion.div
+              className="col-span-3 flex items-center gap-3"
+              initial={{ y: -20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ duration: 0.6 }}
+            >
+              <motion.div
+                className={iconColor}
+                animate={{ rotate: [0, 15, -15, 0] }}
+                transition={{ duration: 2, repeat: Infinity, repeatType: "loop" }}
               >
-                {initial}
-              </div>
-            )}
-          </div>
+                {greeting.icon}
+              </motion.div>
+              <h1 className="text-2xl sm:text-3xl font-semibold text-indigo-800 dark:text-indigo-300 drop-shadow">
+                {greeting.text}, {nameToShow}!
+              </h1>
+            </motion.div>
 
-          <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-3 text-gray-700 dark:text-gray-300 text-sm">
+            {/* Thông tin người dùng */}
+            <motion.div
+              className={`${cardStyle} col-span-3 flex flex-col md:flex-row gap-6`}
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+            >
+              <div className="flex-shrink-0">
+                {userData?.avatar_url ? (
+                  <Image
+                    src={userData.avatar_url}
+                    alt={userData.full_name || "Avatar"}
+                    width={120}
+                    height={120}
+                    className="rounded-full object-cover border border-gray-200 dark:border-gray-700 shadow"
+                  />
+                ) : (
+                  <div
+                    className={`${bgColor} w-28 h-28 rounded-full flex items-center justify-center text-white font-bold text-3xl shadow`}
+                  >
+                    {initial}
+                  </div>
+                )}
+              </div>
+
+              <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-3 text-gray-700 dark:text-gray-300 text-sm">
+                {isParent ? (
+                  <>
+                    <p><span className="font-semibold">Họ tên:</span> {userData.full_name}</p>
+                    <p><span className="font-semibold">SĐT:</span> {userData.phone || "Chưa có"}</p>
+                    <p><span className="font-semibold">Email:</span> {userData.email || "Chưa có"}</p>
+                    <p><span className="font-semibold">CCCD:</span> {userData.citizen_id_card || "Chưa có"}</p>
+                    <p className="sm:col-span-2"><span className="font-semibold">Địa chỉ:</span> {userData.address || "Chưa có"}</p>
+                    <p><span className="font-semibold">Số con:</span> {userData.children?.length || 0}</p>
+                  </>
+                ) : (
+                  <>
+                    <p><span className="font-semibold">MSSV:</span> {userData.student?.student_code}</p>
+                    <p><span className="font-semibold">Họ tên:</span> {userData.full_name}</p>
+                    <p><span className="font-semibold">Giới tính:</span> Nam</p>
+                    <p><span className="font-semibold">Ngày sinh:</span> {userData.student?.date_of_birth?.split("T")[0]}</p>
+                    <p><span className="font-semibold">Nơi sinh:</span> {userData.student?.place_of_birth}</p>
+                    <p><span className="font-semibold">Lớp học:</span> {userData.student?.classes?.class_code || "Chưa có"}</p>
+                    <p><span className="font-semibold">Khóa học:</span> {userData.student?.academic_year}</p>
+                    <p><span className="font-semibold">Bậc đào tạo:</span> {translateTrainingLevel(userData.student?.training_level)}</p>
+                    <p><span className="font-semibold">Loại hình đào tạo:</span> {translateTrainingType(userData.student?.type_of_tranning)}</p>
+                    <p><span className="font-semibold">Ngành:</span> Kỹ thuật phần mềm</p>
+                  </>
+                )}
+              </div>
+            </motion.div>
+
+            {/* Nội dung chính */}
             {isParent ? (
               <>
-                <p><span className="font-semibold">Họ tên:</span> {userData.full_name}</p>
-                <p><span className="font-semibold">SĐT:</span> {userData.phone || "Chưa có"}</p>
-                <p><span className="font-semibold">Email:</span> {userData.email || "Chưa có"}</p>
-                <p><span className="font-semibold">CCCD:</span> {userData.citizen_id_card || "Chưa có"}</p>
-                <p className="sm:col-span-2"><span className="font-semibold">Địa chỉ:</span> {userData.address || "Chưa có"}</p>
-                <p><span className="font-semibold">Số con:</span> {userData.children?.length || 0}</p>
+                {/* Danh sách con */}
+                <motion.div
+                  className={`${cardStyle} xl:col-span-1 overflow-y-auto max-h-[400px]`}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3 }}
+                >
+                  <h3 className="font-semibold mb-3 flex items-center gap-2 text-gray-800 dark:text-gray-100">
+                    <Users className="w-5 h-5 text-blue-500" /> Thông tin con
+                  </h3>
+                  <div className="flex flex-col gap-3">
+                    {userData?.children?.map((child) => (
+                      <motion.div
+                        key={child.id}
+                        className="p-3 border border-gray-200 dark:border-gray-700 rounded-md bg-gray-50 dark:bg-gray-700 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:border-blue-300 dark:hover:border-blue-700 transition-all duration-150 cursor-pointer"
+                        whileHover={{ scale: 1.02, y: -2 }}
+                        transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                      >
+                        <p className="font-medium text-gray-900 dark:text-gray-100">
+                          {child.users.full_name}
+                        </p>
+                        <p className="text-sm">Mã SV: {child.student_code}</p>
+                        <p className="text-sm">Lớp: {child.classes?.class_code}</p>
+                      </motion.div>
+                    ))}
+                  </div>
+                </motion.div>
+
+                {/* Lịch hẹn hôm nay */}
+                <motion.div
+                  className={`${cardStyle} xl:col-span-2 overflow-y-auto max-h-[400px]`}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.4 }}
+                >
+                  <h3 className="font-semibold mb-3 flex items-center gap-2 text-gray-800 dark:text-gray-100">
+                    <Calendar className="w-5 h-5 text-orange-500" /> Lịch hẹn hôm nay
+                  </h3>
+                  <div className="flex flex-col gap-3">
+                    {todayAppointments.length > 0 ? (
+                      todayAppointments.map((a) => (
+                        <motion.div
+                          key={a.id}
+                          className="p-4 border border-gray-200 dark:border-gray-700 rounded-md bg-gray-50 dark:bg-gray-700 cursor-pointer hover:bg-orange-50 dark:hover:bg-orange-900/20 hover:border-orange-300 dark:hover:border-orange-700 transition-all duration-150"
+                          whileHover={{ scale: 1.02, y: -2 }}
+                          transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                          onClick={() => router.push(`/portal/appointments`)}
+                        >
+                          <p className="font-semibold text-gray-900 dark:text-gray-100">{a.title}</p>
+                          <p className="text-sm flex items-center gap-1">
+                            <Clock className="w-4 h-4" />{" "}
+                            {format(parseISO(a.start_time), "HH:mm", { locale: vi })} -{" "}
+                            {format(parseISO(a.end_time), "HH:mm", { locale: vi })}
+                          </p>
+                          {a.location && <p className="text-sm">Địa điểm: {a.location}</p>}
+                        </motion.div>
+                      ))
+                    ) : (
+                      <EmptyState
+                        icon={<Calendar className="w-10 h-10" />}
+                        text="Không có lịch hẹn nào hôm nay."
+                        className="py-1 px-2"
+                      />
+                    )}
+                  </div>
+                </motion.div>
               </>
             ) : (
               <>
-                <p><span className="font-semibold">MSSV:</span> {userData.student?.student_code}</p>
-                <p><span className="font-semibold">Họ tên:</span> {userData.full_name}</p>
-                <p><span className="font-semibold">Giới tính:</span> Nam</p>
-                <p><span className="font-semibold">Ngày sinh:</span> {userData.student?.date_of_birth?.split("T")[0]}</p>
-                <p><span className="font-semibold">Nơi sinh:</span> {userData.student?.place_of_birth}</p>
-                <p><span className="font-semibold">Lớp học:</span> {userData.student?.classes?.class_code || "Chưa có"}</p>
-                <p><span className="font-semibold">Khóa học:</span> {userData.student?.academic_year}</p>
-                <p><span className="font-semibold">Bậc đào tạo:</span> {translateTrainingLevel(userData.student?.training_level)}</p>
-                <p><span className="font-semibold">Loại hình đào tạo:</span> {translateTrainingType(userData.student?.type_of_tranning)}</p>
-                <p><span className="font-semibold">Ngành:</span> Kỹ thuật phần mềm</p>
+                {/* Môn học hôm nay */}
+                <motion.div
+                  className={`${cardStyle} xl:col-span-1 overflow-y-auto max-h-[400px]`}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3 }}
+                >
+                  <h3 className="font-semibold mb-3 flex items-center gap-2 text-gray-800 dark:text-gray-100">
+                    <BookOpen className="w-5 h-5 text-green-500" /> Môn học hôm nay
+                  </h3>
+                  <div className="flex flex-col gap-3">
+                    {todayClasses.length > 0 ? (
+                      todayClasses.map((c) => (
+                        <motion.div
+                          key={c.id}
+                          className="p-4 border border-gray-200 dark:border-gray-700 rounded-md bg-gray-50 dark:bg-gray-700 cursor-pointer hover:bg-green-50 dark:hover:bg-green-900/20 hover:border-green-300 dark:hover:border-green-700 transition-all duration-150"
+                          whileHover={{ scale: 1.02, y: -2 }}
+                          transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                          onClick={() => router.push(`/portal/classes/${c.id}`)}
+                        >
+                          <p className="font-semibold text-gray-900 dark:text-gray-100">
+                            {c.course?.name || c.name || "Không rõ tên"}
+                          </p>
+                          <p className="text-sm flex items-center gap-1">
+                            <GraduationCap className="w-4 h-4" /> Mã lớp: {c.class_code}
+                          </p>
+                          <p className="text-sm flex items-center gap-1">
+                            Giảng viên:{" "}
+                            {c.lecturer?.full_name ||
+                              c.detail?.lecturer?.full_name ||
+                              "Chưa rõ"}
+                          </p>
+                        </motion.div>
+                      ))
+                    ) : (
+                      <EmptyState
+                        icon={<Calendar className="w-10 h-10" />}
+                        text="Không có lớp học phần hôm nay."
+                        className="py-1"
+                      />
+                    )}
+                  </div>
+                </motion.div>
+
+                {/* Tất cả lớp học phần */}
+                <motion.div
+                  className={`${cardStyle} xl:col-span-2 overflow-y-auto max-h-[600px]`}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.4 }}
+                >
+                  <h3 className="font-semibold mb-3 flex items-center gap-2 text-gray-800 dark:text-gray-100">
+                    <BookOpen className="w-5 h-5 text-indigo-500" /> Tất cả lớp học phần -{" "}
+                    {semester?.name}
+                  </h3>
+                  {offerings?.length > 0 ? (
+                    <div className="grid md:grid-cols-2 lg:grid-cols-2 gap-4">
+                      {offerings.map((c) => (
+                        <motion.div
+                          key={c.id}
+                          className="p-4 border border-gray-200 dark:border-gray-700 rounded-md bg-gray-50 dark:bg-gray-700 cursor-pointer hover:bg-indigo-50 dark:hover:bg-indigo-900/20 hover:border-indigo-300 dark:hover:border-indigo-700 transition-all duration-150"
+                          whileHover={{ scale: 1.02, y: -2 }}
+                          transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                          onClick={() => router.push(`/portal/classes/${c.id}`)}
+                        >
+                          <p className="font-semibold text-gray-900 dark:text-gray-100">
+                            {c.course?.name || c.name || "Không rõ tên"}
+                          </p>
+                          <p className="text-sm flex items-center gap-1">
+                            <GraduationCap className="w-4 h-4" /> Mã lớp: {c.class_code}
+                          </p>
+                          <p className="text-sm flex items-center gap-1">
+                            Giảng viên:{" "}
+                            {c.lecturer?.full_name ||
+                              c.detail?.lecturer?.full_name ||
+                              "Chưa rõ"}
+                          </p>
+                          {c.detail?.schedule?.map((s: { day_of_week: number; start_period: number; period_count: number; classroom: string; building: string }, i: number) => (
+                            <p key={i} className="text-sm flex items-center gap-1">
+                              <Calendar className="w-4 h-4" />{" "}
+                              {getDayName(Number(s.day_of_week))} - Tiết {s.start_period} →{" "}
+                              {s.start_period + s.period_count - 1} tại {s.classroom} ({s.building})
+                            </p>
+                          ))}
+                        </motion.div>
+                      ))}
+                    </div>
+                  ) : (
+                    <EmptyState
+                      icon={<Book className="w-10 h-10" />}
+                      text="Không có lớp học phần nào."
+                      className="py-1"
+                    />
+                  )}
+                </motion.div>
               </>
             )}
-          </div>
-        </motion.div>
 
-        {/* Nội dung chính */}
-        {isParent ? (
-          <>
-            {/* Danh sách con */}
+            {/* Quick Access Section */}
             <motion.div
-              className={`${cardStyle} xl:col-span-1 overflow-y-auto max-h-[400px]`}
+              className="col-span-3 mt-6"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
+              transition={{ delay: 0.5 }}
             >
-              <h3 className="font-semibold mb-3 flex items-center gap-2 text-gray-800 dark:text-gray-100">
-                <Users className="w-5 h-5 text-blue-500" /> Thông tin con
+              {/* Tiêu đề */}
+              <h3 className="font-semibold mb-3 text-gray-800 dark:text-gray-100 flex items-center gap-2">
+                <Book className="w-5 h-5 text-indigo-500" /> Thao tác truy cập nhanh
               </h3>
-              <div className="flex flex-col gap-3">
-                {userData?.children?.map((child) => (
+
+              {/* Các nút truy cập nhanh */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                {[
+                  { name: "Học phí", icon: <CreditCard className="w-6 h-6 text-indigo-600" />, link: "/portal/tuition" },
+                  { name: "Điểm danh", icon: <CheckCircle className="w-6 h-6 text-indigo-600" />, link: "/portal/attendances" },
+                  { name: "Thông tin cá nhân", icon: <User className="w-6 h-6 text-indigo-600" />, link: "/portal/profile" },
+                  { name: "Đổi mật khẩu", icon: <Settings2 className="w-6 h-6 text-indigo-600" />, link: "/portal/profile/change-password" },
+                ].map((btn) => (
                   <motion.div
-                    key={child.id}
-                    className="p-3 border border-gray-200 dark:border-gray-700 rounded-md bg-gray-50 dark:bg-gray-700 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:border-blue-300 dark:hover:border-blue-700 transition-all duration-150 cursor-pointer"
-                    whileHover={{ scale: 1.02, y: -2 }}
-                    transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                    key={btn.name}
+                    className="flex flex-col items-center justify-center gap-2 p-4 rounded-xl shadow-sm cursor-pointer bg-indigo-100 hover:bg-indigo-200 text-indigo-800 transition-all duration-150"
+                    whileHover={{ scale: 1.05, y: -2 }}
+                    onClick={() => router.push(btn.link)}
                   >
-                    <p className="font-medium text-gray-900 dark:text-gray-100">
-                      {child.users.full_name}
-                    </p>
-                    <p className="text-sm">Mã SV: {child.student_code}</p>
-                    <p className="text-sm">Lớp: {child.classes?.class_code}</p>
+                    <div className="p-2 rounded-full bg-indigo-200">{btn.icon}</div>
+                    <span className="font-medium text-sm">{btn.name}</span>
                   </motion.div>
                 ))}
               </div>
             </motion.div>
-
-            {/* Lịch hẹn hôm nay */}
-            <motion.div
-              className={`${cardStyle} xl:col-span-2 overflow-y-auto max-h-[400px]`}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 }}
-            >
-              <h3 className="font-semibold mb-3 flex items-center gap-2 text-gray-800 dark:text-gray-100">
-                <Calendar className="w-5 h-5 text-orange-500" /> Lịch hẹn hôm nay
-              </h3>
-              <div className="flex flex-col gap-3">
-                {todayAppointments.length > 0 ? (
-                  todayAppointments.map((a) => (
-                    <motion.div
-                      key={a.id}
-                      className="p-4 border border-gray-200 dark:border-gray-700 rounded-md bg-gray-50 dark:bg-gray-700 cursor-pointer hover:bg-orange-50 dark:hover:bg-orange-900/20 hover:border-orange-300 dark:hover:border-orange-700 transition-all duration-150"
-                      whileHover={{ scale: 1.02, y: -2 }}
-                      transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                      onClick={() => router.push(`/portal/appointments`)}
-                    >
-                      <p className="font-semibold text-gray-900 dark:text-gray-100">{a.title}</p>
-                      <p className="text-sm flex items-center gap-1">
-                        <Clock className="w-4 h-4" />{" "}
-                        {format(parseISO(a.start_time), "HH:mm", { locale: vi })} -{" "}
-                        {format(parseISO(a.end_time), "HH:mm", { locale: vi })}
-                      </p>
-                      {a.location && <p className="text-sm">Địa điểm: {a.location}</p>}
-                    </motion.div>
-                  ))
-                ) : (
-                  <EmptyState
-                    icon={<Calendar className="w-10 h-10" />}
-                    text="Không có lịch hẹn nào hôm nay."
-                    className="py-1 px-2"
-                  />
-                )}
-              </div>
-            </motion.div>
-          </>
-        ) : (
-          <>
-            {/* Môn học hôm nay */}
-            <motion.div
-              className={`${cardStyle} xl:col-span-1 overflow-y-auto max-h-[400px]`}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-            >
-              <h3 className="font-semibold mb-3 flex items-center gap-2 text-gray-800 dark:text-gray-100">
-                <BookOpen className="w-5 h-5 text-green-500" /> Môn học hôm nay
-              </h3>
-              <div className="flex flex-col gap-3">
-                {todayClasses.length > 0 ? (
-                  todayClasses.map((c) => (
-                    <motion.div
-                      key={c.id}
-                      className="p-4 border border-gray-200 dark:border-gray-700 rounded-md bg-gray-50 dark:bg-gray-700 cursor-pointer hover:bg-green-50 dark:hover:bg-green-900/20 hover:border-green-300 dark:hover:border-green-700 transition-all duration-150"
-                      whileHover={{ scale: 1.02, y: -2 }}
-                      transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                      onClick={() => router.push(`/portal/classes/${c.id}`)}
-                    >
-                      <p className="font-semibold text-gray-900 dark:text-gray-100">
-                        {c.course?.name || c.name || "Không rõ tên"}
-                      </p>
-                      <p className="text-sm flex items-center gap-1">
-                        <GraduationCap className="w-4 h-4" /> Mã lớp: {c.class_code}
-                      </p>
-                      <p className="text-sm flex items-center gap-1">
-                        Giảng viên:{" "}
-                        {c.lecturer?.full_name ||
-                          c.detail?.lecturer?.full_name ||
-                          "Chưa rõ"}
-                      </p>
-                    </motion.div>
-                  ))
-                ) : (
-                  <EmptyState
-                    icon={<Calendar className="w-10 h-10" />}
-                    text="Không có lớp học phần hôm nay."
-                    className="py-1"
-                  />
-                )}
-              </div>
-            </motion.div>
-
-            {/* Tất cả lớp học phần */}
-            <motion.div
-              className={`${cardStyle} xl:col-span-2 overflow-y-auto max-h-[600px]`}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 }}
-            >
-              <h3 className="font-semibold mb-3 flex items-center gap-2 text-gray-800 dark:text-gray-100">
-                <BookOpen className="w-5 h-5 text-indigo-500" /> Tất cả lớp học phần -{" "}
-                {semester?.name}
-              </h3>
-              {offerings?.length > 0 ? (
-                <div className="grid md:grid-cols-2 lg:grid-cols-2 gap-4">
-                  {offerings.map((c) => (
-                    <motion.div
-                      key={c.id}
-                      className="p-4 border border-gray-200 dark:border-gray-700 rounded-md bg-gray-50 dark:bg-gray-700 cursor-pointer hover:bg-indigo-50 dark:hover:bg-indigo-900/20 hover:border-indigo-300 dark:hover:border-indigo-700 transition-all duration-150"
-                      whileHover={{ scale: 1.02, y: -2 }}
-                      transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                      onClick={() => router.push(`/portal/classes/${c.id}`)}
-                    >
-                      <p className="font-semibold text-gray-900 dark:text-gray-100">
-                        {c.course?.name || c.name || "Không rõ tên"}
-                      </p>
-                      <p className="text-sm flex items-center gap-1">
-                        <GraduationCap className="w-4 h-4" /> Mã lớp: {c.class_code}
-                      </p>
-                      <p className="text-sm flex items-center gap-1">
-                        Giảng viên:{" "}
-                        {c.lecturer?.full_name ||
-                          c.detail?.lecturer?.full_name ||
-                          "Chưa rõ"}
-                      </p>
-                      {c.detail?.schedule?.map((s: { day_of_week: number; start_period: number; period_count: number; classroom: string; building: string }, i: number) => (
-                        <p key={i} className="text-sm flex items-center gap-1">
-                          <Calendar className="w-4 h-4" />{" "}
-                          {getDayName(Number(s.day_of_week))} - Tiết {s.start_period} →{" "}
-                          {s.start_period + s.period_count - 1} tại {s.classroom} ({s.building})
-                        </p>
-                      ))}
-                    </motion.div>
-                  ))}
-                </div>
-              ) : (
-                <EmptyState
-                  icon={<Book className="w-10 h-10" />}
-                  text="Không có lớp học phần nào."
-                  className="py-1"
-                />
-              )}
-            </motion.div>
-          </>
-        )}
           </div>
         </motion.div>
       </div>

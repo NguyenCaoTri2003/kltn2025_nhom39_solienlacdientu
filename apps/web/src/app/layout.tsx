@@ -3,6 +3,8 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "sonner";
 import { UserProvider } from "@/context/user-context";
+import ChatWidget from "@/components/chatbot/chat-widget";
+import ChatWrapper from "@/components/chatbot/chat-wrapper";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -27,6 +29,7 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+
   return (
     <html lang="en">
       <body
@@ -35,6 +38,7 @@ export default function RootLayout({
         {/* {children} */}
         <UserProvider>
           {children}
+          <ChatWrapper />
         </UserProvider>
         <Toaster position="top-right" richColors closeButton />
       </body>

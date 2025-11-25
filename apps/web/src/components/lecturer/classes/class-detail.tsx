@@ -11,7 +11,6 @@ import {
   CalendarRange,
   Loader2,
   BookText,
-  Info,
 } from "lucide-react";
 import WeeklyScheduleList from "@/components/lecturer/classes/weekly-schedule-list";
 import PracticeGroupCard from "./practice-group-card";
@@ -24,6 +23,7 @@ import { PageBreadcrumb } from "@/components/page-breadcrumb";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import EmptyState from "@/components/empty-state";
+import { CreateNotificationModal } from "./CreateNotificationModal";
 
 function mapGroupStudents(group: PracticeGroup, enrollments: Enrollment[]): Student[] {
   return group.students
@@ -41,11 +41,17 @@ export default function ClassDetail() {
   const [offering, setOffering] = useState<Offering | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("theory");
+  const [notificationModalOpen, setNotificationModalOpen] = useState(false);
 
   const router = useRouter();
-  const currentUser =
-    typeof window !== "undefined" ? JSON.parse(localStorage.getItem("user") || "null") : null;
-  const currentLecturerId = currentUser?.id;
+  const [currentLecturerId, setCurrentLecturerId] = useState<number | undefined>(undefined);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const user = JSON.parse(localStorage.getItem("user") || "null");
+      setCurrentLecturerId(user?.id);
+    }
+  }, []);
   const isTheoryLecturer = offering?.lecturers?.id === currentLecturerId;
 
   const myPracticeGroup = offering?.practice_groups?.find(
@@ -269,6 +275,7 @@ export default function ClassDetail() {
                   <CalendarRange className="h-4 w-4" />
                   Chi tiết điểm danh
                 </Button>
+               
               </div>
             </div>
           </div>
@@ -435,6 +442,8 @@ export default function ClassDetail() {
                     students={offering.students
                       .map((e) => e.students)
                       .filter((s): s is Student => !!s)}
+                    lecturerName={offering.lecturers?.users?.full_name}
+                    className={offering.name}
                   />
                 </div>
               </TabsContent>
@@ -450,6 +459,9 @@ export default function ClassDetail() {
                         .map((e) => ({ id: e.id, students: e.students as Student }))}
                       practiceGroups={practiceGroups}
                       students={mapGroupStudents(g, offering.students)}
+                      lecturerName={offering.lecturers?.users?.full_name}
+                      className={offering.name}
+                      practiceGroupNumber={g.group_number}
                     />
                   </div>
                 </TabsContent>
@@ -479,6 +491,9 @@ export default function ClassDetail() {
                       .map((e) => ({ id: e.id, students: e.students as Student }))}
                     practiceGroups={practiceGroups}
                     students={mapGroupStudents(myPracticeGroup, offering.students)}
+                    lecturerName={offering.lecturers?.users?.full_name}
+                    className={offering.name}
+                    practiceGroupNumber={myPracticeGroup?.group_number}
                   />
                 </div>
               </TabsContent>
@@ -497,11 +512,35 @@ export default function ClassDetail() {
                 students={offering.students
                   .map((e) => e.students)
                   .filter((s): s is Student => !!s)}
+                lecturerName={offering.lecturers?.users?.full_name}
+                className={offering.name}
               />
             </div>
           )}
         </section>
       </div>
+
+      <CreateNotificationModal
+        open={notificationModalOpen}
+        onClose={() => setNotificationModalOpen(false)}
+        onSuccess={() => {
+          setNotificationModalOpen(false);
+          toast.success("Thông báo đã được gửi thành công");
+        }}
+        selectedStudentIds={
+          offering?.students
+            ?.map((e) => e.students?.id)
+            .filter((id): id is number => id !== undefined) || []
+        }
+        students={
+          offering?.students
+            ?.map((e) => e.students)
+            .filter((s): s is Student => !!s) || []
+        }
+        lecturerName={offering?.lecturers?.users?.full_name}
+        className={offering?.name}
+        practiceGroupNumber={myPracticeGroup?.group_number}
+      />
     </div>
   );
 }
