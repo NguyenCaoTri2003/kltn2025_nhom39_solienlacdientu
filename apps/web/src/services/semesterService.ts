@@ -14,13 +14,12 @@ export async function fetchSemestersByStudentYear(studentYear?: number): Promise
     ? `${process.env.NEXT_PUBLIC_API_URL}/api/semesters?fromYear=${studentYear}`
     : `${process.env.NEXT_PUBLIC_API_URL}/api/semesters`;
 
-  console.log("Fetching semesters from URL:", url);
-
   const res = await fetch(url, {
     headers: { Authorization: `Bearer ${token}` },
   });
 
   const json = await res.json();
+  
   if (json.returnCode !== 0) throw new Error(json.message);
   return json.data;
 }

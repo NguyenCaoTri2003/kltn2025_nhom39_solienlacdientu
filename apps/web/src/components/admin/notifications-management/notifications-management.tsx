@@ -67,7 +67,7 @@ export function NotificationsManagement() {
     return cookieToken || localStorage.getItem("token");
   };
 
-  const fetchList = async (overridePage?: number, overridePageSize?: number) => {
+  const fetchList = async (overridePage?: number, overridePageSize?: number, clearSelection: boolean = false) => {
     setLoading(true);
     try {
       const params = new URLSearchParams();
@@ -97,12 +97,18 @@ export function NotificationsManagement() {
       }
       setItems(data.data || []);
       setTotal(data.meta?.total || 0);
-      setSelectedIds(new Set());
+      // Chỉ clear selection khi search/reset filter, không clear khi chuyển trang
+      if (clearSelection) {
+        setSelectedIds(new Set());
+      }
     } catch (e) {
       console.error("Fetch notifications failed:", e);
       setItems([]);
       setTotal(0);
-      setSelectedIds(new Set());
+      // Chỉ clear selection khi có lỗi và clearSelection = true
+      if (clearSelection) {
+        setSelectedIds(new Set());
+      }
     } finally {
       setLoading(false);
     }
@@ -111,7 +117,7 @@ export function NotificationsManagement() {
 
   const onSearch = () => {
     setPage(1);
-    fetchList();
+    fetchList(1, pageSize, true); // Clear selection khi search
   };
 
   const onReset = () => {
@@ -123,7 +129,7 @@ export function NotificationsManagement() {
     setFrom("");
     setTo("");
     setPage(1);
-    fetchList();
+    fetchList(1, pageSize, true); // Clear selection khi reset
   };
 
   const handleDelete = async (id: number) => {
@@ -144,7 +150,7 @@ export function NotificationsManagement() {
         throw new Error(data?.message || `Delete failed (${res.status})`);
       }
       toast.success("Đã xóa thông báo");
-      fetchList();
+      fetchList(page, pageSize, false); // Giữ selection sau khi xóa
     } catch (e) {
       console.error("Delete notification failed:", e);
       toast.error(e instanceof Error ? e.message : "Xóa thông báo thất bại");
@@ -184,8 +190,8 @@ export function NotificationsManagement() {
       }
       const affectedCount = data?.data?.affected || selectedIds.size;
       toast.success(`Đã xóa ${affectedCount} thông báo`);
-      setSelectedIds(new Set());
-      fetchList();
+      setSelectedIds(new Set()); // Clear selection sau khi xóa nhiều
+      fetchList(page, pageSize, false);
     } catch (e) {
       console.error("Delete multiple notifications failed:", e);
       toast.error(e instanceof Error ? e.message : "Xóa thông báo thất bại");
@@ -196,9 +202,59 @@ export function NotificationsManagement() {
 
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
-  const toggleSelectAll = (checked: boolean | "indeterminate") => {
+  const toggleSelectAll = async (checked: boolean | "indeterminate") => {
     if (checked === true || checked === "indeterminate") {
-      setSelectedIds(new Set(items.map((it) => it.id)));
+      // Load tất cả notifications theo filter hiện tại
+      try {
+        setLoading(true);
+        const params = new URLSearchParams();
+        params.set("page", "1");
+        params.set("pageSize", "10000"); // Lấy tất cả (limit lớn)
+        if (title.trim()) params.set("title", title.trim());
+        if (content.trim()) params.set("content", content.trim());
+        if (type && type !== "all") params.set("type", type);
+        if (category && category !== "all") params.set("category", category);
+        if (status && status !== "all") params.set("status", status);
+        if (from) params.set("from", from);
+        if (to) params.set("to", to);
+
+        const token = getToken();
+        const res = await fetch(`${API_BASE}/api/notifications?${params.toString()}`, {
+          headers: {
+            "Authorization": `Bearer ${token}`,
+          },
+          credentials: "include",
+        });
+
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && data?.returnCode === 0 && Array.isArray(data.data)) {
+          const allNotifications = data.data as NotificationRow[];
+          const allIds = allNotifications.map((it) => it.id);
+          
+          // Kiểm tra xem đã chọn hết chưa
+          const allSelected = allIds.every((id) => selectedIds.has(id));
+          
+          if (allSelected) {
+            // Bỏ chọn tất cả
+            const newSelected = new Set(selectedIds);
+            allIds.forEach((id) => newSelected.delete(id));
+            setSelectedIds(newSelected);
+          } else {
+            // Chọn tất cả
+            const newSelected = new Set(selectedIds);
+            allIds.forEach((id) => newSelected.add(id));
+            setSelectedIds(newSelected);
+            toast.success(`Đã chọn ${allIds.length} thông báo`);
+          }
+        } else {
+          toast.error("Không thể tải danh sách thông báo");
+        }
+      } catch (e) {
+        console.error("Error selecting all notifications:", e);
+        toast.error("Lỗi khi chọn tất cả thông báo");
+      } finally {
+        setLoading(false);
+      }
     } else {
       setSelectedIds(new Set());
     }
@@ -241,12 +297,11 @@ export function NotificationsManagement() {
   };
 
   return (
-    <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="max-w-full mx-auto py-2">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-foreground mb-2">Quản lý thông báo</h1>
         <p className="text-muted-foreground">Tạo và quản lý thông báo cho người dùng</p>
       </div>
-
 
       <div className="border rounded-xl p-5 bg-white shadow-sm space-y-6 mb-6">
   {/* Header */}
@@ -473,10 +528,10 @@ export function NotificationsManagement() {
           <div className="flex items-center justify-between mt-4 gap-2 flex-wrap">
             <div className="text-sm text-muted-foreground">Tổng: {total}</div>
             <div className="flex items-center gap-2">
-              <Button variant="outline" disabled={page <= 1 || loading} onClick={async () => { const newPage = Math.max(1, page - 1); setPage(newPage); await fetchList(newPage); }}>Trước</Button>
+              <Button variant="outline" disabled={page <= 1 || loading} onClick={async () => { const newPage = Math.max(1, page - 1); setPage(newPage); await fetchList(newPage, pageSize, false); }}>Trước</Button>
               <div className="text-sm">Trang {page}/{totalPages}</div>
-              <Button variant="outline" disabled={page >= totalPages || loading} onClick={async () => { const newPage = Math.min(totalPages, page + 1); setPage(newPage); await fetchList(newPage); }}>Sau</Button>
-              <Select value={String(pageSize)} onValueChange={async (v) => { const newSize = Number(v); setPageSize(newSize); setPage(1); await fetchList(1, newSize); }}>
+              <Button variant="outline" disabled={page >= totalPages || loading} onClick={async () => { const newPage = Math.min(totalPages, page + 1); setPage(newPage); await fetchList(newPage, pageSize, false); }}>Sau</Button>
+              <Select value={String(pageSize)} onValueChange={async (v) => { const newSize = Number(v); setPageSize(newSize); setPage(1); await fetchList(1, newSize, false); }}>
                 <SelectTrigger className="bg-input border-border w-[100px]"><SelectValue /></SelectTrigger>
                 <SelectContent className="bg-popover border-border">
                   <SelectItem value="10">10</SelectItem>
@@ -494,7 +549,7 @@ export function NotificationsManagement() {
         onClose={() => setCreateModalOpen(false)}
         onSuccess={() => {
           setCreateModalOpen(false);
-          fetchList();
+          fetchList(page, pageSize, false); // Giữ selection sau khi tạo mới
         }}
       />
 

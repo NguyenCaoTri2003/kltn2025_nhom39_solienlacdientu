@@ -57,7 +57,6 @@ export function useCourseOfferings(studentYear?: string, studentId?: number) {
         const current = getCurrentSemester(semesters);
         if (current) {
           setSemester(current);
-          // Gọi loadOfferingsBySemester trực tiếp, không qua dependency
           const offerings = await fetchOfferingsBySemesterWithStudent(current.id, studentId);
           if (offerings.length === 0) {
             setOfferings([]);

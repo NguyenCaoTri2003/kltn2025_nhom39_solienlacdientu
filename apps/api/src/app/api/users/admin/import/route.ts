@@ -102,15 +102,17 @@ function parseRelationship(value: unknown): "father" | "mother" | "guardian" | u
   if (v === "guardian" || v.includes("guardian") || v.includes("caregiver")) return "guardian";
 
   //  Tiếng Việt common variants
-  if (v.includes("cha") || v.includes("bố") || v.includes("ba") || v.includes("phụ thân")) return "father";
-  if (v.includes("mẹ") || v.includes("má") || v.includes("mẫu thân")) return "mother";
+  if (v.includes("cha") || v.includes("bố") || v.includes("ba") || v.includes("tía") || v.includes("phụ thân")) return "father";
+  if (v.includes("mẹ") || v.includes("má") || v.includes("mẫu thân") || v.includes("u")) return "mother";
   if (
     v.includes("giám hộ") ||
     v.includes("người nuôi") ||
     v.includes("ông") ||
     v.includes("bà") ||
     v.includes("chú") ||
-    v.includes("cô") ||
+    v.includes("cô") || 
+    v.includes("bá") ||
+    v.includes("o") ||
     v.includes("dì") ||
     v.includes("bác")
   )
@@ -159,7 +161,7 @@ function parseTypeOfTraining(value: unknown): "regular" | "advanced" | undefined
   if (v.includes("advanced") || v.includes("high quality") || v.includes("international")) return "advanced";
 
   // Tiếng Việt
-  if (v.includes("chính quy") || v.includes("chuẩn")) return "regular";
+  if (v.includes("chính quy") || v.includes("đại trà")) return "regular";
   if (v.includes("chất lượng cao") || v.includes("tiên tiến") || v.includes("đặc biệt")) return "advanced";
 
   console.warn(`⚠️ Unknown typeOfTraining value: "${v}"`);

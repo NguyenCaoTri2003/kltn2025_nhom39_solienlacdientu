@@ -13,7 +13,8 @@ export async function GET(req: NextRequest) {
     const grouped = true; // mặc định là grouped true, không cho phép override via URL
     //const grouped = (url.searchParams.get('grouped') ?? 'true') === 'true';  // cho phép override via URL
     const page = Math.max(1, Number(url.searchParams.get('page') ?? '1'));
-    const pageSize = Math.min(100, Math.max(1, Number(url.searchParams.get('pageSize') ?? '20')));
+    // Cho phép pageSize lớn hơn để hỗ trợ "chọn tất cả" (tối đa 10000)
+    const pageSize = Math.min(10000, Math.max(1, Number(url.searchParams.get('pageSize') ?? '20')));
     const title = (url.searchParams.get('title') || '').trim();
     const content = (url.searchParams.get('content') || '').trim();
     const type = (url.searchParams.get('type') || '').trim();
@@ -154,6 +155,25 @@ export async function PUT(req: NextRequest) {
   }
 }
 
+/**
+ * POST /api/notifications
+ * Tạo thông báo với các mode:
+ * - "broadcast": tạo thông báo cho tất cả người dùng (chỉ admin)
+ * - "users" hoặc có user_ids/user_id: tạo thông báo cho danh sách user (admin + lecturer)
+ * - (mặc định): tạo thông báo đơn cho 1 người
+ * 
+ * Body:
+ * {
+ *   "mode": "broadcast" | "users" (optional),
+ *   "user_ids": [1, 2, 3] hoặc "user_id": 1,
+ *   "title": "Tiêu đề",
+ *   "content": "Nội dung",
+ *   "type": "university" | "lecturer" | "system" (optional),
+ *   "category": "ACADEMIC" | "SYSTEM" | "FINANCE" | "GENERAL" (optional),
+ *   "target_student_id": 123 (optional),
+ *   "url": "https://..." (optional)
+ * }
+ */
 export async function POST(req: NextRequest) {
   try {
     const headerToken = req.headers.get("authorization");
@@ -162,18 +182,18 @@ export async function POST(req: NextRequest) {
     }
 
     const user = await authenticate(req);
-    if (user.role !== "admin") {
-      return NextResponse.json({ returnCode: -1, message: "Forbidden", data: null }, { status: 403 });
-    }
-
     const body = await req.json();
-    const { mode, title, content, type = "university", category = "GENERAL", url } = body || {};
+    const { mode, title, content, type = "university", category = "GENERAL", url, user_ids, user_id, target_student_id } = body || {};
 
     if (!title && !content) {
       return NextResponse.json({ returnCode: -1, message: "Title or content is required", data: null }, { status: 400 });
     }
 
+    // Mode: broadcast - tạo thông báo cho tất cả người dùng (chỉ admin)
     if (mode === "broadcast") {
+      if (user.role !== "admin") {
+        return NextResponse.json({ returnCode: -1, message: "Forbidden: Broadcast mode requires admin role", data: null }, { status: 403 });
+      }
       const result = await notificationsUseCase.createForAll({ 
         title, 
         content, 
@@ -184,20 +204,61 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ returnCode: 0, message: "Broadcast created", data: { created: result.created } }, { status: 201 });
     }
 
+    // Mode: users - tạo thông báo cho danh sách user_ids (1 hoặc nhiều người) - admin + lecturer
+    if (mode === "users" || user_ids || user_id) {
+      if (user.role !== "admin" && user.role !== "lecturer") {
+        return NextResponse.json({ returnCode: -1, message: "Forbidden: Admin or Lecturer only", data: null }, { status: 403 });
+      }
+
+      // Xử lý user_ids: có thể là array hoặc single user_id
+      let userIds: (number | string)[] = [];
+      if (user_ids) {
+        if (Array.isArray(user_ids)) {
+          userIds = user_ids;
+        } else {
+          return NextResponse.json({ returnCode: -1, message: "user_ids must be an array", data: null }, { status: 400 });
+        }
+      } else if (user_id) {
+        userIds = [user_id];
+      } else {
+        return NextResponse.json({ returnCode: -1, message: "user_ids or user_id is required", data: null }, { status: 400 });
+      }
+
+      if (userIds.length === 0) {
+        return NextResponse.json({ returnCode: -1, message: "At least one user_id is required", data: null }, { status: 400 });
+      }
+
+      const result = await notificationsUseCase.createForUsers({
+        user_ids: userIds,
+        title,
+        content,
+        type,
+        category,
+        target_student_id: target_student_id || null,
+        url: url || null,
+      });
+      return NextResponse.json({ returnCode: 0, message: `Notification created for ${result.created} user(s)`, data: { created: result.created } }, { status: 201 });
+    }
+
+    // Mode: single - tạo thông báo cho 1 người (mặc định) - chỉ admin
+    if (user.role !== "admin") {
+      return NextResponse.json({ returnCode: -1, message: "Forbidden: Admin only", data: null }, { status: 403 });
+    }
+
     const notification = await notificationsUseCase.create({
-      user_id: body?.user_id ?? null,
+      user_id: user_id ?? null,
       title,
       content,
       type,
       category,
-      target_student_id: body?.target_student_id ?? null,
+      target_student_id: target_student_id ?? null,
       url: url || null, 
     });
     return NextResponse.json({ returnCode: 0, message: "Notification created", data: notification }, { status: 201 });
   } catch (e: unknown) {
     const message = e instanceof Error ? e.message : "System error";
     const isUnauthorized = message === "No token" || message === "Invalid token" || message === "Token expired";
-    const status = isUnauthorized ? 401 : 500;
+    const status = isUnauthorized ? 401 : (message.includes("required") || message.includes("must be") ? 400 : 500);
     return NextResponse.json({ returnCode: -1, message, data: null }, { status });
   }
 }

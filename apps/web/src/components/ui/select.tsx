@@ -22,7 +22,7 @@ function SelectTrigger({
   return (
     <SelectPrimitive.Trigger
       className={cn(
-        'flex items-center justify-between gap-2 w-full rounded-lg border px-3 text-sm shadow-sm outline-none transition-all duration-200',
+        'flex items-center justify-between gap-2 w-full rounded-lg border px-3 text-sm shadow-sm outline-none transition-all duration-200 cursor-pointer',
         'disabled:cursor-not-allowed disabled:opacity-50',
         size === 'default' && 'h-10 py-2',
         size === 'sm' && 'h-8 py-1.5 text-xs',
