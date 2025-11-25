@@ -23,7 +23,7 @@ export type TuitionFee = {
 
 export async function fetchTuitionFeesBySemester(
   semesterId: number,
-  studentId: number
+  studentId?: number
 ) {
   const token = localStorage.getItem("token");
   if (!studentId) throw new Error("Student ID không hợp lệ");
