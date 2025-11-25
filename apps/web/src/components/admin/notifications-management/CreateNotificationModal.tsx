@@ -22,7 +22,9 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
-import { Loader2, X } from "lucide-react";
+import { Loader2, X, Users } from "lucide-react";
+import { UserSelectionModal } from "./UserSelectionModal";
+import { Badge } from "@/components/ui/badge";
 
 declare const process: { env: Record<string, string | undefined> };
 
@@ -53,9 +55,11 @@ export function CreateNotificationModal({
   const [content, setContent] = useState("");
   const [type, setType] = useState<NotificationType>("university");
   const [category, setCategory] = useState<NotificationCategory>("GENERAL");
-  const [mode, setMode] = useState<"single" | "broadcast">("broadcast");
+  const [mode, setMode] = useState<"broadcast" | "users">("broadcast");
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [selectedUserIds, setSelectedUserIds] = useState<number[]>([]);
+  const [userSelectionOpen, setUserSelectionOpen] = useState(false);
 
   const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -114,6 +118,7 @@ export function CreateNotificationModal({
         type: NotificationType;
         category: NotificationCategory;
         mode?: string;
+        user_ids?: number[];
         url?: string | null;
       } = {
         title: title || null,
@@ -124,10 +129,14 @@ export function CreateNotificationModal({
 
       if (mode === "broadcast") {
         payload.mode = "broadcast";
-      } else {
-        toast.error("Chế độ gửi đơn lẻ chưa được hỗ trợ");
-        setLoading(false);
-        return;
+      } else if (mode === "users") {
+        if (selectedUserIds.length === 0) {
+          toast.error("Vui lòng chọn ít nhất một người dùng");
+          setLoading(false);
+          return;
+        }
+        // Gửi user_ids để route API tự động nhận diện mode "users"
+        payload.user_ids = selectedUserIds;
       }
 
       if (imageUrl) {
@@ -152,17 +161,22 @@ export function CreateNotificationModal({
         return;
       }
 
-      toast.success(
-        mode === "broadcast"
-          ? "Đã gửi thông báo đến tất cả người dùng"
-          : "Tạo thông báo thành công"
-      );
+      if (mode === "broadcast") {
+        toast.success("Đã gửi thông báo đến tất cả người dùng");
+      } else if (mode === "users") {
+        toast.success(
+          `Đã gửi thông báo đến ${data?.data?.created || selectedUserIds.length} người dùng`
+        );
+      } else {
+        toast.success("Tạo thông báo thành công");
+      }
 
       setTitle("");
       setContent("");
       setType("university");
       setCategory("GENERAL");
       setMode("broadcast");
+      setSelectedUserIds([]);
       handleRemoveImage();
 
       onSuccess?.();
@@ -188,19 +202,50 @@ export function CreateNotificationModal({
             <Label>Chế độ</Label>
             <Select
               value={mode}
-              onValueChange={(v: "single" | "broadcast") => setMode(v)}
+              onValueChange={(v: "broadcast" | "users") => {
+                setMode(v);
+                if (v === "broadcast") {
+                  setSelectedUserIds([]);
+                }
+              }}
             >
               <SelectTrigger className="bg-white">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="broadcast">Gửi cho tất cả</SelectItem>
-                <SelectItem value="single" disabled>
-                  Gửi cho người dùng cụ thể (sắp có)
-                </SelectItem>
+                <SelectItem value="users">Gửi cho người dùng cụ thể</SelectItem>
               </SelectContent>
             </Select>
           </div>
+
+          {/* User selection for "users" mode */}
+          {mode === "users" && (
+            <div className="space-y-2">
+              <Label>Người nhận</Label>
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setUserSelectionOpen(true)}
+                  className="flex-1"
+                >
+                  <Users className="mr-2 h-4 w-4" />
+                  Chọn người dùng
+                  {selectedUserIds.length > 0 && (
+                    <Badge variant="secondary" className="ml-2">
+                      {selectedUserIds.length}
+                    </Badge>
+                  )}
+                </Button>
+              </div>
+              {selectedUserIds.length > 0 && (
+                <div className="text-sm text-muted-foreground">
+                  Đã chọn {selectedUserIds.length} người dùng
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Title */}
           <div className="space-y-2">
@@ -314,6 +359,17 @@ export function CreateNotificationModal({
           </Button>
         </DialogFooter>
       </DialogContent>
+
+      {/* User Selection Modal */}
+      <UserSelectionModal
+        open={userSelectionOpen}
+        onClose={() => setUserSelectionOpen(false)}
+        onConfirm={(userIds) => {
+          setSelectedUserIds(userIds);
+          setUserSelectionOpen(false);
+        }}
+        selectedUserIds={selectedUserIds}
+      />
     </Dialog>
   );
 }
