@@ -14,8 +14,6 @@ export async function fetchSemestersByStudentYear(studentYear?: number): Promise
     ? `${process.env.NEXT_PUBLIC_API_URL}/api/semesters?fromYear=${studentYear}`
     : `${process.env.NEXT_PUBLIC_API_URL}/api/semesters`;
 
-  
-
   const res = await fetch(url, {
     headers: { Authorization: `Bearer ${token}` },
   });

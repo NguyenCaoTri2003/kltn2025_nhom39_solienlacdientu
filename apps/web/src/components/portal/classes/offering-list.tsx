@@ -92,6 +92,8 @@ export default function OfferingsList() {
     return filteredOfferings.slice(start, start + pageSize);
   }, [filteredOfferings, page, pageSize]);
 
+  console.log("paginatedOfferings", paginatedOfferings)
+
   const handlePageChange = (newPage: number) => {
     setPage(newPage);
     if (topRef.current) topRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -267,7 +269,7 @@ export default function OfferingsList() {
                             <GraduationCap className="w-4 h-4" />
                           </span>
                           <span className="font-semibold text-foreground">
-                            {item.courses?.credit || "-"} tín chỉ
+                            {item?.detail?.course?.credit || "-"} tín chỉ
                           </span>
                         </div>
                       </div>

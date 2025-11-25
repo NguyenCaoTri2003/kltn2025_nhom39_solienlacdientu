@@ -36,13 +36,10 @@ export default function SemesterSelector({ onChange, className, studentYear }: S
           ? `${process.env.NEXT_PUBLIC_API_URL}/api/semesters?fromYear=${fromYear}`
           : `${process.env.NEXT_PUBLIC_API_URL}/api/semesters`;
 
-        console.log("🔵 FETCHING URL:", url);
-
         const res = await fetch(url, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const json = await res.json();
-        console.log("🟢 RAW RESPONSE FROM API:", json);
 
         if (json.returnCode === 0 && Array.isArray(json.data)) {
           const data: Semester[] = json.data;

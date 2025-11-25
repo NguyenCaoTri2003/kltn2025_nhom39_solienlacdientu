@@ -51,8 +51,6 @@ export function useCourseOfferings(studentYear?: string, studentId?: number) {
           if (match) fromYear = Number(match[1]);
         }
 
-        console.log("🟣 from year:", fromYear);
-
         const semesters = await fetchSemestersByStudentYear(fromYear);
         setSemesters(semesters);
 
