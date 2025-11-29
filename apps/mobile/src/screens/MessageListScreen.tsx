@@ -24,12 +24,23 @@ export default function MessageListScreen() {
 
   if (loading) return <ActivityIndicator style={{ flex: 1 }} />;
 
-  function formatLastMessage(lastMessage: any, myId?: number, partnerName?: string) {
+  function formatLastMessage(lastMessage: any, myId?: number, partnerName?: string, previousMessage?: any) {
     if (!lastMessage) return "Chưa có tin nhắn";
+
+    const senderLabel = lastMessage.sender_id === myId ? "Bạn" : partnerName || "Người khác";
+
+    if (lastMessage.is_recalled) return `${senderLabel}: Tin nhắn đã được thu hồi`;
+
+    // Nếu tin nhắn bị xóa bởi tôi
+    if (lastMessage.deleted_by?.includes(myId)) {
+      if (previousMessage) {
+        return formatLastMessage(previousMessage, myId, partnerName);
+      }
+      return "Chưa có tin nhắn";
+    }
 
     console.log("Last message:", lastMessage);
 
-    const senderLabel = lastMessage.sender_id === myId ? "Bạn" : partnerName || "Người khác";
 
     switch (lastMessage.type) {
       case "text":
@@ -62,6 +73,14 @@ export default function MessageListScreen() {
           const lastMsgTime = item.lastMessage?.created_at
             ? dayjs(item.lastMessage.created_at).format("HH:mm")
             : "";
+
+          let previousMessage = undefined;
+          if (item.messages && item.lastMessage?.deleted_by?.includes(myId)) {
+            const visibleMessages = item.messages.filter(
+              (m: any) => !m.deleted_by?.includes(myId) && !m.is_recalled
+            );
+            previousMessage = visibleMessages[visibleMessages.length - 1];
+          }
 
           return (
             <TouchableOpacity
@@ -105,7 +124,7 @@ export default function MessageListScreen() {
 
                 <View style={styles.lastMsgRow}>
                   <Text style={styles.lastMsg} numberOfLines={1}>
-                    {formatLastMessage(item.lastMessage, myId, partner?.full_name)}
+                    {formatLastMessage(item.lastMessage, myId, partner?.full_name, previousMessage)}
                   </Text>
                   {(item.unreadCount ?? 0) > 0 && (
                     <View style={styles.unreadBadge}>

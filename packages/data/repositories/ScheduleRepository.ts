@@ -31,11 +31,16 @@ type ActualSchedule = {
   period_count: number;
   classroom: string | null;
   building: string | null;
-  type: "theory" | "practice";
+  type: "theory" | "practice" | "exam";
   status: string;
   note: string | null;
   course_offering: CourseOffering | null;
   practice_group: PracticeGroup | null;
+  exam_group_number?: string | null;
+  exam_range_from?: string | null;
+  exam_range_to?: string | null;
+  exam_lecturer_ids?: number[] | null;
+  exam_lecturers?: Lecturer[]; 
 };
 
 export class ScheduleRepository {
@@ -80,6 +85,10 @@ export class ScheduleRepository {
       type,
       status,
       note,
+      exam_group_number,
+      exam_range_from,
+      exam_range_to,
+      exam_lecturer_ids,
       course_offering:offering_id (
         id,
         name,
@@ -123,6 +132,34 @@ export class ScheduleRepository {
     const { data: schedules, error } = await query.returns<ActualSchedule[]>();
     if (error) throw error;
 
+    for (const s of schedules ?? []) {
+      if (s.type === "exam" && Array.isArray(s.exam_lecturer_ids)) {
+        if (s.exam_lecturer_ids.length > 0) {
+          const { data: examLecturers } = await supabase
+            .from("lecturers")
+            .select(
+              `
+            id,
+            lecturer_code,
+            users:users!lecturers_id_fkey (
+              full_name,
+              email
+            )
+          `
+            )
+            .in("id", s.exam_lecturer_ids);
+
+          s.exam_lecturers = (examLecturers ?? []).map((lec: any) => ({
+            id: lec.id,
+            lecturer_code: lec.lecturer_code,
+            users: Array.isArray(lec.users) ? (lec.users[0] ?? null) : (lec.users ?? null),
+          }));
+        } else {
+          s.exam_lecturers = [];
+        }
+      }
+    }
+
     return (
       schedules?.map((s) => {
         const courseLecturer =
@@ -134,6 +171,8 @@ export class ScheduleRepository {
           Array.isArray(s.practice_group?.lecturers)
             ? s.practice_group?.lecturers[0]
             : s.practice_group?.lecturers;
+
+        const isExam = s.type === "exam";
 
         return {
           id: s.id,
@@ -169,6 +208,19 @@ export class ScheduleRepository {
                 group_number: s.practice_group.group_number,
               }
               : null,
+          exam_info: isExam
+          ? {
+              exam_group_number: s.exam_group_number,
+              exam_range_from: s.exam_range_from,
+              exam_range_to: s.exam_range_to,
+              lecturers:
+                s.exam_lecturers?.map((lec) => ({
+                  id: lec.id,
+                  full_name: lec.users?.full_name,
+                  email: lec.users?.email,
+                })) ?? [],
+            }
+          : null,
         };
       }) ?? []
     );

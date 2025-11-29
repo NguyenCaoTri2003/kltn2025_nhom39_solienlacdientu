@@ -11,6 +11,7 @@ import {
   Image,
   Linking,
   ScrollView,
+  Modal,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as DocumentPicker from "expo-document-picker";
@@ -21,6 +22,7 @@ import { useAuth } from "../context/AuthContext";
 import { useMessages } from "../hooks/useMessages";
 import { useMessageContext } from "../context/MessageProvider";
 import { getRoleLabel } from "../utils/roleHelper";
+import { messageService } from "../services/messageService";
 
 export default function ChatScreen({ route }: any) {
   const { conversationId, receiverId, receiverName, receiverRole } = route.params;
@@ -35,6 +37,9 @@ export default function ChatScreen({ route }: any) {
   const [selectedImages, setSelectedImages] = useState<any[]>([]);
   const [sending, setSending] = useState(false);
 
+  const [selectedMessage, setSelectedMessage] = useState<any>(null);
+  const [actionVisible, setActionVisible] = useState(false);
+
   const handleMarkRead = useCallback(() => {
     setConversations((prev: any) =>
       prev.map((c: any) =>
@@ -45,7 +50,7 @@ export default function ChatScreen({ route }: any) {
 
   if (!token || !myId) return null;
 
-  const { messages, sendMessage } = useMessages(
+  const { messages, sendMessage, updateLocalMessage, deleteLocalMessage } = useMessages(
     conversationId,
     myId,
     token,
@@ -134,52 +139,113 @@ export default function ChatScreen({ route }: any) {
     }
   };
 
+  const openAction = (message: any) => {
+    setSelectedMessage(message);
+    setActionVisible(true);
+  };
+
+  const closeAction = () => {
+    setActionVisible(false);
+    setSelectedMessage(null);
+  };
+
+  const handleRecall = async () => {
+    const msg = selectedMessage;
+    closeAction();
+
+    try {
+      const updated = await messageService.recallMessage(msg.id, token);
+
+      updateLocalMessage(msg.id, () => ({
+        ...msg,
+        ...updated, // từ API trả về
+        is_recalled: true,
+        content: "Tin nhắn đã được thu hồi",
+        type: "text",
+      }));
+    } catch (e) {
+      alert("Thu hồi thất bại");
+    }
+  };
+
+  const handleDeleteLocal = async () => {
+    const msg = selectedMessage;
+    closeAction();
+
+    try {
+      await messageService.deleteMessage(msg.id, token);
+
+      deleteLocalMessage(msg.id); 
+    } catch (err) {
+      console.error("Xóa thất bại", err);
+      alert("Xóa tin nhắn thất bại");
+    }
+  };
+
   const renderMessage = ({ item, index }: any) => {
     const isMine = item.sender_id === myId;
+
     const isLastMine =
       isMine &&
       (index === messages.length - 1 ||
         messages[index + 1].sender_id !== myId);
-    const readLabel = isLastMine
-      ? item.is_read
-        ? "Đã xem"
-        : "Đã gửi"
-      : null;
+
+    const readLabel = isLastMine ? (item.is_read ? "Đã xem" : "Đã gửi") : null;
+
+    const isRecalled = item.is_recalled;
+    const isDeleted = item.is_deleted;
+
+    let contentView = null;
+
+    if (item.deleted_by?.includes(myId)) return null;
+
+    if (isRecalled) {
+      contentView = <Text style={[styles.recalled]}>Tin nhắn đã được thu hồi</Text>;
+    } else if (isDeleted) {
+      return null;
+    } else if (item.type === "text") {
+      contentView = <Text style={styles.messageText}>{item.content}</Text>;
+    } else if (item.type === "image") {
+      contentView = (
+        <TouchableOpacity onPress={() => Linking.openURL(item.content)}>
+          <Image source={{ uri: item.content }} style={styles.image} />
+        </TouchableOpacity>
+      );
+    } else if (item.type === "file") {
+      contentView = (
+        <TouchableOpacity
+          style={styles.file}
+          onPress={() => Linking.openURL(item.content)}
+        >
+          <Ionicons name="document-outline" size={20} color="#007AFF" />
+          <Text style={styles.fileName} numberOfLines={1}>
+            {item.file_name}
+          </Text>
+        </TouchableOpacity>
+      );
+    }
 
     return (
-      <View
-        style={[
-          styles.messageBubble,
-          isMine ? styles.rightBubble : styles.leftBubble,
-        ]}
+      <TouchableOpacity
+        onLongPress={() => openAction(item)}
+        delayLongPress={300}
+        activeOpacity={0.8}
       >
-        {item.type === "text" && (
-          <Text style={styles.messageText}>{item.content}</Text>
-        )}
+        <View
+          style={[
+            styles.messageBubble,
+            isMine ? styles.rightBubble : styles.leftBubble,
+            isDeleted && { opacity: 0.4 },
+          ]}
+        >
+          {contentView}
 
-        {item.type === "image" && (
-          <TouchableOpacity onPress={() => Linking.openURL(item.content)}>
-            <Image source={{ uri: item.content }} style={styles.image} />
-          </TouchableOpacity>
-        )}
-
-        {item.type === "file" && (
-          <TouchableOpacity
-            style={styles.file}
-            onPress={() => Linking.openURL(item.content)}
-          >
-            <Ionicons name="document-outline" size={20} color="#007AFF" />
-            <Text numberOfLines={1} style={styles.fileName}>
-              {item.file_name || "Tệp đính kèm"}
-            </Text>
-          </TouchableOpacity>
-        )}
-
-        <View style={styles.metaInfo}>
-          <Text style={styles.time}>{dayjs(item.created_at).format("HH:mm")}</Text>
-          {readLabel && <Text style={styles.readLabel}>{readLabel}</Text>}
+          <View style={styles.metaInfo}>
+            <Text style={styles.time}>{dayjs(item.created_at).format("HH:mm")}</Text>
+            {readLabel && <Text style={styles.readLabel}>{readLabel}</Text>}
+          </View>
         </View>
-      </View>
+      </TouchableOpacity>
     );
   };
 
@@ -271,6 +337,47 @@ export default function ChatScreen({ route }: any) {
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
+
+      <Modal transparent visible={actionVisible} animationType="fade">
+        <TouchableOpacity
+          style={styles.actionOverlay}
+          onPress={closeAction}
+          activeOpacity={1}
+        >
+          <View style={styles.actionMenu}>
+            {/* Recall */}
+            {selectedMessage &&
+              selectedMessage.sender_id === myId &&
+              !selectedMessage.is_recalled &&
+              dayjs().diff(dayjs(selectedMessage.created_at), "minute") < 5 && (
+                <TouchableOpacity style={styles.actionItem} onPress={handleRecall}>
+                  <Text style={styles.actionText}>Thu hồi tin nhắn</Text>
+                </TouchableOpacity>
+              )}
+
+            {/* Delete local */}
+            {!selectedMessage?.is_deleted && (
+              <TouchableOpacity style={styles.actionItem} onPress={handleDeleteLocal}>
+                <Text style={styles.actionText}>Xóa khỏi thiết bị</Text>
+              </TouchableOpacity>
+            )}
+
+            {/* Open file / image */}
+            {selectedMessage?.type === "image" || selectedMessage?.type === "file" ? (
+              <TouchableOpacity
+                style={styles.actionItem}
+                onPress={() => Linking.openURL(selectedMessage.content)}
+              >
+                <Text style={styles.actionText}>Mở tệp</Text>
+              </TouchableOpacity>
+            ) : null}
+
+            <TouchableOpacity style={styles.actionCancel} onPress={closeAction}>
+              <Text style={[styles.actionText, { color: "#ff4444" }]}>Đóng</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -298,4 +405,24 @@ const styles = StyleSheet.create({
   headerName: { fontSize: 18, fontWeight: "600" },
   headerRole: { fontSize: 14, color: "#777", fontStyle: "italic" },
   scrollToBottomBtn: { position: "absolute", bottom: 90, right: 20, zIndex: 100 },
+  recalled: { fontSize: 14, color: "#999", fontStyle: "italic" },
+  actionOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.25)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  actionMenu: {
+    width: "70%",
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    paddingVertical: 10,
+  },
+  actionItem: {
+    padding: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: "#eee",
+  },
+  actionText: { fontSize: 15, textAlign: "center" },
+  actionCancel: { padding: 14 },
 });

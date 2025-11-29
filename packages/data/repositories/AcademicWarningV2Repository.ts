@@ -16,23 +16,23 @@ export type AcademicWarningV2Row = {
   total_credit_failed: number | null;
   semester_classification?: string | null;
   cumulative_classification: string | null;
- 
+
   total_credit_accumulated: number | null;
   total_credit_registered: number | null;
   academic_status: string | null;
   year_of_study: number | null;
   gpa_threshold: number | null;
-  under_threshold: boolean; 
-  previous_warnings_count: number; 
+  under_threshold: boolean;
+  previous_warnings_count: number;
 
-  failed_over_50: boolean; 
+  failed_over_50: boolean;
   total_credit_failed_cumulative: number | null;
   violation_reasons: string[];
   proposed_warning_level: "FIRST" | "SECOND" | "FINAL" | null;
-  expulsion_candidate: boolean; 
+  expulsion_candidate: boolean;
   warnings_count_total?: number;
 
-  is_warned: boolean; 
+  is_warned: boolean;
 };
 
 export type AcademicWarningV2Result = {
@@ -211,31 +211,31 @@ export class AcademicWarningV2Repository {
       const semesterAY: string | null = row.semesters?.academic_year ?? null;
       const studentAY: string | null = row.students?.academic_year ?? null;
       const yearOfStudy = computeYearOfStudy(studentAY, semesterAY);
- 
+
       let avg4 =
         typeof row.avg_score_4 === "number"
           ? row.avg_score_4
           : row.avg_score_4 != null
-          ? Number(row.avg_score_4)
-          : null;
+            ? Number(row.avg_score_4)
+            : null;
       let avg10 =
         typeof row.avg_score_10 === "number"
           ? row.avg_score_10
           : row.avg_score_10 != null
-          ? Number(row.avg_score_10)
-          : null;
+            ? Number(row.avg_score_10)
+            : null;
       let cum4 =
         typeof row.cum_avg_score_4 === "number"
           ? row.cum_avg_score_4
           : row.cum_avg_score_4 != null
-          ? Number(row.cum_avg_score_4)
-          : null;
+            ? Number(row.cum_avg_score_4)
+            : null;
       let cum10 =
         typeof row.cum_avg_score_10 === "number"
           ? row.cum_avg_score_10
           : row.cum_avg_score_10 != null
-          ? Number(row.cum_avg_score_10)
-          : null;
+            ? Number(row.cum_avg_score_10)
+            : null;
 
       // Đồng bộ GPA 10 <-> 4 nếu chỉ có một trong hai
       if (avg4 == null && avg10 != null) avg4 = Number((avg10 / 2.5).toFixed(2));
@@ -246,29 +246,29 @@ export class AcademicWarningV2Repository {
       const threshold = thresholdByYear(yearOfStudy);
       const avgBelow = threshold != null && avg4 != null ? avg4 < threshold : false;
       const cumBelow = threshold != null && cum4 != null ? cum4 < threshold : false;
-      const underThreshold = avgBelow || cumBelow; 
+      const underThreshold = avgBelow || cumBelow;
 
       const reg =
         typeof row.total_credit_registered === "number"
           ? row.total_credit_registered
           : row.total_credit_registered != null
-          ? Number(row.total_credit_registered)
-          : null;
+            ? Number(row.total_credit_registered)
+            : null;
       const failed =
         typeof row.total_credit_failed === "number"
           ? row.total_credit_failed
           : row.total_credit_failed != null
-          ? Number(row.total_credit_failed)
-          : null;
-  const failedOver50 = reg != null && reg > 0 && failed != null ? failed > reg * 0.5 : false;
+            ? Number(row.total_credit_failed)
+            : null;
+      const failedOver50 = reg != null && reg > 0 && failed != null ? failed > reg * 0.5 : false;
 
       // tổng tín chỉ đã học
       const accumulated =
         typeof row.total_credit_accumulated === "number"
           ? row.total_credit_accumulated
           : row.total_credit_accumulated != null
-          ? Number(row.total_credit_accumulated)
-          : null;
+            ? Number(row.total_credit_accumulated)
+            : null;
 
       return {
         user_id: Number(row.students?.users?.id),
@@ -292,9 +292,9 @@ export class AcademicWarningV2Repository {
         year_of_study: yearOfStudy,
         gpa_threshold: threshold,
         under_threshold: underThreshold,
-        previous_warnings_count: 0, 
+        previous_warnings_count: 0,
         failed_over_50: failedOver50,
-        total_credit_failed_cumulative: null, 
+        total_credit_failed_cumulative: null,
         violation_reasons: [],
         proposed_warning_level: null,
         expulsion_candidate: false,
@@ -302,7 +302,7 @@ export class AcademicWarningV2Repository {
       };
     });
 
- 
+
     const studentIds = Array.from(new Set(items.map((i) => i.student_id))).filter((n) => Number.isFinite(n));
     const userIds = Array.from(new Set(items.map((i) => i.user_id))).filter((n) => Number.isFinite(n));
     if (userIds.length > 0) {
@@ -312,8 +312,8 @@ export class AcademicWarningV2Repository {
         .select("student_id, level")
         .in("student_id", userIds as number[]);
       if (!warnsAllErr && Array.isArray(warnsAll)) {
-        const totalCounts = new Map<number, number>(); 
-        const levelCounts = new Map<number, number>(); 
+        const totalCounts = new Map<number, number>();
+        const levelCounts = new Map<number, number>();
         for (const w of warnsAll as any[]) {
           const sid = Number(w.student_id);
           if (!Number.isFinite(sid)) continue;
@@ -331,7 +331,7 @@ export class AcademicWarningV2Repository {
       }
     }
 
- 
+
     if (params.semesterId && studentIds.length > 0) {
       const { data: cum, error: cumErr } = await client
         .from("semester_summary")
@@ -389,6 +389,14 @@ export class AcademicWarningV2Repository {
       const expulsionCandidate = it.previous_warnings_count >= 2 && (cond1 || cond2 || cond3);
       return { ...it, violation_reasons: reasons, proposed_warning_level: level, expulsion_candidate: expulsionCandidate };
     });
+
+    // const isAtRisk = (it: AcademicWarningV2Row) =>
+    //   it.failed_over_50 ||
+    //   (it.total_credit_failed_cumulative ?? 0) > 24 ||
+    //   it.under_threshold ||
+    //   it.proposed_warning_level !== null;
+
+    // items = items.filter(isAtRisk);
 
     const total = count || 0;
     return {

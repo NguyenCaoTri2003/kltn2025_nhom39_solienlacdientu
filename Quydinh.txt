@@ -1,0 +1,12 @@
+- Tổng số tín chỉ không đạt trong học kỳ vượt quá 50% khối lượng đã đăng ký học trong học kỳ, 
+hoặc tổng số tín chỉ nợ từ đầu khóa học vượt quá 24 tín chỉ
+
++ Kiểm tra tất cả học kỳ nếu có kỳ nào bị rớt môn mà trên 50% số tín chỉ tổng cộng là cảnh cáo 
+(kì đó đăng ký 15 tín -> rớt 8 tín - > cảnh cáo)
++ Hoặc từ đầu khóa tín chỉ nợ vượt quá 24 tín 
+(Học 70 tín, rớt môn hết 25 tín)
+
+- ĐTBHL của học kỳ đạt dưới 0.80 đối với học kỳ đầu của khóa học, dưới 1.00 đối với các học kỳ tiếp theo
+
+
+- ĐTBHLTL đạt dưới 1.20 đối với sinh viên năm thứ nhất, dưới 1.40 đối với sinh viên năm thứ hai, dưới 1.60 đối với sinh viên năm thứ ba, hoặc dưới 1.80 đối với sinh viên trình độ các năm tiếp theo và cuối khóa.

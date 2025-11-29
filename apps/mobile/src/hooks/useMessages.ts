@@ -5,67 +5,67 @@ import { Conversation, Message } from "@packages/core/entities/Messages";
 import { supabase } from "../lib/supabaseClient";
 
 export function useConversations(token?: string, userId?: number) {
-    const [conversations, setConversations] = useState<Conversation[]>([]);
-    const [loading, setLoading] = useState(false);
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [loading, setLoading] = useState(false);
 
-    const fetchConversations = useCallback(async () => {
-        if (!token || !userId) return;
-        setLoading(true);
-        try {
-            const data = await messageService.getConversations(token);
-            setConversations(data);
-        } finally {
-            setLoading(false);
+  const fetchConversations = useCallback(async () => {
+    if (!token || !userId) return;
+    setLoading(true);
+    try {
+      const data = await messageService.getConversations(token);
+      setConversations(data);
+    } finally {
+      setLoading(false);
+    }
+  }, [token, userId]);
+
+  useEffect(() => {
+    if (!token || !userId) return;
+
+    const channel = supabase
+      .channel(`messages:realtime-list-${userId}`)
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "messages" },
+        (payload) => {
+          const newMsg = payload.new as Message;
+
+          setConversations((prev) => {
+            const idx = prev.findIndex((c) => c.id === newMsg.conversation_id);
+            if (idx === -1) return prev;
+
+            const updated = [...prev];
+            const conv = { ...updated[idx] };
+
+            conv.lastMessage = {
+              content: newMsg.content,
+              created_at: newMsg.created_at,
+              type: newMsg.type || "text",
+              sender_id: newMsg.sender_id,
+            };
+
+            if (newMsg.sender_id !== userId) {
+              conv.unreadCount = (conv.unreadCount ?? 0) + 1;
+            }
+
+            updated.splice(idx, 1);
+            return [conv, ...updated];
+          });
         }
-    }, [token, userId]);
+      )
+      .subscribe();
 
-    useEffect(() => {
-        if (!token || !userId) return;
-
-        const channel = supabase
-            .channel(`messages:realtime-list-${userId}`)
-            .on(
-                "postgres_changes",
-                { event: "INSERT", schema: "public", table: "messages" },
-                (payload) => {
-                    const newMsg = payload.new as Message;
-
-                    setConversations((prev) => {
-                        const idx = prev.findIndex((c) => c.id === newMsg.conversation_id);
-                        if (idx === -1) return prev;
-
-                        const updated = [...prev];
-                        const conv = { ...updated[idx] };
-
-                        conv.lastMessage = {
-                            content: newMsg.content,
-                            created_at: newMsg.created_at,
-                            type: newMsg.type || "text",
-                            sender_id: newMsg.sender_id,
-                        };
-
-                        if (newMsg.sender_id !== userId) {
-                            conv.unreadCount = (conv.unreadCount ?? 0) + 1;
-                        }
-
-                        updated.splice(idx, 1);
-                        return [conv, ...updated];
-                    });
-                }
-            )
-            .subscribe();
-
-        return () => {
-            supabase.removeChannel(channel);
-        };
-    }, [token, userId]);
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [token, userId]);
 
 
-    useEffect(() => {
-        fetchConversations();
-    }, [fetchConversations]);
+  useEffect(() => {
+    fetchConversations();
+  }, [fetchConversations]);
 
-    return { conversations, setConversations, loading, refresh: fetchConversations };
+  return { conversations, setConversations, loading, refresh: fetchConversations };
 }
 
 export function useMessages(
@@ -116,6 +116,19 @@ export function useMessages(
     },
     [token]
   );
+
+  const updateLocalMessage = useCallback(
+    (messageId: number, updater: (msg: Message) => Message) => {
+      setMessages(prev =>
+        prev.map(msg => (msg.id === messageId ? updater(msg) : msg))
+      );
+    },
+    []
+  );
+
+  const deleteLocalMessage = useCallback((messageId: number) => {
+    setMessages(prev => prev.filter(msg => msg.id !== messageId));
+  }, []);
 
   useEffect(() => {
     if (!conversationId || !token || !userId) return;
@@ -175,5 +188,5 @@ export function useMessages(
     fetchMessages();
   }, [fetchMessages]);
 
-  return { messages, loading, sendMessage };
+  return { messages, loading, sendMessage, updateLocalMessage, deleteLocalMessage };
 }
