@@ -101,18 +101,27 @@ export default function StudentHomeScreen() {
           <FeatureButton
             icon={<BarChart color="#2563EB" size={28} />}
             label="Kết quả học tập"
-            onPress={() =>
-              navigation.navigate("Grades", { studentId: user!.id }) as never
-            }
+            onPress={() => navigation.navigate("Grades" as never)}
           />
           <FeatureButton
             icon={<Users color="#2563EB" size={28} />}
             label="Lớp học phần"
             onPress={() => navigation.navigate("CourseOffering" as never)}
           />
-          <FeatureButton icon={<DollarSign color="#2563EB" size={28} />} label="Học phí" />
-          <FeatureButton icon={<ClipboardList color="#2563EB" size={28} />} label="Điểm danh" />
-          <FeatureButton icon={<BookOpen color="#2563EB" size={28} />} label="Khảo sát" />
+          <FeatureButton
+            icon={<DollarSign color="#2563EB" size={28} />}
+            label="Học phí"
+            onPress={() => navigation.navigate("Tuition" as never)}
+          />
+          <FeatureButton
+            icon={<ClipboardList color="#2563EB" size={28} />}
+            label="Điểm danh"
+            onPress={() => navigation.navigate("Attendance" as never)}
+          />
+          <FeatureButton
+            icon={<BookOpen color="#2563EB" size={28} />}
+            label="Khảo sát"
+          />
         </View>
       </ScrollView>
     </SafeAreaView>
