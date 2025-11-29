@@ -37,15 +37,30 @@ export function useConversations(token?: string, userId?: number) {
             const updated = [...prev];
             const conv = { ...updated[idx] };
 
-            conv.lastMessage = {
-              content: newMsg.content,
-              created_at: newMsg.created_at,
-              type: newMsg.type || "text",
-              sender_id: newMsg.sender_id,
-            };
+            if (newMsg.deleted_by?.includes(userId)) {
+              const msgs = conv.messages?.map(m =>
+                m.id === newMsg.id ? { ...m, ...newMsg } : m
+              ) || [];
 
-            if (newMsg.sender_id !== userId) {
-              conv.unreadCount = (conv.unreadCount ?? 0) + 1;
+              // Cập nhật lastMessage mới
+              conv.lastMessage = msgs.filter(m => !m.deleted_by?.includes(userId)).slice(-1)[0] || null;
+            } else if (newMsg.is_recalled) {
+              conv.lastMessage = {
+                ...newMsg,
+                content: "Tin nhắn đã được thu hồi",
+                type: "text",
+              }
+            } else if (payload.eventType === "INSERT") {
+              conv.lastMessage = {
+                content: newMsg.content,
+                created_at: newMsg.created_at,
+                type: newMsg.type || "text",
+                sender_id: newMsg.sender_id,
+              };
+
+              if (newMsg.sender_id !== userId) {
+                conv.unreadCount = (conv.unreadCount ?? 0) + 1;
+              }
             }
 
             updated.splice(idx, 1);
@@ -138,7 +153,7 @@ export function useMessages(
       .on(
         "postgres_changes",
         {
-          event: "*", // lắng nghe INSERT + UPDATE
+          event: "*",
           schema: "public",
           table: "messages",
           filter: `conversation_id=eq.${conversationId}`,
@@ -150,13 +165,11 @@ export function useMessages(
             const idx = prev.findIndex((m) => m.id === newMsg.id);
 
             if (payload.eventType === "INSERT") {
-              // Nếu tin nhắn mới
               if (idx !== -1) return prev;
               return [...prev, newMsg];
             }
 
             if (payload.eventType === "UPDATE") {
-              // Nếu trạng thái đã xem thay đổi
               if (idx === -1) return prev;
               const updated = [...prev];
               updated[idx] = { ...updated[idx], ...newMsg };

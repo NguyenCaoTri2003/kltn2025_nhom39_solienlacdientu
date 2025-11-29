@@ -150,19 +150,67 @@ export default function ChatScreen({ route }: any) {
   };
 
   const handleRecall = async () => {
+    if (!selectedMessage) return;
     const msg = selectedMessage;
     closeAction();
 
     try {
       const updated = await messageService.recallMessage(msg.id, token);
 
-      updateLocalMessage(msg.id, () => ({
-        ...msg,
-        ...updated, // từ API trả về
-        is_recalled: true,
-        content: "Tin nhắn đã được thu hồi",
-        type: "text",
-      }));
+      updateLocalMessage(msg.id, (prevMsg) => {
+        const newMsg = {
+          ...prevMsg,
+          ...updated,
+          is_recalled: true,
+          content: "Tin nhắn đã được thu hồi",
+          type: "text",
+        };
+
+        setTimeout(() => {
+          setConversations((prevConvs: any[]) =>
+            prevConvs.map(c => {
+              if (c.id !== conversationId) return c;
+
+              const updatedMessages = prevConvs
+                .find(conv => conv.id === conversationId)
+                ?.messages?.map((m: { id: any; }) => (m.id === msg.id ? newMsg : m)) || [];
+
+              const remainingMessages = updatedMessages.filter(
+                (m: { deleted_by: string | any[]; is_recalled: any; }) => !m.deleted_by?.includes(myId) && !m.is_recalled
+              );
+
+              return {
+                ...c,
+                lastMessage: remainingMessages.slice(-1)[0] || newMsg,
+              };
+            })
+          );
+        }, 0);
+
+        return newMsg;
+      });
+
+      //   setConversations(prevConvs =>
+      //     prevConvs.map(c => {
+      //       if (c.id !== conversationId) return c;
+
+      //       const updatedMessages = messages.map(m =>
+      //         m.id === msg.id
+      //           ? { ...m, ...updated, is_recalled: true, content: "Tin nhắn đã được thu hồi", type: "text" }
+      //           : m
+      //       );
+
+      //       const remainingMessages = updatedMessages.filter(
+      //         m => !m.deleted_by?.includes(myId) && !m.is_recalled
+      //       );
+
+      //       return {
+      //         ...c,
+      //         lastMessage: remainingMessages.slice(-1)[0] || updatedMessages[0],
+      //       };
+      //     })
+      //   );
+      // }, 0);
     } catch (e) {
       alert("Thu hồi thất bại");
     }
@@ -175,10 +223,23 @@ export default function ChatScreen({ route }: any) {
     try {
       await messageService.deleteMessage(msg.id, token);
 
-      deleteLocalMessage(msg.id); 
+      deleteLocalMessage(msg.id);
+
+      setConversations((prev: any) =>
+        prev.map((c: any) => {
+          if (c.id !== conversationId) return c;
+
+          const remainingMessages = messages
+            .filter(m => m.id !== msg.id && !m.deleted_by?.includes(myId) && !m.is_recalled);
+
+          return {
+            ...c,
+            lastMessage: remainingMessages.slice(-1)[0] || null,
+          };
+        })
+      );
     } catch (err) {
-      console.error("Xóa thất bại", err);
-      alert("Xóa tin nhắn thất bại");
+      console.error(err);
     }
   };
 
