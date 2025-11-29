@@ -43,23 +43,20 @@ export function translateStatus(status?: string): string {
   }
 }
 export function translateWarningLevel(level?: string | null): string {
-  switch (level) {
-    case "minor":
-      return "Cảnh cáo nhẹ";
-    case "moderate":
-      return "Cảnh cáo trung bình";
-    case "major":
-      return "Cảnh cáo nặng";
-    case "severe":
-      return "Cảnh cáo nặng";
+  if (!level) return "";
+  const levelUpper = level.toUpperCase();
+  
+  switch (levelUpper) {
     case "FIRST":
       return "Cảnh cáo lần 1";
     case "SECOND":
       return "Cảnh cáo lần 2";
     case "FINAL":
       return "Cảnh cáo lần 3";
+    case "EXPULSION":
+      return "Buộc thôi học";
     default:
-      return level || "";
+      return level;
   }
 }
 

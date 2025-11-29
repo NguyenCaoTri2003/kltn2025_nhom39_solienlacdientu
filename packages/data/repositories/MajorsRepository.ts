@@ -24,6 +24,17 @@ export class MajorsRepository {
     if (error) throw error;
     return data ?? null;
   }
+
+  // lấy tất cả majors (chuyên ngành)
+  async getAllMajors() {
+    const { data, error } = await supabase
+      .from("majors")
+      .select("id, name, major_code, description, faculty_id")
+      .order("name", { ascending: true });
+
+    if (error) throw error;
+    return data ?? [];
+  }
 }
 
 

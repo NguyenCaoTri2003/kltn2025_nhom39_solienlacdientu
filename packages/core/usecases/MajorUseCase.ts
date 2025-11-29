@@ -10,4 +10,9 @@ export async function getMajorById(majorId: number) {
   return await repo.getMajorById(majorId);
 }
 
+export async function getAllMajors() {
+  const repo = new MajorsRepository();
+  return await repo.getAllMajors();
+}
+
 

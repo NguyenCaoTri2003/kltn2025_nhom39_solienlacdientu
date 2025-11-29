@@ -132,16 +132,48 @@ export function WarningHistoryModal({ open, onClose, studentId, semesterId, apiB
       alive = false;
     };
   }, [open, semesterId, data?.semester_id, API_BASE, semesters]);
-  const getLevelColor = (level: string) => {
-    switch (level) {
-      case "minor":
-        return "bg-green-100 text-green-800";
-      case "moderate":
-        return "bg-yellow-100 text-yellow-800";
-      case "major":
-        return "bg-red-100 text-red-800";
+
+  // Helper function để normalize level - chỉ chấp nhận 4 giá trị mới
+  const normalizeWarningLevel = (level: string): string => {
+    const levelUpper = level.toUpperCase();
+    // Chỉ chấp nhận 4 giá trị mới
+    const validLevels = ["FIRST", "SECOND", "FINAL", "EXPULSION"];
+    if (validLevels.includes(levelUpper)) {
+      return levelUpper;
+    }
+    // Nếu không phải giá trị hợp lệ, trả về FIRST làm mặc định
+    return "FIRST";
+  };
+
+  // Helper function để lấy variant và màu cho Badge dựa trên level
+  const getWarningLevelBadge = (level: string) => {
+    const normalizedLevel = normalizeWarningLevel(level);
+    switch (normalizedLevel) {
+      case "FIRST":
+        return {
+          variant: "outline" as const,
+          className: "border-yellow-500 text-yellow-700 bg-yellow-50 dark:bg-yellow-950 dark:text-yellow-400",
+        };
+      case "SECOND":
+        return {
+          variant: "outline" as const,
+          className: "border-orange-500 text-orange-700 bg-orange-50 dark:bg-orange-950 dark:text-orange-400",
+        };
+      case "FINAL":
+        return {
+          variant: "destructive" as const,
+          className: "",
+        };
+      case "EXPULSION":
+        return {
+          variant: "destructive" as const,
+          className: "bg-red-700 hover:bg-red-800 border-red-800",
+        };
       default:
-        return "bg-gray-100 text-gray-700";
+        return {
+          variant: "secondary" as const,
+          className: "",
+        };
     }
   };
 
@@ -199,7 +231,12 @@ export function WarningHistoryModal({ open, onClose, studentId, semesterId, apiB
                     <tr key={w.id} className="hover:bg-gray-50">
                       <td className="px-4 py-3 border-b text-center font-medium">{i + 1}</td>
                       <td className="px-4 py-3 border-b">
-                        <Badge className={getLevelColor(w.level)}>{translateWarningLevel(w.level)}</Badge>
+                        <Badge 
+                          variant={getWarningLevelBadge(w.level).variant}
+                          className={getWarningLevelBadge(w.level).className}
+                        >
+                          {translateWarningLevel(normalizeWarningLevel(w.level))}
+                        </Badge>
                       </td>
                       <td className="px-4 py-3 border-b text-sm text-muted-foreground">
                         {w.semester_id ? `HK ${w.semester_id}` : "-"}

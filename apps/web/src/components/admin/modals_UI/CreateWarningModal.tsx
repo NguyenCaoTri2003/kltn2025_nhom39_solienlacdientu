@@ -16,7 +16,7 @@ interface CreateWarningModalProps {
   semesterId: number | null;
   apiBase?: string;
   onCreated?: () => void;
-  defaultLevel?: "FIRST" | "SECOND" | "FINAL";
+  defaultLevel?: "FIRST" | "SECOND" | "FINAL" | "EXPULSION";
   studentName?: string;
   studentData?: {
     avg_score_4?: number | null;
@@ -237,6 +237,7 @@ export function CreateWarningModal({
                   <SelectItem value="FIRST">Cảnh cáo lần 1</SelectItem>
                   <SelectItem value="SECOND">Cảnh cáo lần 2</SelectItem>
                   <SelectItem value="FINAL">Cảnh cáo lần 3</SelectItem>
+                  <SelectItem value="EXPULSION">Buộc thôi học</SelectItem>
                 </SelectContent>
               </Select>
             </div>
