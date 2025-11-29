@@ -22,6 +22,11 @@ type CourseOffering = {
   name: string;
   class_code: string;
   lecturers?: Lecturer | Lecturer[] | null;
+  class?: {
+    id: number;
+    name: string;
+    class_code: string;
+  } | null;
 };
 
 type ActualSchedule = {
@@ -40,7 +45,7 @@ type ActualSchedule = {
   exam_range_from?: string | null;
   exam_range_to?: string | null;
   exam_lecturer_ids?: number[] | null;
-  exam_lecturers?: Lecturer[]; 
+  exam_lecturers?: Lecturer[];
 };
 
 export class ScheduleRepository {
@@ -93,6 +98,7 @@ export class ScheduleRepository {
         id,
         name,
         class_code,
+        class_id,
         lecturers:lecturer_id (
           id,
           lecturer_code,
@@ -100,6 +106,11 @@ export class ScheduleRepository {
             full_name,
             email
           )
+        ),
+        class:class_id ( 
+          id,
+          name,
+          class_code
         )
       ),
       practice_group:practice_group_id (
@@ -188,6 +199,7 @@ export class ScheduleRepository {
             id: s.course_offering?.id,
             name: s.course_offering?.name,
             class_code: s.course_offering?.class_code,
+            class_name: s.course_offering?.class?.name ?? null,
           },
           lecturer:
             s.type === "theory"
@@ -209,7 +221,7 @@ export class ScheduleRepository {
               }
               : null,
           exam_info: isExam
-          ? {
+            ? {
               exam_group_number: s.exam_group_number,
               exam_range_from: s.exam_range_from,
               exam_range_to: s.exam_range_to,
@@ -220,7 +232,7 @@ export class ScheduleRepository {
                   email: lec.users?.email,
                 })) ?? [],
             }
-          : null,
+            : null,
         };
       }) ?? []
     );

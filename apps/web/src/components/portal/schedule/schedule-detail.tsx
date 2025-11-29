@@ -252,7 +252,7 @@ export default function ScheduleDetail() {
                                                 const items = buoi[session.key as keyof typeof buoi] as Array<{
                                                     id: number;
                                                     type: string;
-                                                    course_offering: { name: string };
+                                                    course_offering: { name: string, class_code: string, class_name?: string | null };
                                                     start_period: number;
                                                     period_count: number;
                                                     classroom: string;
@@ -291,6 +291,9 @@ export default function ScheduleDetail() {
                                                                                 {item.course_offering.name}
                                                                             </p>
                                                                             <div className="space-y-1">
+                                                                                <p className="text-[11px] text-muted-foreground dark:text-gray-400">
+                                                                                    <span className="font-medium">{item?.course_offering?.class_name} - </span> {item?.course_offering?.class_code} 
+                                                                                </p>
                                                                                 <p className="text-[11px] text-muted-foreground dark:text-gray-400">
                                                                                     <span className="font-medium">Tiết:</span> {item.start_period}–{item.start_period + item.period_count - 1}
                                                                                 </p>

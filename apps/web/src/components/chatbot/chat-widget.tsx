@@ -40,9 +40,9 @@ export default function ChatWidget() {
 
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/chat`, {
         method: "POST",
-        headers: { 
-          "Content-Type": "application/json", 
-          Authorization: `Bearer ${token}` 
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
         },
         body: JSON.stringify({ message: userMessage }),
       });
@@ -64,8 +64,11 @@ export default function ChatWidget() {
       {/* Nút chat */}
       <button
         onClick={() => setOpen(!open)}
-        className="cursor-pointer fixed bottom-5 right-5 w-16 h-16 rounded-full shadow-lg flex items-center justify-center hover:scale-105 transition-transform z-[9999]"
-        style={{ backgroundColor: "#4FC3F7" }} 
+        className="cursor-pointer fixed bottom-5 right-5 w-16 h-16 rounded-full shadow-lg flex items-center justify-center z-[9999] transform transition-all duration-200 hover:scale-110 hover:shadow-2xl"
+        style={{
+          background: "linear-gradient(135deg, #4FC3F7, #00CFFF)",
+          padding: "8px",
+        }}
       >
         <Image
           src="/smart-chatbot.png"
@@ -73,6 +76,10 @@ export default function ChatWidget() {
           width={48}
           height={48}
           className="object-contain"
+        />
+        <span
+          className="absolute w-20 h-20 rounded-full opacity-30 animate-ping"
+          style={{ background: "radial-gradient(circle, #4FC3F7 0%, transparent 70%)" }}
         />
       </button>
 
@@ -92,11 +99,10 @@ export default function ChatWidget() {
                 className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
               >
                 <div
-                  className={`px-4 py-2 rounded-lg max-w-[75%] break-words text-[0.95rem] ${
-                    m.role === "user"
+                  className={`px-4 py-2 rounded-lg max-w-[75%] break-words text-[0.95rem] ${m.role === "user"
                       ? "bg-blue-500 text-white text-base"
                       : "bg-gray-200 text-black text-base"
-                  }`}
+                    }`}
                 >
                   {m.text}
                 </div>
@@ -130,9 +136,8 @@ export default function ChatWidget() {
             <button
               onClick={sendMessage}
               disabled={loading || !input.trim()}
-              className={`cursor-pointer p-2 rounded text-white flex items-center justify-center ${
-                loading ? "bg-gray-400 cursor-not-allowed" : "bg-blue-500 hover:bg-blue-600"
-              }`}
+              className={`cursor-pointer p-2 rounded text-white flex items-center justify-center ${loading ? "bg-gray-400 cursor-not-allowed" : "bg-blue-500 hover:bg-blue-600"
+                }`}
             >
               <Send size={18} className="stroke-white" />
             </button>
