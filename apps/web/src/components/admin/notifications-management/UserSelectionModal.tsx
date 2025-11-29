@@ -60,12 +60,18 @@ export function UserSelectionModal({
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive" | "suspended">("active");
+  const [roleFilter, setRoleFilter] = useState<"all" | "admin" | "lecturer" | "student" | "parent">("all");
   const pageSize = 20;
 
   const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
 
   const loadUsers = useCallback(
-    async (search: string = "", pageNum: number = 1, status: string = "active") => {
+    async (
+      search: string = "",
+      pageNum: number = 1,
+      status: string = "active",
+      role: string = "all"
+    ) => {
       const token = localStorage.getItem("token");
       try {
         setLoading(true);
@@ -77,6 +83,9 @@ export function UserSelectionModal({
         }
         if (status && status !== "all") {
           params.set("status", status);
+        }
+        if (role && role !== "all") {
+          params.set("role", role);
         }
 
         const res = await fetch(`${API_BASE}/api/users?${params.toString()}`, {
@@ -132,21 +141,21 @@ export function UserSelectionModal({
 
   useEffect(() => {
     if (open) {
-      loadUsers(searchQuery, 1, statusFilter);
+      loadUsers(searchQuery, 1, statusFilter, roleFilter);
       setSelectedIds(new Set(selectedUserIds));
       // selectedUsers sẽ được cập nhật tự động khi loadUsers được gọi
     }
-  }, [open, selectedUserIds, statusFilter, loadUsers, searchQuery]);
+  }, [open, selectedUserIds, statusFilter, roleFilter, loadUsers, searchQuery]);
 
   useEffect(() => {
     if (open) {
       const timeoutId = setTimeout(() => {
-        loadUsers(searchQuery, 1, statusFilter);
+        loadUsers(searchQuery, 1, statusFilter, roleFilter);
       }, 500); // Debounce 500ms
 
       return () => clearTimeout(timeoutId);
     }
-  }, [searchQuery, statusFilter, open, loadUsers]);
+  }, [searchQuery, statusFilter, roleFilter, open, loadUsers]);
 
   const handleToggleUser = (userId: number) => {
     const newSelected = new Set(selectedIds);
@@ -180,6 +189,9 @@ export function UserSelectionModal({
       }
       if (statusFilter && statusFilter !== "all") {
         params.set("status", statusFilter);
+      }
+      if (roleFilter && roleFilter !== "all") {
+        params.set("role", roleFilter);
       }
 
       const res = await fetch(`${API_BASE}/api/users?${params.toString()}`, {
@@ -294,7 +306,7 @@ export function UserSelectionModal({
 
         <div className="space-y-4 flex-1 min-h-0 flex flex-col">
           {/* Search and Status Filter */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label>Tìm kiếm</Label>
               <div className="relative">
@@ -324,6 +336,27 @@ export function UserSelectionModal({
                   <SelectItem value="active">Hoạt động</SelectItem>
                   <SelectItem value="inactive">Bị khoá</SelectItem>
                   <SelectItem value="suspended">Chờ kích hoạt</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Vai trò</Label>
+              <Select
+                value={roleFilter}
+                onValueChange={(v: "all" | "admin" | "lecturer" | "student" | "parent") => {
+                  setRoleFilter(v);
+                  setPage(1);
+                }}
+              >
+                <SelectTrigger className="bg-white">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tất cả</SelectItem>
+                  <SelectItem value="admin">Quản trị</SelectItem>
+                  <SelectItem value="lecturer">Giảng viên</SelectItem>
+                  <SelectItem value="student">Sinh viên</SelectItem>
+                  <SelectItem value="parent">Phụ huynh</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -436,7 +469,7 @@ export function UserSelectionModal({
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => loadUsers(searchQuery, page - 1, statusFilter)}
+                    onClick={() => loadUsers(searchQuery, page - 1, statusFilter, roleFilter)}
                     disabled={page <= 1 || loading}
                   >
                     Trước
@@ -444,7 +477,7 @@ export function UserSelectionModal({
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => loadUsers(searchQuery, page + 1, statusFilter)}
+                    onClick={() => loadUsers(searchQuery, page + 1, statusFilter, roleFilter)}
                     disabled={page >= totalPages || loading}
                   >
                     Sau

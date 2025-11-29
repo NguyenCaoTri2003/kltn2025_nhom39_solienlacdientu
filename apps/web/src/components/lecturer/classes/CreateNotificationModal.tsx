@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectTrigger,
@@ -45,8 +46,8 @@ interface CreateNotificationModalProps {
   selectedStudentIds?: number[]; // Student IDs đã chọn từ bảng
   students?: Student[]; // Danh sách students để map sang user_ids
   lecturerName?: string;
-  className?: string; 
-  practiceGroupNumber?: number; 
+  className?: string;
+  practiceGroupNumber?: number;
 }
 
 export function CreateNotificationModal({
@@ -66,10 +67,25 @@ export function CreateNotificationModal({
   const [category, setCategory] = useState<NotificationCategory>("ACADEMIC");
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
-  
+  const [sendToParents, setSendToParents] = useState(false);
+
   const currentUserIds = useMemo(() => {
     return selectedStudentIds.filter((id): id is number => id !== undefined);
   }, [selectedStudentIds]);
+
+  const parentUserIds = useMemo(() => {
+    const ids = new Set<number>();
+    selectedStudentIds.forEach((studentId) => {
+      const student = students.find((s) => s.id === studentId);
+      student?.student_parent?.forEach((sp) => {
+        const parentId = sp.parents?.id;
+        if (parentId) {
+          ids.add(parentId);
+        }
+      });
+    });
+    return Array.from(ids);
+  }, [selectedStudentIds, students]);
 
   const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -103,6 +119,7 @@ export function CreateNotificationModal({
       setTitle("");
       setContent("");
       setSelectedImage(null);
+      setSendToParents(false);
       if (imagePreview) {
         URL.revokeObjectURL(imagePreview);
       }
@@ -125,11 +142,17 @@ export function CreateNotificationModal({
       return;
     }
 
-    const userIdsToSend = currentUserIds;
+    const receiverSet = new Set(currentUserIds);
+
+    if (sendToParents) {
+      parentUserIds.forEach((id) => receiverSet.add(id));
+    }
+
+    const userIdsToSend = Array.from(receiverSet);
     console.log("Submitting with userIds:", userIdsToSend);
     console.log("selectedStudentIds:", selectedStudentIds);
     console.log("students count:", students.length);
-    
+
     if (userIdsToSend.length === 0) {
       toast.error("Vui lòng chọn ít nhất một sinh viên từ bảng");
       return;
@@ -156,7 +179,7 @@ export function CreateNotificationModal({
       // Tự động thêm thông tin giảng viên, lớp, nhóm thực hành vào đầu nội dung
       let finalContent = content || "";
       const headerParts: string[] = [];
-      
+
       if (lecturerName) {
         headerParts.push(`Giảng viên: ${lecturerName}`);
       }
@@ -166,7 +189,7 @@ export function CreateNotificationModal({
       if (practiceGroupNumber) {
         headerParts.push(`Nhóm thực hành: ${practiceGroupNumber}`);
       }
-      
+
       if (headerParts.length > 0) {
         const header = headerParts.join("\n");
         finalContent = header + (finalContent ? "\n\n" + finalContent : "");
@@ -200,16 +223,14 @@ export function CreateNotificationModal({
       }
 
       if (data?.data?.created) {
-        toast.success(
-          `Đã gửi thông báo đến ${data.data.created} sinh viên`
-        );
-      } else {
+
         toast.success("Tạo thông báo thành công");
       }
 
       setTitle("");
       setContent("");
       setCategory("ACADEMIC");
+      setSendToParents(false);
       handleRemoveImage();
 
       onSuccess?.();
@@ -266,7 +287,7 @@ export function CreateNotificationModal({
                   )}
                 </div>
               )}
-              
+
               <Textarea
                 id="content"
                 value={content}
@@ -363,12 +384,36 @@ export function CreateNotificationModal({
                     })}
                   </div>
                 </div>
+
+                {/* Gửi phụ huynh */}
+                <div className="flex gap-2 pt-2">
+                  <div className="flex gap-2">
+                    <Checkbox
+                      id="send-parents"
+                      checked={sendToParents}
+                      disabled={parentUserIds.length === 0}
+                      onCheckedChange={(checked) => setSendToParents(checked === true)}
+                    />
+                    <Label
+                      htmlFor="send-parents"
+                      className="font-normal cursor-pointer leading-none"
+                    >
+                      Gửi phụ huynh
+                    </Label>
+                  </div>
+                  <span className="text-sm text-muted-foreground leading-none whitespace-nowrap">
+                    {parentUserIds.length > 0
+                      ? `${parentUserIds.length} phụ huynh sẽ nhận thêm`
+                      : "Chưa có thông tin phụ huynh khả dụng"}
+                  </span>
+                </div>
+
               </div>
             )}
             {selectedStudentIds.length === 0 && (
-              <div className="space-y-2">
+              <div className="">
                 <Label>Sinh viên nhận thông báo *</Label>
-                <div className="text-sm text-amber-600 p-4 border border-amber-200 rounded-md bg-amber-50">
+                <div className="">
                   Vui lòng chọn ít nhất một sinh viên từ bảng bên ngoài trước khi tạo thông báo
                 </div>
               </div>

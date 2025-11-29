@@ -124,4 +124,34 @@ export const messageService = {
     const data = await res.json();
     return data.count || 0;
   },
+
+  async recallMessage(messageId: number, token: string) {
+    const res = await fetch(
+      `${API_URL}/api/messages/${messageId}/recall`,
+      {
+        method: "PATCH",
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Recall failed");
+
+    return data;
+  },
+
+  async deleteMessage(messageId: number, token: string) {
+    const res = await fetch(
+      `${API_URL}/api/messages/${messageId}/delete`,
+      {
+        method: "PATCH",
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Delete failed");
+
+    return data; 
+  },
 };

@@ -3,21 +3,35 @@ import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { AuthProvider, useAuth } from "./src/context/AuthContext";
 import LoginScreen from "./src/screens/LoginScreen";
-import AppNavigator from "./src/screens/AppNavigator"; // 👈 thay cho HomeScreen
+import AppNavigator from "./src/screens/AppNavigator";
 import { UserProvider } from "./src/context/UserContext";
 import { NotificationProvider, useNotificationContext } from "./src/context/NotificationContext";
 import { MessageProvider } from "./src/context/MessageProvider";
 import ChatScreen from "./src/screens/ChatScreen";
 import GlobalNotificationToast from "./src/components/GlobalNotificationToast";
+import ChatWidgetMobile from "./src/components/ChatWidgetMobile";
 
 const Stack = createNativeStackNavigator();
 
 function GlobalToastWrapper() {
   const { toastVisible, toastNotification, hideToast } = useNotificationContext();
+ const { user } = useAuth();
 
   return (
     <>
       <RootNavigator />
+
+      {user && (
+        <ChatWidgetMobile
+          style={{
+            position: "absolute",
+            bottom: 20,
+            right: 20,
+            zIndex: 9999,
+          }}
+        />
+      )}
+
       <GlobalNotificationToast
         visible={toastVisible}
         notification={toastNotification}

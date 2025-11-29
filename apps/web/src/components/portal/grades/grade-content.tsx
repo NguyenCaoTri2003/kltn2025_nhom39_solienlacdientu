@@ -27,7 +27,18 @@ export default function GradeContent({
     const load = async () => {
       setLoadingSemesters(true);
       const data = await fetchSemestersByStudentYear(studentYear);
-      setSemesters(data);
+
+      const sorted = [...data].sort((a, b) => {
+        const yearA = parseInt(a.academic_year.split("-")[0]);
+        const yearB = parseInt(b.academic_year.split("-")[0]);
+        if (yearA !== yearB) return yearB - yearA;
+
+        const semA = parseInt(a.name.replace(/\D/g, ""));
+        const semB = parseInt(b.name.replace(/\D/g, ""));
+        return semB - semA;
+      });
+
+      setSemesters(sorted);
       setLoadingSemesters(false);
     };
     load();
@@ -61,8 +72,6 @@ export default function GradeContent({
   };
 
   const formatScore = (v?: number | null) => (v != null ? v.toFixed(2) : "-");
-  const formatList = (arr: number[]) =>
-    arr.length ? arr.map((x) => x.toFixed(2)).join(", ") : "-";
 
   if (loadingSemesters || loadingGrades)
     return <Loading text="Đang tải kết quả học tập..." />;
