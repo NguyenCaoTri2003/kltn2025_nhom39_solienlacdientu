@@ -535,14 +535,14 @@ export default function LearningDataOverview_V3() {
           )}
           {!error && rows.length === 0 && !loading && (
             <tr>
-              <td className="px-4 py-8 text-center text-muted-foreground" colSpan={24}>
+              <td className="px-4 py-8 text-muted-foreground" colSpan={24}>
                 <p>Không có dữ liệu cảnh cáo cho học kỳ hiện tại.</p>
               </td>
             </tr>
           )}
           {!error && loading && (
             <tr>
-              <td className="px-4 py-8 text-center text-muted-foreground" colSpan={24}>
+              <td className="px-4 py-8 text-muted-foreground" colSpan={24}>
                 Đang tải dữ liệu...
               </td>
             </tr>
