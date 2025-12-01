@@ -19,3 +19,16 @@ export async function GET(req: Request) {
   const data = await usecase.getUserConversations(userId)
   return NextResponse.json(data)
 }
+
+export async function POST(req: Request) {
+  const user = await authenticate(req);
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const body = await req.json();
+  const { receiverId } = body;
+
+  if (!receiverId) return NextResponse.json({ error: "Missing receiverId" }, { status: 400 });
+
+  const conversation = await usecase.createConversation(user.id, receiverId);
+  return NextResponse.json(conversation);
+}

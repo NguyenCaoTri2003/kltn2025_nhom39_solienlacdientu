@@ -22,14 +22,26 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.nguyencaotri2k3.mobile"
+      "package": "com.nguyencaotri2k3.mobile",
+      "versionCode": 1
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-secure-store"
+      [
+        "expo-secure-store",
+        {
+          "path": "./node_modules/expo-secure-store"
+        }
+      ]
     ],
+    "npm": {
+      "packageManager": "pnpm"
+    },
+    "cli": {
+      "appVersionSource": "app.json"
+    },
     "extra": {
       "eas": {
         "projectId": "c0ed7b8b-b297-4e21-9828-d0482aa0cb74"
