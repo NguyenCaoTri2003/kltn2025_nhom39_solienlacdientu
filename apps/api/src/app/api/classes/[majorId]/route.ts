@@ -7,11 +7,12 @@ import { authenticate } from "@packages/utils/auth";
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { majorId: string } }
+  { params }: { params: Promise<{ majorId: string }> | { majorId: string } }
 ) {
   try {
     const user = await authenticate(req);
-    const majorId = Number(params.majorId);
+    const resolvedParams = await Promise.resolve(params);
+    const majorId = Number(resolvedParams.majorId);
     const classesList = await getClassesByMajor(majorId, user);
 
     if (!classesList || (Array.isArray(classesList) && classesList.length === 0)) {

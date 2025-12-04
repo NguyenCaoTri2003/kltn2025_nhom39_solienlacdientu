@@ -15,6 +15,7 @@ import { useAuth } from "../context/AuthContext";
 import CourseOfferingDetailScreen from "./CourseOfferingDetailScreen";
 import { RootStackParamList } from "../types/navigation";
 import GradesScreen from "./GradesScreen";
+import TuitionFeesScreen from "./TuitionFeesScreen";
 import { useNotificationContext } from "../context/NotificationContext";
 import MessagesStack from "./MessagesStack";
 import { useMessageContext } from "../context/MessageProvider";
@@ -39,6 +40,11 @@ function StudentStack() {
         component={GradesScreen}
         options={{ title: "Kết quả học tập" }}
       />
+      <Stack.Screen
+        name="Tuition"
+        component={TuitionFeesScreen}
+        options={{ title: "Học phí" }}
+      />
     </Stack.Navigator>
   );
 }
@@ -58,6 +64,11 @@ function ParentStack() {
         name="Grades"
         component={GradesScreen}
         options={{ title: "Kết quả học tập" }}
+      />
+      <Stack.Screen
+        name="Tuition"
+        component={TuitionFeesScreen}
+        options={{ title: "Học phí" }}
       />
     </Stack.Navigator>
   );

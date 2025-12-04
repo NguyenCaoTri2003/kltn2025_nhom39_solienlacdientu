@@ -1,0 +1,35 @@
+# Ignore node modules
+node_modules/
+
+# Git and VCS
+.git/
+.gitignore
+
+# Build & cache
+.android/
+.ios/
+android/
+ios/
+build/
+dist/
+expo-build/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Temporary files
+*.tmp
+*.temp
+.tmp/
+.cache/
+
+# IDE files
+.vscode/
+.idea/
+
+# Environment
+.env
+.env.*

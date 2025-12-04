@@ -64,10 +64,10 @@ export async function POST(req: NextRequest) {
     }
 
     const levelStr = String(level).toUpperCase();
-    const allowedLevels = new Set(["FIRST", "SECOND", "FINAL"]);
+    const allowedLevels = new Set(["FIRST", "SECOND", "FINAL", "EXPULSION"]);
     if (!allowedLevels.has(levelStr)) {
       return NextResponse.json(
-        { returnCode: -1, message: "Invalid level. Use one of: FIRST|SECOND|FINAL", data: null },
+        { returnCode: -1, message: "Invalid level. Use one of: FIRST|SECOND|FINAL|EXPULSION", data: null },
         { status: 400 }
       );
     }
