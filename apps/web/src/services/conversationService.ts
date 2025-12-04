@@ -28,7 +28,6 @@
 // };
 export const conversationService = {
   async getOrCreateConversation(token: string, receiverId: number) {
-    // 1️⃣ Kiểm tra xem có cuộc trò chuyện nào giữa hai người không
     const res = await fetch(
       `${process.env.NEXT_PUBLIC_API_URL}/api/conversations/with?otherUserId=${receiverId}`,
       {
@@ -41,7 +40,6 @@ export const conversationService = {
       if (data?.id) return data;
     }
 
-    // 2️⃣ Nếu chưa có thì tạo mới
     const create = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/conversations`, {
       method: "POST",
       headers: {

@@ -51,4 +51,10 @@ export class MessageUseCase {
   async deleteMessage(messageId: number, userId: number) {
     return await this.repo.deleteMessage(messageId, userId);
   }
+
+  async createConversation(userA: number, userB: number) {
+    if (userA === userB) throw new Error("Cannot create conversation with yourself");
+    const conversationId = await this.repo.getOrCreateConversation(userA, userB);
+    return { id: conversationId };
+  }
 }
