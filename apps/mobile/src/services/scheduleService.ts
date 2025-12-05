@@ -18,6 +18,13 @@ export type ScheduleItem = {
   course_offering: {
     name: string;
     class_code: string;
+    class_name: string;
+  };
+  exam_info?: {
+    exam_group_number: string;
+    exam_range_from: string;
+    exam_range_to: string;
+    lecturers: any[];
   };
 };
 

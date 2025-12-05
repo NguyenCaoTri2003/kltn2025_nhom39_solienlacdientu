@@ -46,7 +46,7 @@ export default function GradeSummary() {
 
     const [offering, setOffering] = useState<Offering | null>(null);
     const [loading, setLoading] = useState(true);
-  const [gradesData, setGradesData] = useState<LecturerGradeSummary[]>([]);
+    const [gradesData, setGradesData] = useState<LecturerGradeSummary[]>([]);
     const [loadingGrades, setLoadingGrades] = useState(false);
 
   const currentUser =
@@ -57,6 +57,8 @@ export default function GradeSummary() {
     const myPracticeGroup = offering?.practice_groups?.find(
         (g) => g.lecturers?.id === currentLecturerId
     );
+
+    console.log("gradesData:", gradesData);
 
     useEffect(() => {
         if (!id) return;

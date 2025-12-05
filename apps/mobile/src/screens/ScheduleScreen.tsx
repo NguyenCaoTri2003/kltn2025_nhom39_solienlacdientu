@@ -46,6 +46,24 @@ export default function ScheduleScreen() {
     (s) => dayjs(s.schedule_date).format("YYYY-MM-DD") === selectedDate
   );
 
+  const handleNextWeek = () => {
+    nextWeek();   
+    setTimeout(() => {
+      if (weekDays[0]) {
+        setSelectedDate(weekDays[0].format("YYYY-MM-DD"));
+      }
+    }, 0);
+  };
+
+  const handlePrevWeek = () => {
+    prevWeek();
+    setTimeout(() => {
+      if (weekDays[0]) {
+        setSelectedDate(weekDays[0].format("YYYY-MM-DD"));
+      }
+    }, 0);
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <HeaderBar title="Lịch học / Lịch thi" />
@@ -84,11 +102,11 @@ export default function ScheduleScreen() {
         </View>
 
         <View style={styles.weekHeader}>
-          <TouchableOpacity onPress={prevWeek} style={styles.navBtn}>
+          <TouchableOpacity onPress={handlePrevWeek} style={styles.navBtn}>
             <Ionicons name="chevron-back" size={24} color="#1E3A8A" />
           </TouchableOpacity>
           <Text style={styles.weekText}>{weekLabel}</Text>
-          <TouchableOpacity onPress={nextWeek} style={styles.navBtn}>
+          <TouchableOpacity onPress={handleNextWeek} style={styles.navBtn}>
             <Ionicons name="chevron-forward" size={24} color="#1E3A8A" />
           </TouchableOpacity>
         </View>
@@ -146,15 +164,22 @@ export default function ScheduleScreen() {
             contentContainerStyle={{ paddingBottom: 40, paddingHorizontal: 10 }}
             renderItem={({ item }) => {
               const isPractice = item.type === "practice";
+              const isExam = item.type === "exam";
 
               return (
                 <View
                   style={[
                     styles.card,
-                    isPractice ? styles.practiceCard : styles.theoryCard,
+                    isPractice
+                      ? styles.practiceCard
+                      : isExam
+                        ? styles.examCard
+                        : styles.theoryCard,
                   ]}
                 >
                   <Text style={styles.title}>{item.course_offering.name}</Text>
+
+                  <Text>{item?.course_offering?.class_name} - {item?.course_offering?.class_code} </Text>
 
                   <View style={styles.row}>
                     <Text style={styles.label}>Tiết:</Text>
@@ -181,6 +206,33 @@ export default function ScheduleScreen() {
                       <Text style={styles.value}>{item.practice_group.group_number}</Text>
                     </View>
                   )}
+
+                  {item.exam_info && (
+                    <>
+                      {item.exam_info?.exam_group_number && (
+                        <View style={styles.row}>
+                          <Text style={styles.label}>Nhóm:</Text>
+
+                          <Text style={styles.value}>
+                            {item.exam_info.exam_group_number}
+                            {(item.exam_info.exam_range_from || item.exam_info.exam_range_to) && (
+                              <> ({item.exam_info.exam_range_from ?? ""}{item.exam_info.exam_range_from && item.exam_info.exam_range_to ? " - " : ""}{item.exam_info.exam_range_to ?? ""})</>
+                            )}
+                          </Text>
+                        </View>
+                      )}
+
+                      {item.exam_info.lecturers && item.exam_info.lecturers.length > 0 && (
+                        <View style={styles.row}>
+                          <Text style={styles.label}>Giảng viên:</Text>
+                          <Text style={styles.value}>
+                            {item.exam_info.lecturers.map((lec) => lec.full_name).join(", ")}
+                          </Text>
+                        </View>
+                      )}
+                    </>
+                  )}
+
 
                   {item.note && <Text style={styles.note}>Ghi chú: {item.note}</Text>}
                 </View>
@@ -278,6 +330,11 @@ const styles = StyleSheet.create({
     backgroundColor: "#F3E8FF",
     borderLeftWidth: 4,
     borderLeftColor: "#9333EA",
+  },
+  examCard: {
+    backgroundColor: "#FEF3C7",
+    borderLeftWidth: 4,
+    borderLeftColor: "#F59E0B",
   },
   title: { fontSize: 16, fontWeight: "700", color: "#111827", marginBottom: 6 },
   note: { color: "#6B7280", fontStyle: "italic", marginTop: 6 },
