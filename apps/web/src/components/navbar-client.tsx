@@ -173,11 +173,18 @@ export default function NavbarClient({ userRole, userName, avatarUrl, userId }: 
               <NotificationDropdown userRole={userRole} />
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button className="cursor-pointer relative w-9 h-9 rounded-full overflow-hidden flex items-center justify-center text-white font-semibold border border-border">
+                  <button className="cursor-pointer relative w-9 h-9 rounded-full overflow-hidden flex items-center justify-center border border-border">
                     {avatarUrl ? (
-                      <Image src={avatarUrl} alt={userName} fill className="object-cover" />
+                      <Image
+                        src={avatarUrl}
+                        alt={userName}
+                        width={36}
+                        height={36}
+                        quality={100}
+                        className="object-cover w-9 h-9"
+                      />
                     ) : (
-                      <span className={`${bgColor} w-full h-full flex items-center justify-center`}>
+                      <span className={`${bgColor} w-full h-full flex items-center justify-center text-white font-semibold`}>
                         {initial}
                       </span>
                     )}
@@ -446,11 +453,18 @@ export default function NavbarClient({ userRole, userName, avatarUrl, userId }: 
             {/* Avatar Dropdown */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="cursor-pointer relative w-9 h-9 rounded-full overflow-hidden flex items-center justify-center text-white font-semibold border border-border hover:opacity-90 transition">
+                <button className="cursor-pointer relative w-9 h-9 rounded-full overflow-hidden flex items-center justify-center border border-border">
                   {avatarUrl ? (
-                    <Image src={avatarUrl} alt={userName} fill className="object-cover" />
+                    <Image
+                      src={avatarUrl}
+                      alt={userName}
+                      width={36}
+                      height={36}
+                      quality={100}
+                      className="object-cover w-9 h-9"
+                    />
                   ) : (
-                    <span className={`${bgColor} w-full h-full flex items-center justify-center`}>
+                    <span className={`${bgColor} w-full h-full flex items-center justify-center text-white font-semibold`}>
                       {initial}
                     </span>
                   )}

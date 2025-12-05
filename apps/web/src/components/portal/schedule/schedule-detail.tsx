@@ -94,6 +94,7 @@ export default function ScheduleDetail() {
         practice: "border-emerald-500 dark:border-emerald-400 from-emerald-50/50 via-emerald-50/30 dark:from-emerald-800/30 dark:via-emerald-900/20",
         theory: "border-primary dark:border-blue-400 from-blue-50/50 via-blue-50/30 dark:from-blue-900/30 dark:via-blue-800/20",
         exam: "border-amber-500 dark:border-amber-400 from-amber-50/50 via-amber-50/30 dark:from-amber-900/30 dark:via-amber-800/20",
+        cancelled: "border-red-500 dark:border-red-400 from-red-50/60 via-red-50/40 dark:from-red-900/30 dark:via-red-800/20",
     };
 
     useEffect(() => {
@@ -249,23 +250,7 @@ export default function ScheduleDetail() {
                                                 {session.label}
                                             </td>
                                             {groupedSchedules.map(({ day, ...buoi }) => {
-                                                const items = buoi[session.key as keyof typeof buoi] as Array<{
-                                                    id: number;
-                                                    type: string;
-                                                    course_offering: { name: string, class_code: string, class_name?: string | null };
-                                                    start_period: number;
-                                                    period_count: number;
-                                                    classroom: string;
-                                                    building: string;
-                                                    lecturer?: { full_name: string };
-                                                    exam_info?: {
-                                                        exam_group_number: string;
-                                                        exam_range_from: string;
-                                                        exam_range_to: string;
-                                                        lecturers: { full_name: string }[];
-                                                    };
-
-                                                }>;
+                                                const items = (buoi as any)[session.key] as Array<any>;
                                                 const isToday = day.format("YYYY-MM-DD") === dayjs().format("YYYY-MM-DD");
                                                 return (
                                                     <td
@@ -282,17 +267,23 @@ export default function ScheduleDetail() {
                                                                     <Card
                                                                         key={item.id}
                                                                         className={cn(
-                                                                            "rounded-xl border-l-4 p-3 transition-all hover:shadow-md bg-gradient-to-br to-background/60 dark:to-background/80",
-                                                                            colorMap[item.type]
+                                                                            "relative rounded-xl border-l-4 p-3 transition-all hover:shadow-md bg-gradient-to-br to-background/60 dark:to-background/80 opacity-100",
+                                                                            item.status === "cancelled" ? colorMap.cancelled : colorMap[item.type],
+                                                                            item.status === "cancelled" && "opacity-70"
                                                                         )}
                                                                     >
+                                                                        {item.status === "cancelled" && (
+                                                                            <span className="absolute top-1 right-2 text-[10px] px-2 py-0.5 rounded-full bg-red-500 text-white font-semibold">
+                                                                                ĐÃ HỦY
+                                                                            </span>
+                                                                        )}
                                                                         <CardContent className="p-0 space-y-1.5">
                                                                             <p className="text-xs font-semibold text-foreground leading-tight">
                                                                                 {item.course_offering.name}
                                                                             </p>
                                                                             <div className="space-y-1">
                                                                                 <p className="text-[11px] text-muted-foreground dark:text-gray-400">
-                                                                                    <span className="font-medium">{item?.course_offering?.class_name} - </span> {item?.course_offering?.class_code} 
+                                                                                    <span className="font-medium">{item?.course_offering?.class_name} - </span> {item?.course_offering?.class_code}
                                                                                 </p>
                                                                                 <p className="text-[11px] text-muted-foreground dark:text-gray-400">
                                                                                     <span className="font-medium">Tiết:</span> {item.start_period}–{item.start_period + item.period_count - 1}

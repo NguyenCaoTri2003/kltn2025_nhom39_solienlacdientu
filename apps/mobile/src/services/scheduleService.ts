@@ -26,6 +26,7 @@ export type ScheduleItem = {
     exam_range_to: string;
     lecturers: any[];
   };
+  status: string;
 };
 
 export async function fetchStudentSchedule(

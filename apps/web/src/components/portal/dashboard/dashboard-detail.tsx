@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useUser } from "@/context/user-context";
 import { useCourseOfferings } from "@/hooks/useCourseOfferings";
 import { useAppointment } from "@/hooks/useAppointment";
@@ -45,21 +45,35 @@ export default function Dashboard() {
   const { appointments, loading: appointmentsLoading } = useAppointment(token);
   const isLoading = loading || (isParent && appointmentsLoading);
 
+  const [todayClasses, setTodayClasses] = useState<any[]>([]);
+  const [loadingToday, setLoadingToday] = useState(true);
+
   const todayAppointments = useMemo(
     () => appointments.filter((a) => isToday(parseISO(a.start_time || a.date || ""))),
     [appointments]
   );
 
-  const todayClasses = useMemo(() => {
-    if (!offerings) return [];
-    const todayIndex = new Date().getDay();
-    return offerings.filter((o) =>
-      o.detail?.schedule?.some((s: { day_of_week: number }) => {
-        const dayOfWeek = Number(s.day_of_week) % 7;
-        return dayOfWeek === todayIndex;
-      })
-    );
-  }, [offerings]);
+  useEffect(() => {
+    if (!studentId) return;
+
+    async function fetchToday() {
+      try {
+        setLoadingToday(true);
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/schedules/today/student?student_id=${studentId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const json = await res.json();
+        setTodayClasses(json.data || []);
+        console.log("Today's classes data:", json.data);
+      } catch (error) {
+        console.error("Failed to load today's schedule:", error);
+      } finally {
+        setLoadingToday(false);
+      }
+    }
+
+    fetchToday();
+  }, [studentId]);
 
   const initial = useMemo(() => {
     const name = userData?.full_name?.trim() ?? "";
@@ -154,15 +168,16 @@ export default function Dashboard() {
               animate={{ scale: 1, opacity: 1 }}
               transition={{ duration: 0.6, delay: 0.2 }}
             >
-              <div className="flex-shrink-0">
+              <div>
                 {userData?.avatar_url ? (
-                  <Image
-                    src={userData.avatar_url}
-                    alt={userData.full_name || "Avatar"}
-                    width={120}
-                    height={120}
-                    className="rounded-full object-cover border border-gray-200 dark:border-gray-700 shadow"
-                  />
+                  <div className="relative w-28 h-28 rounded-full overflow-hidden border border-gray-200 dark:border-gray-700 shadow">
+                    <Image
+                      src={userData.avatar_url}
+                      alt={userData.full_name || "Avatar"}
+                      fill
+                      className="object-cover"
+                    />
+                  </div>
                 ) : (
                   <div
                     className={`${bgColor} w-28 h-28 rounded-full flex items-center justify-center text-white font-bold text-3xl shadow`}
@@ -292,15 +307,14 @@ export default function Dashboard() {
                           onClick={() => router.push(`/portal/classes/${c.id}`)}
                         >
                           <p className="font-semibold text-gray-900 dark:text-gray-100">
-                            {c.course?.name || c.name || "Không rõ tên"}
+                            {c?.course_offering?.name || "Không rõ tên"}
                           </p>
                           <p className="text-sm flex items-center gap-1">
-                            <GraduationCap className="w-4 h-4" /> Mã lớp: {c.class_code}
+                            <GraduationCap className="w-4 h-4" /> Mã lớp: {c?.course_offering?.class_code}
                           </p>
                           <p className="text-sm flex items-center gap-1">
                             Giảng viên:{" "}
-                            {c.lecturer?.full_name ||
-                              c.detail?.lecturer?.full_name ||
+                            {c?.course_offering?.lecturers?.users?.full_name ||
                               "Chưa rõ"}
                           </p>
                         </motion.div>

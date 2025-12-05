@@ -1,17 +1,3 @@
-// import { NextConfig } from 'next';
-// import path from 'path';
-
-// const nextConfig: NextConfig = {
-//   webpack: (config) => {
-//     config.resolve.alias['@packages'] = path.resolve(__dirname, 'packages');
-//     return config;
-//   },
-//   eslint: {
-//     ignoreDuringBuilds: true
-//   }
-// };
-
-// export default nextConfig;
 import { fileURLToPath } from "url";
 import path from 'path';
 import { NextConfig } from "next";
@@ -29,6 +15,16 @@ const nextConfig: NextConfig = {
   },
   experimental: {
     esmExternals: "loose",
+  },
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "ceocmvtxpdqgmremuqgb.supabase.co",
+        port: "",
+        pathname: "/storage/v1/object/**",
+      },
+    ],
   },
   async rewrites() {
     return [
