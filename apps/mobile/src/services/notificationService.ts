@@ -275,7 +275,7 @@ class NotificationService {
             };
             this.notifyListeners(connectedEvent);
           } else if (status === 'CHANNEL_ERROR') {
-            console.error('Channel error - check RLS policies and channel name');
+            console.log('Channel error - check RLS policies and channel name');
           } else if (status === 'TIMED_OUT') {
             console.error('Channel timed out');
           } else if (status === 'CLOSED') {

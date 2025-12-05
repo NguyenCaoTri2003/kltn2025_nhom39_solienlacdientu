@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -15,11 +15,13 @@ import LoadingScreen from "../components/LoadingScreen";
 import HeaderBar from "../components/HeaderBar";
 import dayjs from "dayjs";
 import { useUser } from "../context/UserContext";
+import DateTimePicker from "react-native-modal-datetime-picker";
 
 export default function ScheduleScreen() {
   const { userData } = useUser();
   const children = userData?.children || [];
   const isParent = userData?.role === "parent";
+  const [showDatePicker, setShowDatePicker] = useState(false);
 
   const initialStudentId: number | null | undefined =
     userData?.role === "student"
@@ -38,6 +40,8 @@ export default function ScheduleScreen() {
     nextWeek,
     prevWeek,
     weekDays,
+    goToDate,
+    goToToday
   } = useStudentSchedule(selectedStudentId);
 
   const [selectedDate, setSelectedDate] = useState(dayjs().format("YYYY-MM-DD"));
@@ -47,21 +51,39 @@ export default function ScheduleScreen() {
   );
 
   const handleNextWeek = () => {
-    nextWeek();   
-    setTimeout(() => {
-      if (weekDays[0]) {
-        setSelectedDate(weekDays[0].format("YYYY-MM-DD"));
-      }
-    }, 0);
+    nextWeek();
   };
 
   const handlePrevWeek = () => {
     prevWeek();
-    setTimeout(() => {
-      if (weekDays[0]) {
-        setSelectedDate(weekDays[0].format("YYYY-MM-DD"));
-      }
-    }, 0);
+  };
+
+  const handleSelectDate = (date: any) => {
+    const selected = dayjs(date);
+    goToDate(selected.format("YYYY-MM-DD"));
+    setSelectedDate(selected.format("YYYY-MM-DD"));
+    setShowDatePicker(false);
+  };
+
+  useEffect(() => {
+    if (!weekDays || weekDays.length === 0) return;
+
+    const today = dayjs().format("YYYY-MM-DD");
+    const isTodayInWeek = weekDays.some(
+      (d) => d.format("YYYY-MM-DD") === today
+    );
+
+    if (isTodayInWeek) {
+      setSelectedDate(today);
+    } else {
+      setSelectedDate(weekDays[0].format("YYYY-MM-DD"));
+    }
+  }, [weekDays]);
+
+  const handleGoToday = () => {
+    goToToday();
+    const today = dayjs().format("YYYY-MM-DD");
+    setSelectedDate(today);
   };
 
   return (
@@ -102,12 +124,18 @@ export default function ScheduleScreen() {
         </View>
 
         <View style={styles.weekHeader}>
+          <TouchableOpacity onPress={() => setShowDatePicker(true)} style={styles.navBtn}>
+            <Ionicons name="calendar" size={24} color="#1E3A8A" />
+          </TouchableOpacity>
           <TouchableOpacity onPress={handlePrevWeek} style={styles.navBtn}>
             <Ionicons name="chevron-back" size={24} color="#1E3A8A" />
           </TouchableOpacity>
           <Text style={styles.weekText}>{weekLabel}</Text>
           <TouchableOpacity onPress={handleNextWeek} style={styles.navBtn}>
             <Ionicons name="chevron-forward" size={24} color="#1E3A8A" />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={handleGoToday} style={styles.todayBtn}>
+            <Text style={{ color: "#1E3A8A", fontWeight: "600" }}>Hôm nay</Text>
           </TouchableOpacity>
         </View>
 
@@ -241,11 +269,21 @@ export default function ScheduleScreen() {
           />
         )}
       </View>
+      {showDatePicker && (
+        <DateTimePicker
+          isVisible={true}
+          mode="date"
+          date={new Date(selectedDate)}
+          onConfirm={(date: Date) => {
+            handleSelectDate(date);
+          }}
+          onCancel={() => setShowDatePicker(false)}
+        />
+      )}
     </SafeAreaView>
   );
 }
 
-// --- Styles tab con ---
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: "#F9FAFB" },
   container: { flex: 1, backgroundColor: "#F9FAFB" },
@@ -342,4 +380,11 @@ const styles = StyleSheet.create({
   label: { color: "#111827", width: 120 },
   value: { color: "#374151", fontSize: 14, flexShrink: 1, fontWeight: "600" },
   center: { flex: 1, justifyContent: "center", alignItems: "center" },
+  todayBtn: {
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    backgroundColor: "#DBEAFE",
+    borderRadius: 8,
+    marginLeft: 6
+  },
 });
