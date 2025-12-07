@@ -21,6 +21,7 @@ import {
   CreditCard,
   User,
   Settings2,
+  CalendarDays,
 } from "lucide-react";
 import { getAvatarColor } from "@/utils/color-hash";
 import Loading from "@/components/ui/loading";
@@ -276,9 +277,8 @@ export default function Dashboard() {
                       ))
                     ) : (
                       <EmptyState
-                        icon={<Calendar className="w-10 h-10" />}
-                        text="Không có lịch hẹn nào hôm nay."
-                        className="py-1 px-2"
+                        icon={<CalendarDays className="w-12 h-12 text-muted-foreground/50" />}
+                        text="Hôm nay không có lịch hẹn nào."
                       />
                     )}
                   </div>
@@ -321,9 +321,8 @@ export default function Dashboard() {
                       ))
                     ) : (
                       <EmptyState
-                        icon={<Calendar className="w-10 h-10" />}
+                        icon={<Book className="w-12 h-12 text-muted-foreground/50" />}
                         text="Không có lớp học phần hôm nay."
-                        className="py-1"
                       />
                     )}
                   </div>
@@ -374,9 +373,8 @@ export default function Dashboard() {
                     </div>
                   ) : (
                     <EmptyState
-                      icon={<Book className="w-10 h-10" />}
-                      text="Không có lớp học phần nào."
-                      className="py-1"
+                      icon={<Book className="w-12 h-12 text-muted-foreground/50" />}
+                      text="Không có lớp học phần nào trong học kỳ này."
                     />
                   )}
                 </motion.div>
