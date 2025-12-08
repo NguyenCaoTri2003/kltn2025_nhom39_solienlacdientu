@@ -68,7 +68,7 @@ export default function ProfileScreen() {
       </View>
 
       <View style={styles.footer}>
-        <Text style={styles.footerText}>Được phát triển bởi Nhóm 36</Text>
+        <Text style={styles.footerText}>Được phát triển bởi Nhóm 39</Text>
       </View>
     </View>
   );

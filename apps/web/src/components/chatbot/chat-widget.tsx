@@ -61,7 +61,7 @@ export default function ChatWidget() {
 
   return (
     <>
-      {/* Nút chat */}
+      {/* Floating chat button */}
       <button
         onClick={() => setOpen(!open)}
         className="cursor-pointer fixed bottom-5 right-5 w-16 h-16 rounded-full shadow-lg flex items-center justify-center z-[9999] transform transition-all duration-200 hover:scale-110 hover:shadow-2xl"
@@ -84,25 +84,26 @@ export default function ChatWidget() {
       </button>
 
       {open && (
-        <div className="fixed bottom-20 right-5 w-80 h-96 bg-white shadow-xl rounded-lg border flex flex-col overflow-hidden z-[9999]">
+        <div className="fixed bottom-20 right-5 w-80 h-96 bg-white dark:bg-gray-900 text-black dark:text-white shadow-xl rounded-lg border dark:border-gray-700 flex flex-col overflow-hidden z-[9999]">
+          
           {/* Header */}
-          <div className="bg-[#4FC3F7] text-white p-3 font-semibold flex justify-between items-center rounded-t-lg">
+          <div className="bg-[#4FC3F7] dark:bg-[#2196F3] text-white p-3 font-semibold flex justify-between items-center rounded-t-lg">
             <span>Trợ lý Sổ Liên Lạc Điện Tử</span>
             <button onClick={() => setOpen(false)} className="text-lg cursor-pointer">✕</button>
           </div>
 
-          {/* Message list */}
+          {/* Messages */}
           <div className="flex-1 p-3 overflow-y-auto space-y-3">
             {messages.map((m, i) => (
-              <div
-                key={i}
-                className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
-              >
+              <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
                 <div
-                  className={`px-4 py-2 rounded-lg max-w-[75%] break-words text-[0.95rem] ${m.role === "user"
-                      ? "bg-blue-500 text-white text-base"
-                      : "bg-gray-200 text-black text-base"
-                    }`}
+                  className={`
+                    px-4 py-2 rounded-lg max-w-[75%] break-words text-[0.95rem]
+                    ${m.role === "user"
+                      ? "bg-blue-500 text-white dark:bg-blue-600"
+                      : "bg-gray-200 text-black dark:bg-gray-700 dark:text-white"
+                    }
+                  `}
                 >
                   {m.text}
                 </div>
@@ -112,7 +113,7 @@ export default function ChatWidget() {
             {/* Bot đang gõ */}
             {botTyping && (
               <div className="flex justify-start">
-                <div className="px-4 py-2 rounded-lg max-w-[75%] break-words text-gray-700 font-bold bg-gray-200 text-lg flex gap-1">
+                <div className="px-4 py-2 rounded-lg max-w-[75%] bg-gray-200 dark:bg-gray-700 text-black dark:text-white flex gap-1 font-bold">
                   <span className="dot dot-1">.</span>
                   <span className="dot dot-2">.</span>
                   <span className="dot dot-3">.</span>
@@ -124,9 +125,9 @@ export default function ChatWidget() {
           </div>
 
           {/* Input */}
-          <div className="p-3 border-t flex gap-2">
+          <div className="p-3 border-t dark:border-gray-700 flex gap-2 bg-white dark:bg-gray-900">
             <input
-              className="flex-1 border rounded px-3 py-2 text-base"
+              className="flex-1 border rounded px-3 py-2 text-base bg-white dark:bg-gray-800 dark:text-white border-gray-300 dark:border-gray-600"
               placeholder="Nhập tin nhắn..."
               value={input}
               onChange={(e) => setInput(e.target.value)}
@@ -136,8 +137,12 @@ export default function ChatWidget() {
             <button
               onClick={sendMessage}
               disabled={loading || !input.trim()}
-              className={`cursor-pointer p-2 rounded text-white flex items-center justify-center ${loading ? "bg-gray-400 cursor-not-allowed" : "bg-blue-500 hover:bg-blue-600"
-                }`}
+              className={`cursor-pointer p-2 rounded text-white flex items-center justify-center 
+                ${loading
+                  ? "bg-gray-400 dark:bg-gray-600 cursor-not-allowed"
+                  : "bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700"
+                }
+              `}
             >
               <Send size={18} className="stroke-white" />
             </button>
@@ -145,7 +150,7 @@ export default function ChatWidget() {
         </div>
       )}
 
-      {/* CSS animation cho 3 chấm */}
+      {/* Animation */}
       <style jsx>{`
         .dot {
           animation: blink 1.4s infinite both;

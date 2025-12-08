@@ -37,11 +37,19 @@ export default function ProfileHeader({
         <div className="px-5 py-5">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5">
             <div className="flex items-center gap-4">
-              <div className="relative w-16 h-16 ring-2 ring-border rounded-full overflow-hidden flex items-center justify-center text-white font-semibold">
+              <div className="relative w-16 h-16 ring-2 ring-border rounded-full overflow-hidden">
                 {avatar_url ? (
-                  <Image src={avatar_url} alt={displayName} fill sizes="64px" className="object-cover" />
+                  <Image
+                    src={avatar_url}
+                    alt={displayName}
+                    width={64}
+                    height={64}
+                    className="object-cover w-16 h-16"
+                  />
                 ) : (
-                  <span className={`${bgColor} w-full h-full flex items-center justify-center text-2xl`}>
+                  <span
+                    className={`${bgColor} w-full h-full flex items-center justify-center text-white text-2xl`}
+                  >
                     {initialLocal}
                   </span>
                 )}

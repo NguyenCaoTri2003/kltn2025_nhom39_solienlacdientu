@@ -10,8 +10,8 @@ export class ScheduleUseCase {
 
   async getStudentSchedulesByDate(
     studentId: number,
-    startDate: string, 
-    endDate: string, 
+    startDate: string,
+    endDate: string,
     user: any
   ) {
     if (!(await AuthorizationService.canViewStudent(user, studentId))) {
@@ -21,10 +21,10 @@ export class ScheduleUseCase {
   }
 
   async getStudentOfferingScheduleByDate(
-    studentId: number, 
-    offeringId: number, 
-    user: any, 
-    startDate: string, 
+    studentId: number,
+    offeringId: number,
+    user: any,
+    startDate: string,
     endDate: string
   ) {
     if (!(await AuthorizationService.canViewStudent(user, studentId))) {
@@ -61,6 +61,14 @@ export class ScheduleUseCase {
       startDate,
       endDate
     );
+  }
+
+  async getStudentTodaySchedules(studentId: number) {
+    return await this.repo.getStudentSchedulesToday(studentId);
+  }
+
+  async getLecturerTodaySchedules(lecturerId: number) {
+    return await this.repo.getLecturerSchedulesToday(lecturerId);
   }
 
 }
