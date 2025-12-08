@@ -38,6 +38,8 @@ export default function GradesList() {
     return yearStr ? parseInt(yearStr.split(" - ")[0]) : null;
   }, [isParent, activeChild, userData]);
 
+  console.log("Selected Student ID:", selectedStudentId);
+
   if (!userData)
     return (
       <Loading text="Đang tải dữ liệu..." />

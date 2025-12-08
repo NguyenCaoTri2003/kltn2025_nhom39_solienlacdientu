@@ -95,7 +95,7 @@ export default function WeeklyScheduleList({
         <>
           {isInSemester ? (
             <>
-              {hasTodayClass && (
+              {/* {hasTodayClass && (
                 <div className="flex items-center gap-1 text-green-600 font-medium pl-5">
                   <CalendarDays className="w-4 h-4" />
                   Hôm nay có tiết
@@ -106,7 +106,7 @@ export default function WeeklyScheduleList({
                   <CalendarDays className="w-4 h-4" />
                   Ngày mai có tiết
                 </div>
-              )}
+              )} */}
             </>
           ) : (
             <div className="flex items-center gap-1 text-gray-500 italic pl-5">

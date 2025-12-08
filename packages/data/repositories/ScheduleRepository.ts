@@ -1,4 +1,5 @@
 import { supabase } from "../supabaseClient";
+import dayjs from "dayjs";
 
 type LecturerUser = {
   full_name: string | null;
@@ -321,7 +322,6 @@ export class ScheduleRepository {
 
     const theoryOfferingIds = theoryOfferings?.map(o => o.id) ?? [];
 
-    // Lấy các nhóm thực hành mà giảng viên phụ trách
     const { data: practiceGroups } = await supabase
       .from("practice_groups")
       .select("id, offering_id")
@@ -353,7 +353,7 @@ export class ScheduleRepository {
     } else if (practiceGroupIds.length > 0) {
       query = query.in("practice_group_id", practiceGroupIds);
     } else {
-      query = query.is("practice_group_id", null); // chỉ LT
+      query = query.is("practice_group_id", null);
     }
 
     if (startDate) query = query.gte("schedule_date", startDate);
@@ -449,4 +449,156 @@ export class ScheduleRepository {
 
     return { weekly, actual };
   }
+
+  async getStudentSchedulesToday(studentId: number) {
+    const todayStart = dayjs().startOf("day").toISOString();
+    const todayEnd = dayjs().endOf("day").toISOString();
+
+    const { data: enrollments } = await supabase
+      .from("enrollment")
+      .select("offering_id")
+      .eq("student_id", studentId);
+
+    const offeringIds = enrollments?.map((e: any) => e.offering_id) ?? [];
+
+    const { data, error } = await supabase
+      .from("actual_schedules")
+      .select(
+        `
+        id,
+        offering_id,
+        practice_group_id,
+        schedule_date,
+        start_period,
+        period_count,
+        classroom,
+        building,
+        type,
+        status,
+        note,
+        weekly_schedule_id,
+        course_offering:offering_id (
+          id,
+          name,
+          class_code,
+          class_id,
+          lecturers:lecturer_id (
+            id,
+            lecturer_code,
+            users:users!lecturers_id_fkey (
+              full_name,
+              email
+            )
+          ),
+          class:class_id ( 
+            id,
+            name,
+            class_code
+          )
+        )
+      `
+      )
+      .eq("status", "scheduled")
+      .in("offering_id", offeringIds)
+      .gte("schedule_date", todayStart)
+      .lte("schedule_date", todayEnd)
+      .order("schedule_date", { ascending: true });
+
+    if (error) throw error;
+    return data || [];
+  }
+
+  async getLecturerSchedulesToday(lecturerId: number) {
+    const todayStart = dayjs().startOf("day").toISOString();
+    const todayEnd = dayjs().endOf("day").toISOString();
+
+    const { data: theory, error: theoryErr } = await supabase
+      .from("actual_schedules")
+      .select(
+        `
+        *,
+        course_offerings (
+          id,
+          course_id,
+          name,
+          class_code,
+          lecturer_id,
+          courses (id, name, course_code)
+        )
+      `
+      )
+      .eq("status", "scheduled")
+      .gte("schedule_date", todayStart)
+      .lte("schedule_date", todayEnd)
+      .eq("course_offerings.lecturer_id", lecturerId)
+      .order("schedule_date", { ascending: true });
+    if (theoryErr) throw theoryErr;
+
+    const { data: practice, error: practiceErr } = await supabase
+      .from("actual_schedules")
+      .select(
+        `
+        *,
+        practice_groups (
+          id,
+          group_number,
+          lecturer_id
+        ),
+        course_offerings (
+          id,
+          course_id,
+          name,
+          class_code
+        )
+      `
+      )
+      .eq("status", "scheduled")
+      .gte("schedule_date", todayStart)
+      .lte("schedule_date", todayEnd)
+      .eq("practice_groups.lecturer_id", lecturerId)
+      .order("schedule_date", { ascending: true });
+    if (practiceErr) throw practiceErr;
+
+    const { data: exam, error: examErr } = await supabase
+      .from("actual_schedules")
+      .select(
+        `
+        *,
+        course_offerings (
+          id,
+          course_id,
+          name,
+          class_code
+        )
+      `
+      )
+      .eq("status", "scheduled")
+      .gte("schedule_date", todayStart)
+      .lte("schedule_date", todayEnd)
+      .contains("exam_lecturer_ids", [lecturerId])
+      .order("schedule_date", { ascending: true });
+    if (examErr) throw examErr;
+
+    const allSchedules = [...theory, ...practice, ...exam];
+
+    const uniqueSchedulesMap = new Map<number, any>();
+    allSchedules.forEach((s) => {
+      if (!uniqueSchedulesMap.has(s.id)) {
+        uniqueSchedulesMap.set(s.id, s);
+      } else {
+        const existing = uniqueSchedulesMap.get(s.id);
+        uniqueSchedulesMap.set(s.id, { ...existing, ...s });
+      }
+    });
+
+    const uniqueSchedules = Array.from(uniqueSchedulesMap.values());
+
+    uniqueSchedules.sort(
+      (a, b) => new Date(a.schedule_date).getTime() - new Date(b.schedule_date).getTime()
+    );
+
+    return uniqueSchedules;
+  }
+
+
 }

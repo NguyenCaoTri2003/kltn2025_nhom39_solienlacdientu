@@ -49,6 +49,8 @@ export default function GradeContent({
     semesters
   );
 
+  console.log("gradesBySemester:", gradesBySemester);
+
   const semesterIdsWithGrades = useMemo(
     () =>
       semesters

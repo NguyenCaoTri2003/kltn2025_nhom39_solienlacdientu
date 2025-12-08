@@ -1,126 +1,111 @@
 import { Grade, GradeGroup } from "@packages/core/entities/Grade";
 import { supabase } from "../supabaseClient";
 
+type Enrollment = {
+  students: any;
+  student_id: any;
+  id: number;
+  offering_id: number;
+  course_offerings: CourseOffering;
+};
+
+type EnrollmentJoin = {
+  id: number;
+  student_id: number;
+  course_offerings: CourseOffering;
+};
+
+type TheoryGrade = {
+  enrollment_id: number;
+  id: number;
+  score_type: string;
+  score: number;
+  comment: string;
+  enrollment: EnrollmentJoin;
+};
+
+type PracticeGroup = {
+  id: number;
+  group_number: number;
+};
+
+type PracticeEnrollment = {
+  id: number;
+  enrollment_id: number;
+  group_id: number;
+  enrollment: EnrollmentJoin;
+  practice_groups: PracticeGroup;
+};
+
+type PracticeGradeRaw = {
+  id: number;
+  score_type: string;
+  score: number;
+  comment: string;
+  practice_enrollment_id: number;
+};
+
+type GradeSummary = {
+  enrollment_id: number;
+  [k: string]: any;
+};
+
+type Course = {
+  id: number;
+  name: string;
+  course_code: string;
+  credit: number;
+  semester_id: number;
+};
+
+type CourseOffering = {
+  semester_id: number;
+  id: number;
+  name: string;
+  class_code: string;
+  lecturer_id: number;
+  course: Course;
+};
+
+type PracticeGrade = {
+  id: number;
+  score_type: string;
+  score: number;
+  comment: string;
+  practice_enrollment_id: number;
+};
+
 export class GradeRepository {
-  // async getGradesByStudent(student_id: number) {
-  //   const { data: theoryGrades, error: theoryError } = await supabase
-  //     .from("grades")
-  //     .select(`
-  //     id,
-  //     score_type,
-  //     score,
-  //     comment,
-  //     enrollment:enrollment_id (
-  //       id,
-  //       student_id,
-  //       course_offerings:offering_id (
-  //         id,
-  //         name,
-  //         class_code,
-  //         course:course_id (
-  //           id,
-  //           name,
-  //           course_code,
-  //           credit,
-  //           semester_id
-  //         ),
-  //         lecturer_id
-  //       )
-  //     )
-  //   `)
-  //     .eq("enrollment.student_id", student_id);
+  async getGradesByStudent(student_id: number, semesterId?: number) {
 
-  //   if (theoryError) throw theoryError;
+    const { data: rawEnrollments, error: e1 } = await supabase
+      .from("enrollment")
+      .select(`
+      id,
+      offering_id,
+      course_offerings:offering_id (
+        id,
+        name,
+        class_code,
+        lecturer_id,
+        semester_id
+      )
+    `)
+      .eq("student_id", student_id);
 
-  //   const { data: practiceGrades, error: practiceError } = await supabase
-  //     .from("grades")
-  //     .select(`
-  //     id,
-  //     score_type,
-  //     score,
-  //     comment,
-  //     practice_enrollment:practice_enrollment_id (
-  //       id,
-  //       enrollment:enrollment_id (
-  //         id,
-  //         student_id,
-  //         course_offerings:offering_id (
-  //           id,
-  //           name,
-  //           class_code,
-  //           course:course_id (
-  //             id,
-  //             name,
-  //             course_code,
-  //             credit,
-  //             semester_id
-  //           ),
-  //           lecturer_id
-  //         )
-  //       ),
-  //       practice_groups:group_id (
-  //         id,
-  //         group_number,
-  //         lecturer_id
-  //       )
-  //     )
-  //   `)
-  //     .eq("practice_enrollment.enrollment.student_id", student_id);
+    if (e1) throw e1;
 
-  //   if (practiceError) throw practiceError;
+    if (!rawEnrollments || rawEnrollments.length === 0) return [];
 
-  //   const grouped: Record<string, GradeGroup> = {};
+    const enrollments = rawEnrollments as unknown as Enrollment[];
 
-  //   theoryGrades?.forEach((g: any) => {
-  //     const offering = g.enrollment?.course_offerings;
-  //     if (!offering) return;
+    const validEnrollments = semesterId
+      ? enrollments.filter(e => e.course_offerings.semester_id === semesterId)
+      : enrollments;
 
-  //     const offeringId = offering.id;
-  //     if (!grouped[offeringId]) {
-  //       grouped[offeringId] = {
-  //         offering_id: offeringId,
-  //         offering_name: offering.name,
-  //         class_code: offering.class_code,
-  //         course: offering.course,
-  //         lecturer_id: offering.lecturer_id,
-  //         theoryScores: [],
-  //         practiceScores: [],
-  //       };
-  //     }
-  //     grouped[offeringId].theoryScores.push(g);
-  //   });
+    const enrollmentIds = validEnrollments.map(e => e.id);
 
-  //   practiceGrades?.forEach((g: any) => {
-  //     const offering = g.practice_enrollment?.enrollment?.course_offerings;
-  //     if (!offering) return;
-
-  //     const offeringId = offering.id;
-  //     if (!grouped[offeringId]) {
-  //       grouped[offeringId] = {
-  //         offering_id: offeringId,
-  //         offering_name: offering.name,
-  //         class_code: offering.class_code,
-  //         course: offering.course,
-  //         lecturer_id: offering.lecturer_id,
-  //         theoryScores: [],
-  //         practiceScores: [],
-  //       };
-  //     }
-  //     grouped[offeringId].practiceScores.push({
-  //       ...g,
-  //       practice_group: g.practice_enrollment?.practice_groups,
-  //     });
-  //   });
-
-  //   return Object.values(grouped);
-  // }
-
-  async getGradesByStudent(
-    student_id: number,
-    semesterId?: number
-  ) {
-    
-    const { data: theoryGrades, error: theoryError } = await supabase
+    const { data: rawTheoryGrades, error: theoryError } = await supabase
       .from("grades")
       .select(`
       id,
@@ -135,136 +120,125 @@ export class GradeRepository {
           name,
           class_code,
           lecturer_id,
-          semesters:semester_id (
-            id,
-            name,
-            academic_year,
-            start_date,
-            end_date
-          )
+          semester_id
         )
       )
     `)
-      .eq("enrollment.student_id", student_id);
+      .in("enrollment_id", enrollmentIds);
 
     if (theoryError) throw theoryError;
 
-    const { data: practiceGrades, error: practiceError } = await supabase
+    const theoryGrades = rawTheoryGrades as unknown as TheoryGrade[];
+
+    const { data: rawPracticeEnrollments, error: e2 } = await supabase
+      .from("practice_enrollment")
+      .select(`
+      id,
+      enrollment_id,
+      group_id,
+      enrollment:enrollment_id (
+        id,
+        student_id,
+        course_offerings:offering_id (
+          id,
+          name,
+          class_code,
+          lecturer_id,
+          semester_id
+        )
+      ),
+      practice_groups:group_id (
+        id,
+        group_number
+      )
+    `)
+      .in("enrollment_id", enrollmentIds);
+
+    if (e2) throw e2;
+
+    const practiceEnrollments = rawPracticeEnrollments as unknown as PracticeEnrollment[];
+    const practiceEnrollmentIds = practiceEnrollments.map(p => p.id);
+
+    const { data: rawPracticeGrades, error: practiceError } = await supabase
       .from("grades")
       .select(`
       id,
       score_type,
       score,
       comment,
-      practice_enrollment:practice_enrollment_id (
-        id,
-        enrollment:enrollment_id (
-          id,
-          student_id,
-          course_offerings:offering_id (
-            id,
-            name,
-            class_code,
-            lecturer_id,
-            semesters:semester_id (
-              id,
-              name,
-              academic_year,
-              start_date,
-              end_date
-            )
-          )
-        ),
-        practice_groups:group_id (
-          id,
-          group_number
-        )
-      )
+      practice_enrollment_id
     `)
-      .eq("practice_enrollment.enrollment.student_id", student_id);
+      .in("practice_enrollment_id", practiceEnrollmentIds);
 
     if (practiceError) throw practiceError;
 
-    const filteredTheoryGrades = semesterId
-      ? theoryGrades.filter(
-        (g: any) =>
-          g.enrollment?.course_offerings?.semesters?.id === semesterId
-      )
-      : theoryGrades;
+    const practiceGradesRaw = rawPracticeGrades as PracticeGradeRaw[];
 
-    const filteredPracticeGrades = semesterId
-      ? practiceGrades.filter(
-        (g: any) =>
-          g.practice_enrollment?.enrollment?.course_offerings?.semesters?.id === semesterId
-      )
-      : practiceGrades;
+    const fullPracticeGrades = practiceGradesRaw.map(pg => {
+      const pEnroll = practiceEnrollments.find(p => p.id === pg.practice_enrollment_id)!;
+      return {
+        ...pg,
+        practice_enrollment: pEnroll,
+      };
+    });
 
-    const enrollmentIds = Array.from(
-      new Set([
-        ...filteredTheoryGrades.map((g: any) => g.enrollment?.id),
-        ...filteredPracticeGrades.map((g: any) => g.practice_enrollment?.enrollment?.id),
-      ].filter(Boolean))
-    );
+    let gradeSummaries: Record<number, GradeSummary> = {};
 
-    let gradeSummaries: Record<number, any> = {};
     if (enrollmentIds.length > 0) {
-      const { data: summaries, error: summaryError } = await supabase
+      const { data: summaries, error: sErr } = await supabase
         .from("grade_summary")
         .select("*")
         .in("enrollment_id", enrollmentIds);
 
-      if (summaryError) throw summaryError;
+      if (sErr) throw sErr;
 
-      gradeSummaries = summaries.reduce((acc: any, s: any) => {
+      gradeSummaries = (summaries as GradeSummary[]).reduce((acc, s) => {
         acc[s.enrollment_id] = s;
         return acc;
-      }, {});
+      }, {} as Record<number, GradeSummary>);
     }
 
-    const grouped: Record<string, GradeGroup> = {};
+    const grouped: Record<number, any> = {};
 
-    filteredTheoryGrades.forEach((g: any) => {
-      const enrollment = g.enrollment;
-      const offering = enrollment?.course_offerings;
-      if (!offering) return;
-
+    theoryGrades.forEach(g => {
+      const offering = g.enrollment.course_offerings;
       const offeringId = offering.id;
+
       if (!grouped[offeringId]) {
         grouped[offeringId] = {
-          offering_id: offeringId,
+          offering_id: offering.id,
           offering_name: offering.name,
           class_code: offering.class_code,
-          course: offering.course,
           lecturer_id: offering.lecturer_id,
           theoryScores: [],
           practiceScores: [],
-          summary: enrollment ? gradeSummaries[enrollment.id] || null : null,
+          summary: gradeSummaries[g.enrollment.id] || null,
         };
       }
+
       grouped[offeringId].theoryScores.push(g);
     });
 
-    filteredPracticeGrades.forEach((g: any) => {
-      const enrollment = g.practice_enrollment?.enrollment;
-      const offering = enrollment?.course_offerings;
-      if (!offering) return;
-
+    fullPracticeGrades.forEach(g => {
+      const offering = g.practice_enrollment.enrollment.course_offerings;
       const offeringId = offering.id;
+      const enrollmentId = g.practice_enrollment.enrollment.id;
+
       if (!grouped[offeringId]) {
         grouped[offeringId] = {
-          offering_id: offeringId,
+          offering_id: offering.id,
           offering_name: offering.name,
           class_code: offering.class_code,
-          course: offering.course,
           lecturer_id: offering.lecturer_id,
           theoryScores: [],
           practiceScores: [],
-          summary: enrollment ? gradeSummaries[enrollment.id] || null : null,
+          summary: gradeSummaries[enrollmentId] || null,
         };
       }
+
       grouped[offeringId].practiceScores.push({
         ...g,
-        practice_group: g.practice_enrollment?.practice_groups,
+        practice_group: g.practice_enrollment.practice_groups,
       });
     });
 
@@ -314,7 +288,7 @@ export class GradeRepository {
     `)
       .eq("practice_enrollment.enrollment.student_id", student_id)
       .eq("practice_enrollment.enrollment.offering_id", offering_id)
-      .not("practice_enrollment", "is", null); // tránh record null
+      .not("practice_enrollment", "is", null);
 
     if (practiceError) throw practiceError;
 
@@ -325,124 +299,130 @@ export class GradeRepository {
   }
 
   async getAllGradesByOffering(offeringId: number) {
-    // --- Lấy điểm lý thuyết ---
-    const { data: theoryGrades, error: theoryError } = await supabase
-      .from("grades")
+
+    const { data: rawEnrollments, error: e1 } = await supabase
+      .from("enrollment")
       .select(`
       id,
-      score_type,
-      score,
-      comment,
-      enrollment:enrollment_id (
+      student_id,
+      students:student_id (
         id,
-        student_id,
-        students:student_id (
-          id,
-          student_code,
-          users(full_name)
-        ),
-        course_offerings:offering_id (
+        student_code,
+        users(full_name)
+      ),
+      course_offerings:offering_id (
+        id,
+        name,
+        class_code,
+        course:course_id (
           id,
           name,
-          class_code,
-          course:course_id (
-            id,
-            name,
-            course_code,
-            credit,
-            semester_id
-          ),
-          lecturer_id
-        )
+          course_code,
+          credit,
+          semester_id
+        ),
+        lecturer_id
       )
     `)
-      .eq("enrollment.offering_id", offeringId);
+      .eq("offering_id", offeringId);
 
-    if (theoryError) throw theoryError;
+    if (e1) throw e1;
+    if (!rawEnrollments || rawEnrollments.length === 0) return [];
 
-    // --- Lấy điểm thực hành ---
-    const { data: practiceGrades, error: practiceError } = await supabase
+    // ép kiểu
+    const enrollments = rawEnrollments as unknown as Enrollment[];
+
+    const enrollmentIds = enrollments.map(e => e.id);
+
+    //
+    // ===== STEP 2: Theory grades =====
+    //
+    const { data: rawTheory, error: tErr } = await supabase
       .from("grades")
+      .select(`id, score_type, score, comment, enrollment_id`)
+      .in("enrollment_id", enrollmentIds);
+
+    if (tErr) throw tErr;
+
+    const theoryGrades = rawTheory as unknown as TheoryGrade[];
+
+    //
+    // ===== STEP 3: Practice enrollment =====
+    //
+    const { data: rawPracticeEnrollments, error: e2 } = await supabase
+      .from("practice_enrollment")
       .select(`
       id,
-      score_type,
-      score,
-      comment,
-      practice_enrollment:practice_enrollment_id (
+      enrollment_id,
+      group_id,
+      practice_groups:group_id (
         id,
-        enrollment:enrollment_id (
-          id,
-          student_id,
-          students:student_id (
-            id,
-            student_code,
-            users(full_name)
-          ),
-          course_offerings:offering_id (
-            id,
-            name,
-            class_code,
-            course:course_id (
-              id,
-              name,
-              course_code,
-              credit,
-              semester_id
-            ),
-            lecturer_id
-          )
-        ),
-        practice_groups:group_id (
-          id,
-          group_number,
-          lecturer_id
-        )
+        group_number,
+        lecturer_id
       )
     `)
-      .eq("practice_enrollment.enrollment.offering_id", offeringId);
+      .in("enrollment_id", enrollmentIds);
 
-    if (practiceError) throw practiceError;
+    if (e2) throw e2;
 
-    const extractEnrollmentId = (enrollment: any) =>
-      Array.isArray(enrollment) ? enrollment[0]?.id : enrollment?.id;
+    const practiceEnrollmentList = rawPracticeEnrollments as unknown as PracticeEnrollment[];
 
-    const enrollmentIds = [
-      ...(theoryGrades?.map((g: any) => extractEnrollmentId(g.enrollment)) ?? []),
-      ...(practiceGrades?.map((g: any) => extractEnrollmentId(g.practice_enrollment?.enrollment)) ?? []),
-    ].filter((id): id is number => !!id);
+    const practiceEnrollmentIds = practiceEnrollmentList.map(p => p.id);
 
-    const uniqueEnrollmentIds = [...new Set(enrollmentIds)];
+    //
+    // ===== STEP 4: Practice grades =====
+    //
+    const { data: rawPracticeGrades, error: pErr } = await supabase
+      .from("grades")
+      .select(`id, score_type, score, comment, practice_enrollment_id`)
+      .in("practice_enrollment_id", practiceEnrollmentIds);
 
-    const { data: summaries, error: summaryError } = await supabase
+    if (pErr) throw pErr;
+
+    const practiceGrades = rawPracticeGrades as PracticeGrade[];
+
+    //
+    // ===== STEP 5: Grade summary =====
+    //
+    const { data: rawSummaries, error: sErr } = await supabase
       .from("grade_summary")
-      .select("enrollment_id, total_score, gpa4, letter_grade, classification, passed, note")
-      .in("enrollment_id", uniqueEnrollmentIds);
+      .select("*")
+      .in("enrollment_id", enrollmentIds);
 
-    if (summaryError) throw summaryError;
+    if (sErr) throw sErr;
 
-    const grouped: Record<string, any> = {};
+    const summaryMap = (rawSummaries as GradeSummary[]).reduce((acc, s) => {
+      acc[s.enrollment_id] = s;
+      return acc;
+    }, {} as Record<number, GradeSummary>);
 
-    theoryGrades?.forEach((g: any) => {
-      const student = g.enrollment?.students;
-      if (!student) return;
+    //
+    // ===== STEP 6: group by student =====
+    //
+    const grouped: Record<number, any> = {};
 
-      const studentId = student.id;
-      const enrollmentId = g.enrollment?.id;
+    // init student entries
+    for (const e of enrollments) {
+      grouped[e.student_id] = {
+        student_id: e.student_id,
+        student_code: e.students.student_code,
+        student_name: e.students.users.full_name,
+        offering: e.course_offerings,
+        theoryScores: [],
+        practiceScores: [],
+        practice_group_number: null,
+        summary: summaryMap[e.id] ?? null,
+      };
+    }
 
-      if (!grouped[studentId]) {
-        grouped[studentId] = {
-          student_id: studentId,
-          student_code: student.student_code,
-          student_name: student.users.full_name,
-          offering: g.enrollment.course_offerings,
-          theoryScores: [],
-          practiceScores: [],
-          practice_group_number: null,
-          summary: summaries?.find((s) => s.enrollment_id === enrollmentId) ?? null,
-        };
-      }
+    //
+    // attach theory grades
+    //
+    theoryGrades.forEach(g => {
+      const enrollment = enrollments.find(e => e.id === g.enrollment_id);
+      if (!enrollment) return;
 
-      grouped[studentId].theoryScores.push({
+      grouped[enrollment.student_id].theoryScores.push({
         id: g.id,
         type: g.score_type,
         score: g.score,
@@ -450,40 +430,33 @@ export class GradeRepository {
       });
     });
 
-    practiceGrades?.forEach((g: any) => {
-      const student = g.practice_enrollment?.enrollment?.students;
-      if (!student) return;
+    //
+    // attach practice grades
+    //
+    practiceGrades.forEach(g => {
+      const pEnroll = practiceEnrollmentList.find(p => p.id === g.practice_enrollment_id);
+      if (!pEnroll) return;
 
-      const studentId = student.id;
-      const enrollmentId = g.practice_enrollment?.enrollment?.id;
-      const group = g.practice_enrollment?.practice_groups;
+      const enrollment = enrollments.find(e => e.id === pEnroll.enrollment_id);
+      if (!enrollment) return;
 
-      if (!grouped[studentId]) {
-        grouped[studentId] = {
-          student_id: studentId,
-          student_code: student.student_code,
-          student_name: student.users.full_name,
-          offering: g.practice_enrollment.enrollment.course_offerings,
-          theoryScores: [],
-          practiceScores: [],
-          practice_group_number: group?.group_number ?? null,
-          summary: summaries?.find((s) => s.enrollment_id === enrollmentId) ?? null,
-        };
-      } else if (!grouped[studentId].practice_group_number) {
-        grouped[studentId].practice_group_number = group?.group_number ?? null;
-      }
-
-      grouped[studentId].practiceScores.push({
+      grouped[enrollment.student_id].practiceScores.push({
         id: g.id,
         type: g.score_type,
         score: g.score,
         comment: g.comment,
-        practice_group: group,
+        practice_group: pEnroll.practice_groups,
       });
+
+      if (!grouped[enrollment.student_id].practice_group_number) {
+        grouped[enrollment.student_id].practice_group_number =
+          pEnroll.practice_groups?.group_number ?? null;
+      }
     });
 
     return Object.values(grouped);
   }
+
 
   async getStudentGradesInOffering(studentId: number, offeringId: number) {
     const { data: enrollment, error: enrollError } = await supabase

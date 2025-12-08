@@ -21,25 +21,6 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   }
 }
 
-// export async function PATCH(req: NextRequest, { params }: { params: any }) {
-//   try {
-//     const { id } = await params; 
-//     const payload = authenticate(req); 
-
-//     if (payload.id !== Number(id) && payload.role !== "admin") {
-//       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-//     }
-
-//     const updates = await req.json(); 
-//     const user = await repo.updateUserFull(Number(id), updates);
-
-//     return NextResponse.json(user);
-//   } catch (e: any) {
-//     return NextResponse.json({ error: e.message }, { status: e.message === "Invalid token" ? 401 : 400 });
-//   }
-// }
-
-
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;

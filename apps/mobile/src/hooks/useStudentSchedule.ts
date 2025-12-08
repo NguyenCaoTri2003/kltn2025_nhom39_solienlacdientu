@@ -1,6 +1,8 @@
 import { useEffect, useState, useMemo } from "react";
 import { fetchStudentSchedule, ScheduleItem } from "../services/scheduleService";
 import dayjs from "dayjs";
+import isoWeek from "dayjs/plugin/isoWeek";
+dayjs.extend(isoWeek);
 
 export function useStudentSchedule(studentId: number | null | undefined) {
   const [weekOffset, setWeekOffset] = useState(0);
@@ -9,8 +11,9 @@ export function useStudentSchedule(studentId: number | null | undefined) {
   const [error, setError] = useState<string | null>(null);
 
   const { startDate, endDate, weekLabel, weekDays } = useMemo(() => {
-    const start = dayjs().startOf("week").add(weekOffset, "week");
-    const end = start.endOf("week");
+    const start = dayjs().startOf("isoWeek").add(weekOffset, "week");
+    const end = start.endOf("isoWeek");
+
     const days = Array.from({ length: 7 }, (_, i) => start.add(i, "day"));
     return {
       startDate: start.format("YYYY-MM-DD"),
@@ -19,6 +22,17 @@ export function useStudentSchedule(studentId: number | null | undefined) {
       weekDays: days,
     };
   }, [weekOffset]);
+
+  const goToDate = (dateStr: string) => {
+    const date = dayjs(dateStr);
+
+    const mondayOfToday = dayjs().startOf("isoWeek");
+    const mondayOfTarget = date.startOf("isoWeek");
+
+    const diffWeeks = mondayOfTarget.diff(mondayOfToday, "week");
+
+    setWeekOffset(diffWeeks);
+  };
 
   const fetchData = async () => {
     try {
@@ -45,5 +59,7 @@ export function useStudentSchedule(studentId: number | null | undefined) {
     weekDays,
     nextWeek: () => setWeekOffset((w) => w + 1),
     prevWeek: () => setWeekOffset((w) => w - 1),
+    goToDate,
+    goToToday: () => setWeekOffset(0)
   };
 }

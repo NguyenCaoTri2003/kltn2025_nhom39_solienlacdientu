@@ -114,7 +114,7 @@ export default function NavbarClient({ userRole, userName, avatarUrl, userId }: 
   }
 
   const roleBasePath = userRole === 'admin' ? '/admin' : userRole === 'lecturer' ? '/lecturer' : '/portal';
-  const profilePath = (subPath: "infoV2" | "change-password") => `${roleBasePath}/profile/${subPath}`;
+  const profilePath = (subPath: "info" | "change-password") => `${roleBasePath}/profile/${subPath}`;
   const navItems = userRole === 'admin' ? adminNavItems : userRole === 'lecturer' ? teacherNavItems : userRole === 'student' ? studentNavItems : parentNavItems;
 
   if (userRole === 'student' || userRole === 'parent') {
@@ -173,11 +173,18 @@ export default function NavbarClient({ userRole, userName, avatarUrl, userId }: 
               <NotificationDropdown userRole={userRole} />
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button className="cursor-pointer relative w-9 h-9 rounded-full overflow-hidden flex items-center justify-center text-white font-semibold border border-border">
+                  <button className="cursor-pointer relative w-9 h-9 rounded-full overflow-hidden flex items-center justify-center border border-border">
                     {avatarUrl ? (
-                      <Image src={avatarUrl} alt={userName} fill className="object-cover" />
+                      <Image
+                        src={avatarUrl}
+                        alt={userName}
+                        width={36}
+                        height={36}
+                        quality={100}
+                        className="object-cover w-9 h-9"
+                      />
                     ) : (
-                      <span className={`${bgColor} w-full h-full flex items-center justify-center`}>
+                      <span className={`${bgColor} w-full h-full flex items-center justify-center text-white font-semibold`}>
                         {initial}
                       </span>
                     )}
@@ -189,7 +196,7 @@ export default function NavbarClient({ userRole, userName, avatarUrl, userId }: 
                     {userName}
                   </div>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => router.push(profilePath("infoV2"))}>
+                  <DropdownMenuItem onClick={() => router.push(profilePath("info"))}>
                     <User className="w-4 h-4 mr-2" /> Thông tin cá nhân
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => router.push(profilePath("change-password"))}>
@@ -310,7 +317,7 @@ export default function NavbarClient({ userRole, userName, avatarUrl, userId }: 
                   <Button variant="outline" size="sm" className="text-xs">Tùy chọn</Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48">
-                  <DropdownMenuItem onClick={() => router.push(profilePath('infoV2'))}>
+                  <DropdownMenuItem onClick={() => router.push(profilePath('info'))}>
                     <User className="w-4 h-4 mr-2" /> Thông tin cá nhân
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => router.push(profilePath('change-password'))}>
@@ -366,7 +373,7 @@ export default function NavbarClient({ userRole, userName, avatarUrl, userId }: 
                 );
               })}
               <div className="pt-2 border-t border-border mt-2 space-y-1">
-                <button onClick={() => { router.push(profilePath('infoV2')); setIsMobileMenuOpen(false); }} className="w-full flex items-center gap-2 rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-accent hover:text-foreground">
+                <button onClick={() => { router.push(profilePath('info')); setIsMobileMenuOpen(false); }} className="w-full flex items-center gap-2 rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-accent hover:text-foreground">
                   <User className="w-4 h-4" /> Thông tin cá nhân
                 </button>
                 <button onClick={() => { router.push(profilePath('change-password')); setIsMobileMenuOpen(false); }} className="w-full flex items-center gap-2 rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-accent hover:text-foreground">
@@ -446,11 +453,18 @@ export default function NavbarClient({ userRole, userName, avatarUrl, userId }: 
             {/* Avatar Dropdown */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="cursor-pointer relative w-9 h-9 rounded-full overflow-hidden flex items-center justify-center text-white font-semibold border border-border hover:opacity-90 transition">
+                <button className="cursor-pointer relative w-9 h-9 rounded-full overflow-hidden flex items-center justify-center border border-border">
                   {avatarUrl ? (
-                    <Image src={avatarUrl} alt={userName} fill className="object-cover" />
+                    <Image
+                      src={avatarUrl}
+                      alt={userName}
+                      width={36}
+                      height={36}
+                      quality={100}
+                      className="object-cover w-9 h-9"
+                    />
                   ) : (
-                    <span className={`${bgColor} w-full h-full flex items-center justify-center`}>
+                    <span className={`${bgColor} w-full h-full flex items-center justify-center text-white font-semibold`}>
                       {initial}
                     </span>
                   )}
@@ -462,7 +476,7 @@ export default function NavbarClient({ userRole, userName, avatarUrl, userId }: 
                   {userName}
                 </div>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => router.push(profilePath("infoV2"))}>
+                <DropdownMenuItem onClick={() => router.push(profilePath("info"))}>
                   <User className="w-4 h-4 mr-2" /> Thông tin cá nhân
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => router.push(profilePath("change-password"))}>
