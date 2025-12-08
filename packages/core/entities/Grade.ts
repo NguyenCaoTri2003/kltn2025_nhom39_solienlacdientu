@@ -4,7 +4,7 @@ export interface Grade {
   score: number | null;
   comment?: string;
   type: string;
-  
+
 }
 
 export interface GradeGroup {

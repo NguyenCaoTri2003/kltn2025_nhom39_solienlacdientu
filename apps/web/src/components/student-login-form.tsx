@@ -17,37 +17,6 @@ export function StudentLoginForm() {
   const router = useRouter()
   const { refreshUser } = useUser();
 
-  // const handleSubmit = async (e: React.FormEvent) => {
-  //   e.preventDefault()
-  //   setIsLoading(true)
-  //   setError("")
-
-  //   const role = isParent ? "parent" : "student"
-
-  //   try {
-  //     const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/login/studentorparent`, {
-  //       method: "POST",
-  //       headers: { "Content-Type": "application/json" },
-  //       credentials: "include",
-  //       body: JSON.stringify({ identifier: account, password, role }),
-  //     })
-
-  //     const data = await res.json()
-  //     console.log("Login response:", data);
-  //     if (!res.ok) throw new Error(data.error || "Đăng nhập thất bại")
-
-  //       localStorage.setItem("user", JSON.stringify(data.user))
-  //       localStorage.setItem("token", data.token)
-  //       await refreshUser();
-
-  //     router.push("/portal")
-  //   } catch (err: any) {
-  //     setError(err.message)
-  //   } finally {
-  //     setIsLoading(false)
-  //   }
-  // }
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -57,8 +26,8 @@ export function StudentLoginForm() {
 
     try {
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/auth/login/studentorparent`,
-        //  `/api/auth/login/studentorparent`,
+        // `${process.env.NEXT_PUBLIC_API_URL}/api/auth/login/studentorparent`,
+         `/api/auth/login/studentorparent`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

@@ -118,11 +118,6 @@ export default function ChatWindow({
                 },
                 (payload) => {
                     const updatedMsg = payload.new as Message;
-                    // setMessages((prev) =>
-                    //     prev.map((m) =>
-                    //         m.id === updatedMsg.id ? { ...m, is_read: updatedMsg.is_read } : m
-                    //     )
-                    // );
                     setMessages((prev) =>
                         prev.map((m) => (m.id === updatedMsg.id ? { ...m, ...updatedMsg } : m))
                     );

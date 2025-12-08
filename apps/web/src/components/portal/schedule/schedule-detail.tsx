@@ -303,7 +303,7 @@ export default function ScheduleDetail() {
                                                                                         </p>
                                                                                         {item.exam_info.lecturers && item.exam_info.lecturers.length > 0 && (
                                                                                             <p className="text-[11px] text-muted-foreground dark:text-gray-400">
-                                                                                                <span className="font-medium">GV:</span> {item.exam_info.lecturers.map((l) => l.full_name).join(", ")}
+                                                                                                <span className="font-medium">GV:</span> {item.exam_info.lecturers.map((l: any) => l.full_name).join(", ")}
                                                                                             </p>
                                                                                         )}
                                                                                     </>
