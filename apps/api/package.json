@@ -12,11 +12,11 @@
     "@google/genai": "^1.29.1",
     "@sendgrid/mail": "^8.1.6",
     "ioredis": "^5.8.2",
-    "next": "15.5.2",
+    "next": "15.5.7",
     "nodemailer": "^7.0.9",
     "rate-limiter-flexible": "^8.2.0",
-    "react": "19.1.0",
-    "react-dom": "19.1.0",
+    "react": "19.1.2",
+    "react-dom": "19.1.2",
     "resend": "^6.4.1"
   },
   "devDependencies": {
@@ -27,7 +27,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
-    "eslint-config-next": "15.5.3",
+    "eslint-config-next": "15.5.7",
     "typescript": "^5"
   }
 }
