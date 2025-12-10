@@ -30,7 +30,7 @@ const nextConfig: NextConfig = {
     return [
       {
         source: "/api/:path*",
-        destination: "https://kltn2025-nhom39-solienlacdientu.onrender.com/api/:path*", // ← BE Render
+        destination: "https://kltn2025-nhom39-solienlacdientu.onrender.com/api/:path*", 
       },
     ];
   },

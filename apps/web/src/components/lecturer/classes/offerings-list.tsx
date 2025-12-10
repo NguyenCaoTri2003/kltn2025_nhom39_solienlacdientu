@@ -389,88 +389,6 @@ export default function OfferingsList() {
           </div>
         </div>
 
-        {/* <div
-          className={`grid gap-4 sm:grid-cols-2 xl:grid-cols-4 ${
-            loading ? "animate-pulse" : ""
-          }`}
-        >
-          <div className="group rounded-2xl border border-border/50 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent p-5 shadow-[0_20px_60px_-40px_rgba(37,99,235,0.65)] transition hover:-translate-y-1 hover:border-primary/60 hover:shadow-[0_24px_80px_-40px_rgba(37,99,235,0.75)]">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-medium uppercase tracking-[0.15em] text-muted-foreground">
-                  Tổng lớp học phần
-                </p>
-                <p className="mt-2 text-3xl font-semibold text-foreground">
-                  {summaryStats.total}
-                </p>
-              </div>
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/15 text-primary">
-                <BookOpen className="h-5 w-5" />
-              </div>
-            </div>
-            <p className="mt-4 text-xs text-muted-foreground">
-              {summaryStats.theory} lý thuyết · {summaryStats.practice} thực hành
-            </p>
-          </div>
-
-          <div className="group rounded-2xl border border-border/50 bg-gradient-to-br from-emerald-500/10 via-emerald-500/5 to-transparent p-5 shadow-[0_20px_60px_-40px_rgba(16,185,129,0.65)] transition hover:-translate-y-1 hover:border-emerald-500/60 hover:shadow-[0_24px_80px_-40px_rgba(16,185,129,0.75)]">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-medium uppercase tracking-[0.15em] text-muted-foreground">
-                  Tổng tín chỉ
-                </p>
-                <p className="mt-2 text-3xl font-semibold text-foreground">
-                  {summaryStats.totalCredits}
-                </p>
-              </div>
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-500">
-                <GraduationCap className="h-5 w-5" />
-              </div>
-            </div>
-            <p className="mt-4 text-xs text-muted-foreground">Tổng số tín chỉ của các lớp</p>
-          </div>
-
-          <div className="group rounded-2xl border border-border/50 bg-gradient-to-br from-indigo-500/10 via-indigo-500/5 to-transparent p-5 shadow-[0_20px_60px_-40px_rgba(99,102,241,0.65)] transition hover:-translate-y-1 hover:border-indigo-500/60 hover:shadow-[0_24px_80px_-40px_rgba(99,102,241,0.75)]">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-medium uppercase tracking-[0.15em] text-muted-foreground">
-                  Sức chứa
-                </p>
-                <p className="mt-2 text-3xl font-semibold text-foreground">
-                  {summaryStats.totalCapacity}
-                </p>
-              </div>
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-indigo-500/15 text-indigo-500">
-                <Users className="h-5 w-5" />
-              </div>
-            </div>
-            <p className="mt-4 text-xs text-muted-foreground">
-              {summaryStats.totalRegistered} sinh viên đã đăng ký
-            </p>
-          </div>
-
-          <div className="group rounded-2xl border border-border/50 bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-transparent p-5 shadow-[0_20px_60px_-40px_rgba(245,158,11,0.65)] transition hover:-translate-y-1 hover:border-amber-500/60 hover:shadow-[0_24px_80px_-40px_rgba(245,158,11,0.75)]">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-medium uppercase tracking-[0.15em] text-muted-foreground">
-                  Tỉ lệ đăng ký
-                </p>
-                <p className="mt-2 text-3xl font-semibold text-foreground">
-                  {summaryStats.totalCapacity > 0 ? `${summaryStats.occupancy}%` : "-"}
-                </p>
-              </div>
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-amber-500/15 text-amber-600">
-                <Info className="h-5 w-5" />
-              </div>
-            </div>
-            <p className="mt-4 text-xs text-muted-foreground">
-              {summaryStats.totalCapacity > 0
-                ? `${summaryStats.totalRegistered}/${summaryStats.totalCapacity} SV`
-                : "Chưa có dữ liệu"}
-            </p>
-          </div>
-        </div> */}
-
         {loading ? (
           <CourseOfferingSkeleton items={6} />
         ) : filteredOfferings.length === 0 ? (
@@ -544,15 +462,11 @@ export default function OfferingsList() {
                       <p className="mt-2 text-xs text-muted-foreground">
                         Nhóm thực hành số {o.practice_group_number}
                       </p>
-                    ) : o.practice_group_count > 0 ? (
-                      <p className="mt-2 text-xs text-muted-foreground">
-                        {o.practice_group_count} nhóm thực hành phối hợp
-                      </p>
                     ) : (
                       <div className="h-5" />
                     )}
 
-                    <div className="mt-3 space-y-1.5 rounded-2xl border border-dashed border-border/50 bg-muted/20 px-4 py-3 text-sm text-muted-foreground">
+                    <div className="mt-3 space-y-1.5 rounded-2xl border border-dashed border-border/50 bg-muted/20 px-4 py-3 text-sm text-muted-foreground dark:border-border/40 dark:bg-muted/10">
                       <p>
                         Mã lớp học phần:{" "}
                         <span className="font-medium text-foreground">{o.class_code}</span>

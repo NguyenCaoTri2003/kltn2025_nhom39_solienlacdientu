@@ -100,12 +100,12 @@ export function UserDetailModal({ open, userId, onClose }: { open: boolean; user
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
-      <div className="relative z-10 w-full max-w-2xl mx-4 rounded-xl bg-white border border-border shadow-lg">
-        <div className="px-6 py-4 border-b border-border flex items-center justify-between">
+      <div className="relative z-10 w-full max-w-2xl mx-4 rounded-xl bg-white dark:bg-card border border-border dark:border-border shadow-lg dark:shadow-none">
+        <div className="px-6 py-4 border-b border-border dark:border-border bg-white dark:bg-card flex items-center justify-between">
           <h3 className="text-lg font-semibold text-foreground">Chi tiết người dùng</h3>
-          <button onClick={onClose} className="px-3 py-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 text-sm">Đóng</button>
+          <button onClick={onClose} className="px-3 py-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 dark:bg-muted dark:hover:bg-muted/70 text-sm text-foreground dark:text-foreground">Đóng</button>
         </div>
-        <div className="px-6 py-5 max-h-[75vh] overflow-y-auto">
+        <div className="px-6 py-5 max-h-[75vh] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 dark:scrollbar-thumb-gray-700 dark:scrollbar-track-gray-800">
           {loading ? (
             <div className="flex items-center justify-center py-6">
               <Loading text="Đang tải..." />
@@ -118,11 +118,9 @@ export function UserDetailModal({ open, userId, onClose }: { open: boolean; user
               <Field label="Vai trò" value={translateRole(user.role || "-") as string} />
               <Field label="Email" value={user.email || "-"} />
               <Field label="Số điện thoại" value={user.phone || "-"} />
-              {/* Ẩn trạng thái theo yêu cầu */}
               <Field label="CCCD" value={user.citizen_id_card || "-"} />
               <Field label="Địa chỉ" value={user.address || "-"} />
               <Field label="Dân tộc" value={user.ethnic || "-"} />
-              {/* Ẩn ngày tạo và đăng nhập cuối theo yêu cầu */}
               <Field label="Mã số" value={user._code || user.student?.student_code || user.lecturer?.lecturer_code || "-"} />
               {/* Khoa */}
               {(() => {
@@ -255,8 +253,8 @@ export function UserDetailModal({ open, userId, onClose }: { open: boolean; user
 function Field({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex flex-row items-center gap-2">
-      <label className="text-gray-700 font-medium flex-shrink-0 min-w-[140px]">{label}:</label>
-      <input type="text" readOnly value={value} className="flex-1 bg-transparent text-gray-800 focus:outline-none border-b-2 border-transparent" />
+      <label className="text-gray-700 dark:text-muted-foreground font-medium flex-shrink-0 min-w-[140px]">{label}:</label>
+      <input type="text" readOnly value={value} className="flex-1 bg-transparent text-gray-800 focus:outline-none border-b-2 border-transparent dark:border-transparent dark:text-foreground" />
     </div>
   );
 }

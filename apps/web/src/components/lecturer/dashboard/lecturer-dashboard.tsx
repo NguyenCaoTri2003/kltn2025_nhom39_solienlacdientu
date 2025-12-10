@@ -265,7 +265,7 @@ export default function LecturerDashboard() {
         <div className="py-1 px-6 sm:px-6 lg:px-8">
             <div className="max-w-7xl mx-auto">
                 <motion.div
-                    className="rounded-2xl border bg-white p-6 sm:p-8 shadow-sm"
+                    className="rounded-2xl border bg-white p-6 sm:p-8 shadow-sm dark:bg-gray-950 dark:border-gray-800 dark:shadow-md"
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.4 }}
