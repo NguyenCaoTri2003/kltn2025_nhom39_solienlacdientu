@@ -188,10 +188,10 @@ export function UserDetailModal({ open, userId, onClose }: { open: boolean; user
                                 p.relationship === "father"
                                   ? "Họ tên cha"
                                   : p.relationship === "mother"
-                                  ? "Họ tên mẹ"
-                                  : p.relationship === "guardian"
-                                  ? "Họ tên người giám hộ"
-                                  : "Họ tên"
+                                    ? "Họ tên mẹ"
+                                    : p.relationship === "guardian"
+                                      ? "Họ tên người giám hộ"
+                                      : "Họ tên"
                               }
                               value={p.user.full_name}
                             />
@@ -215,9 +215,18 @@ export function UserDetailModal({ open, userId, onClose }: { open: boolean; user
                         <div key={idx}>
                           <div className="grid grid-cols-1 gap-3">
                             <Field label="Họ tên (con)" value={c.user?.full_name || "-"} />
-                            <Field label="Quan hệ" value={c.relationship} />
+                            <Field
+                              label="Quan hệ"
+                              value={
+                                c.relationship === "father"
+                                  ? "Cha"
+                                  : c.relationship === "mother"
+                                    ? "Mẹ"
+                                    : "Người giám hộ"
+                              }
+                            />
                             <Field label="Mã sinh viên" value={c.student?.student_code || "-"} />
-                          <Field label="Trạng thái học tập" value={translateAcademicStatus(c.student?.academic_status || "-") as string} />
+                            <Field label="Trạng thái học tập" value={translateAcademicStatus(c.student?.academic_status || "-") as string} />
                             {(() => {
                               const childClass = c.student?.class?.name || "-";
                               return <Field label="Lớp" value={childClass} />;
