@@ -33,7 +33,7 @@ export default function ProfileHeader({
 
   return (
     <div className="mb-6">
-      <div className="bg-card border border-border overflow-hidden rounded-xl">
+      <div className="bg-card border border-border overflow-hidden rounded-xl dark:border-border/70 ">
         <div className="px-5 py-5">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5">
             <div className="flex items-center gap-4">
@@ -81,7 +81,7 @@ export default function ProfileHeader({
             </div>
             {onEdit ? (
               <div className="w-full sm:w-auto">
-                <button onClick={onEdit} className="px-4 py-2 rounded-lg bg-[#4e73df] text-white hover:bg-[#3a5ed7] transition">
+                <button onClick={onEdit} className="px-4 py-2 rounded-lg bg-[#4e73df] text-white hover:bg-[#3a5ed7] transition  dark:bg-[#3a54b8] dark:hover:bg-[#2f47a3]">
                   Chỉnh sửa
                 </button>
               </div>

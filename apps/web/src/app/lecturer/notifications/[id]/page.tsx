@@ -14,7 +14,7 @@ interface NotificationDetailPageProps {
 }
 
 export default function NotificationDetailPage({ params }: NotificationDetailPageProps) {
-  const [user, setUser] = useState<{ id: number; full_name: string } | null>(null);
+  const [user, setUser] = useState<{ id: number; full_name: string; avatar_url?: string } | null>(null);
   const [notificationId, setNotificationId] = useState<string>("");
 
   useEffect(() => {
@@ -24,7 +24,7 @@ export default function NotificationDetailPage({ params }: NotificationDetailPag
         setUser(JSON.parse(userData));
       }
     }
-    
+
     params.then((resolvedParams) => {
       setNotificationId(resolvedParams.id);
     });
@@ -32,7 +32,13 @@ export default function NotificationDetailPage({ params }: NotificationDetailPag
 
   if (!notificationId) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-background via-background/80 to-accent/10 flex flex-col">
+        <NavbarClient
+          userRole="lecturer"
+          userName={user?.full_name || ""}
+          userId={user?.id || null}
+          avatarUrl={user?.avatar_url || null}
+        />
         <Loading text="Đang tải thông báo..." />
       </div>
     );
@@ -40,10 +46,11 @@ export default function NotificationDetailPage({ params }: NotificationDetailPag
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background/80 to-accent/10 flex flex-col">
-      <NavbarClient 
-        userRole="lecturer" 
-        userName={user?.full_name || ""} 
+      <NavbarClient
+        userRole="lecturer"
+        userName={user?.full_name || ""}
         userId={user?.id || null}
+        avatarUrl={user?.avatar_url || null}
       />
       <div className="flex-1">
         <NotificationDetail notificationId={notificationId} />

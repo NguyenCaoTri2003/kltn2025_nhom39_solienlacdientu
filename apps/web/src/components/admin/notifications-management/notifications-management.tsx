@@ -230,10 +230,10 @@ export function NotificationsManagement() {
         if (res.ok && data?.returnCode === 0 && Array.isArray(data.data)) {
           const allNotifications = data.data as NotificationRow[];
           const allIds = allNotifications.map((it) => it.id);
-          
+
           // Kiểm tra xem đã chọn hết chưa
           const allSelected = allIds.every((id) => selectedIds.has(id));
-          
+
           if (allSelected) {
             // Bỏ chọn tất cả
             const newSelected = new Set(selectedIds);
@@ -303,168 +303,168 @@ export function NotificationsManagement() {
         <p className="text-muted-foreground">Tạo và quản lý thông báo cho người dùng</p>
       </div>
 
-      <div className="border rounded-xl p-5 bg-white shadow-sm space-y-6 mb-6">
-  {/* Header */}
-  <div className="flex flex-wrap justify-between items-center gap-2">
-    <h2 className="text-base font-semibold flex items-center gap-2">
-      <SlidersHorizontal className="h-4 w-4 text-gray-600" />
-      Bộ lọc tìm kiếm
-    </h2>
-    <Button
-      variant="ghost"
-      size="sm"
-      onClick={onReset}
-      className="text-sm text-gray-600 hover:text-red-600"
-      disabled={loading}
-    >
-      Đặt lại bộ lọc
-    </Button>
-  </div>
+      <div className="border rounded-xl p-5 bg-white shadow-sm space-y-6 mb-6 dark:bg-card dark:border-border">
+        {/* Header */}
+        <div className="flex flex-wrap justify-between items-center gap-2">
+          <h2 className="text-base font-semibold flex items-center gap-2">
+            <SlidersHorizontal className="h-4 w-4 text-gray-600" />
+            Bộ lọc tìm kiếm
+          </h2>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onReset}
+            className="text-sm text-gray-600 hover:text-red-600"
+            disabled={loading}
+          >
+            Đặt lại bộ lọc
+          </Button>
+        </div>
 
-  {/* Grid inputs */}
-  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-    <div className="flex flex-col">
-      <Label>Tiêu đề</Label>
-      <Input
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-        className="bg-white border-border"
-        placeholder="Tìm tiêu đề"
-      />
-    </div>
+        {/* Grid inputs */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          <div className="flex flex-col">
+            <Label>Tiêu đề</Label>
+            <Input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className="bg-white border-border"
+              placeholder="Tìm tiêu đề"
+            />
+          </div>
 
-    <div className="flex flex-col">
-      <Label>Nội dung</Label>
-      <Input
-        value={content}
-        onChange={(e) => setContent(e.target.value)}
-        className="bg-white border-border"
-        placeholder="Tìm nội dung"
-      />
-    </div>
+          <div className="flex flex-col">
+            <Label>Nội dung</Label>
+            <Input
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              className="bg-white border-border"
+              placeholder="Tìm nội dung"
+            />
+          </div>
 
-    <div className="flex flex-col">
-      <Label>Loại</Label>
-      <Select value={type} onValueChange={(v: NotificationType | "all") => setType(v)}>
-      <SelectTrigger className="bg-white border-border">
-          <SelectValue placeholder="Chọn loại" />
-        </SelectTrigger>
-        <SelectContent className="bg-popover border-border">
-          <SelectItem value="all">Tất cả</SelectItem>
-          <SelectItem value="university">Đại học</SelectItem>
-          <SelectItem value="lecturer">Giảng viên</SelectItem>
-          <SelectItem value="system">Hệ thống</SelectItem>
-        </SelectContent>
-      </Select>
-    </div>
+          <div className="flex flex-col">
+            <Label>Loại</Label>
+            <Select value={type} onValueChange={(v: NotificationType | "all") => setType(v)}>
+              <SelectTrigger className="bg-white border-border">
+                <SelectValue placeholder="Chọn loại" />
+              </SelectTrigger>
+              <SelectContent className="bg-popover border-border">
+                <SelectItem value="all">Tất cả</SelectItem>
+                <SelectItem value="university">Đại học</SelectItem>
+                <SelectItem value="lecturer">Giảng viên</SelectItem>
+                <SelectItem value="system">Hệ thống</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
 
-    <div className="flex flex-col">
-      <Label>Danh mục</Label>
-      <Select value={category} onValueChange={(v: CategoryOption) => setCategory(v)}>
-      <SelectTrigger className="bg-white border-border">
-          <SelectValue placeholder="Chọn danh mục" />
-        </SelectTrigger>
-        <SelectContent className="bg-popover border-border">
-          <SelectItem value="all">Tất cả</SelectItem>
-          <SelectItem value="GENERAL">Chung</SelectItem>
-          <SelectItem value="ACADEMIC">Học vụ</SelectItem>
-          <SelectItem value="APPOINTMENT">Lịch hẹn</SelectItem>
-          <SelectItem value="SYSTEM">Hệ thống</SelectItem>
-          <SelectItem value="FINANCE">Tài chính</SelectItem>
-        </SelectContent>
-      </Select>
-    </div>
+          <div className="flex flex-col">
+            <Label>Danh mục</Label>
+            <Select value={category} onValueChange={(v: CategoryOption) => setCategory(v)}>
+              <SelectTrigger className="bg-white border-border">
+                <SelectValue placeholder="Chọn danh mục" />
+              </SelectTrigger>
+              <SelectContent className="bg-popover border-border">
+                <SelectItem value="all">Tất cả</SelectItem>
+                <SelectItem value="GENERAL">Chung</SelectItem>
+                <SelectItem value="ACADEMIC">Học vụ</SelectItem>
+                <SelectItem value="APPOINTMENT">Lịch hẹn</SelectItem>
+                <SelectItem value="SYSTEM">Hệ thống</SelectItem>
+                <SelectItem value="FINANCE">Tài chính</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
 
-    <div className="flex flex-col">
-      <Label>Trạng thái</Label>
-      <Select value={status} onValueChange={(v: StatusOption) => setStatus(v)}>
-      <SelectTrigger className="bg-white border-border">
-          <SelectValue placeholder="Chọn trạng thái" />
-        </SelectTrigger>
-        <SelectContent className="bg-popover border-border">
-          <SelectItem value="all">Tất cả</SelectItem>
-          <SelectItem value="sent">Đã gửi</SelectItem>
-          <SelectItem value="deleted">Đã xóa</SelectItem>
-        </SelectContent>
-      </Select>
-    </div>
+          <div className="flex flex-col">
+            <Label>Trạng thái</Label>
+            <Select value={status} onValueChange={(v: StatusOption) => setStatus(v)}>
+              <SelectTrigger className="bg-white border-border">
+                <SelectValue placeholder="Chọn trạng thái" />
+              </SelectTrigger>
+              <SelectContent className="bg-popover border-border">
+                <SelectItem value="all">Tất cả</SelectItem>
+                <SelectItem value="sent">Đã gửi</SelectItem>
+                <SelectItem value="deleted">Đã xóa</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
 
-    <div className="flex flex-col">
-      <Label>Từ ngày</Label>
-      <Input
-        type="date"
-        value={from}
-        onChange={(e) => setFrom(e.target.value)}
-        className="bg-white border-border"
-      />
-    </div>
+          <div className="flex flex-col">
+            <Label>Từ ngày</Label>
+            <Input
+              type="date"
+              value={from}
+              onChange={(e) => setFrom(e.target.value)}
+              className="bg-white border-border"
+            />
+          </div>
 
-    <div className="flex flex-col">
-      <Label>Đến ngày</Label>
-      <Input
-        type="date"
-        value={to}
-        onChange={(e) => setTo(e.target.value)}
-        className="bg-white border-border"
-      />
-    </div>
-  </div>
+          <div className="flex flex-col">
+            <Label>Đến ngày</Label>
+            <Input
+              type="date"
+              value={to}
+              onChange={(e) => setTo(e.target.value)}
+              className="bg-white border-border"
+            />
+          </div>
+        </div>
 
-  {/* Buttons row */}
-  <div className="flex flex-wrap justify-between items-center gap-3 pt-2">
-    <div className="flex items-center gap-2">
-      {selectedIds.size > 0 && (
-        <Button
-          onClick={handleDeleteMultiple}
-          disabled={loading}
-          variant="destructive"
-          className="flex items-center gap-2"
-        >
-          {loading ? (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Đang xóa...
-            </>
-          ) : (
-            <>
-              <Trash2 className="h-4 w-4" />
-              Xóa đã chọn ({selectedIds.size})
-            </>
-          )}
-        </Button>
-      )}
-    </div>
+        {/* Buttons row */}
+        <div className="flex flex-wrap justify-between items-center gap-3 pt-2">
+          <div className="flex items-center gap-2">
+            {selectedIds.size > 0 && (
+              <Button
+                onClick={handleDeleteMultiple}
+                disabled={loading}
+                variant="destructive"
+                className="flex items-center gap-2"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Đang xóa...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="h-4 w-4" />
+                    Xóa đã chọn ({selectedIds.size})
+                  </>
+                )}
+              </Button>
+            )}
+          </div>
 
-    <div className="flex flex-wrap items-center gap-3">
-      <Button
-        onClick={() => setCreateModalOpen(true)}
-        className="bg-primary hover:bg-primary/90 text-primary-foreground flex items-center gap-2"
-      >
-        <Plus className="h-4 w-4" />
-        Tạo thông báo
-      </Button>
+          <div className="flex flex-wrap items-center gap-3">
+            <Button
+              onClick={() => setCreateModalOpen(true)}
+              className="bg-primary hover:bg-primary/90 text-primary-foreground flex items-center gap-2"
+            >
+              <Plus className="h-4 w-4" />
+              Tạo thông báo
+            </Button>
 
-      <Button
-        onClick={onSearch}
-        disabled={loading}
-        className="bg-primary hover:bg-primary/90 text-primary-foreground flex items-center gap-2"
-      >
-        {loading ? (
-          <>
-            <Loader2 className="h-4 w-4 animate-spin" />
-            Đang tìm...
-          </>
-        ) : (
-          <>
-            <Search className="h-4 w-4" />
-            Tìm kiếm
-          </>
-        )}
-      </Button>
-    </div>
-  </div>
+            <Button
+              onClick={onSearch}
+              disabled={loading}
+              className="bg-primary hover:bg-primary/90 text-primary-foreground flex items-center gap-2"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Đang tìm...
+                </>
+              ) : (
+                <>
+                  <Search className="h-4 w-4" />
+                  Tìm kiếm
+                </>
+              )}
+            </Button>
+          </div>
+        </div>
 
-</div>
+      </div>
 
 
       {/* Danh sách */}
@@ -540,7 +540,7 @@ export function NotificationsManagement() {
                 </SelectContent>
               </Select>
             </div>
-      </div>
+          </div>
         </CardContent>
       </Card>
 

@@ -78,7 +78,7 @@ export default function AttendanceEditModal({
           new Set(filtered.map((a: any) => (a.attendance_date || "").split("T")[0]))
         )
           .filter(Boolean)
-          .sort((a, b) => new Date(b as string).getTime() - new Date(a as string).getTime()); 
+          .sort((a, b) => new Date(b as string).getTime() - new Date(a as string).getTime());
         setDates(availableDates as string[]);
         setSelectedDate((prev: any) => {
           if (prev && availableDates.includes(prev)) return prev;
@@ -120,8 +120,8 @@ export default function AttendanceEditModal({
         filtered.forEach((r: any) => {
           const sid =
             r.enrollment?.student_id ??
-            r.student_id ??
-            (r.enrollment && r.enrollment.student && r.enrollment.student.id)
+              r.student_id ??
+              (r.enrollment && r.enrollment.student && r.enrollment.student.id)
               ? (r.enrollment?.student_id ?? r.enrollment?.student?.id)
               : undefined;
           const studentId = Number(sid);
@@ -212,7 +212,7 @@ export default function AttendanceEditModal({
 
           return {
             ...(r?.id ? { id: r.id } : {}),
-            student_id: studentId, 
+            student_id: studentId,
             enrollment_id: r?.enrollment_id ?? enrollmentMap?.[studentId] ?? null,
             offeringId,
             status: r?.status ?? null,
@@ -242,6 +242,104 @@ export default function AttendanceEditModal({
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl">
+        <div className="p-6">
+          <DialogHeader>
+            <DialogTitle>Sửa điểm danh</DialogTitle>
+          </DialogHeader>
+        </div>
+
+        <div className="overflow-y-auto">
+          {loading ? (
+            <div className="flex justify-center items-center py-10">
+              <Loader2 className="w-5 h-5 animate-spin mr-2" /> Đang tải dữ liệu...
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">Chọn ngày điểm danh</label>
+                <Select value={selectedDate} onValueChange={(v: any) => setSelectedDate(v)}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Chọn ngày" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {dates.length === 0 ? (
+                      <SelectItem value={format(new Date(), "yyyy-MM-dd")}>
+                        {format(new Date(), "dd/MM/yyyy")} (Ngày mới)
+                      </SelectItem>
+                    ) : (
+                      dates.map((d) => (
+                        <SelectItem key={d} value={d}>
+                          {format(new Date(d), "dd/MM/yyyy")}
+                        </SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="border rounded-md overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>MSSV</TableHead>
+                      <TableHead>Họ tên</TableHead>
+                      <TableHead className="text-center">Trạng thái</TableHead>
+                      <TableHead className="text-center">Ghi chú</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {sortedStudents.map((s) => {
+                      const record = records[s.id] ?? {};
+                      return (
+                        <TableRow key={s.id}>
+                          <TableCell>{s.studentCode}</TableCell>
+                          <TableCell>{s.fullName}</TableCell>
+                          <TableCell className="text-center">
+                            <Select
+                              value={record?.status ?? ""}
+                              onValueChange={(v: any) => handleStatusChange(s.id, v)}
+                            >
+                              <SelectTrigger className="w-[150px] mx-auto">
+                                <SelectValue placeholder="Chọn trạng thái" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="present">Có mặt</SelectItem>
+                                <SelectItem value="absent">Vắng</SelectItem>
+                                <SelectItem value="late">Đi trễ</SelectItem>
+                                <SelectItem value="excused">Có phép</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <textarea
+                              className="w-full max-w-[240px] p-1 border rounded resize-y"
+                              rows={2}
+                              value={record?.note ?? ""}
+                              onChange={(e) => handleNoteChange(s.id, e.target.value)}
+                              placeholder="Ghi chú (nếu có)"
+                            />
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="p-4 border-t flex justify-end gap-2 bg-background">
+          <Button variant="secondary" onClick={onClose} disabled={saving}>Hủy</Button>
+          <Button onClick={handleSave} disabled={saving || !selectedDate}>
+            {saving && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
+            Lưu thay đổi
+          </Button>
+        </div>
+
+      </DialogContent>
+
+      {/* <DialogContent className="max-w-4xl">
         <DialogHeader>
           <DialogTitle>Sửa điểm danh</DialogTitle>
         </DialogHeader>
@@ -252,7 +350,6 @@ export default function AttendanceEditModal({
           </div>
         ) : (
           <div className="space-y-4">
-            {/* Chọn ngày */}
             <div>
               <label className="block text-sm font-medium mb-1">Chọn ngày điểm danh</label>
               <Select value={selectedDate} onValueChange={(v: any) => setSelectedDate(v)}>
@@ -275,7 +372,6 @@ export default function AttendanceEditModal({
               </Select>
             </div>
 
-            {/* Bảng sinh viên */}
             <div className="border rounded-md overflow-x-auto">
               <Table>
                 <TableHeader>
@@ -325,7 +421,6 @@ export default function AttendanceEditModal({
               </Table>
             </div>
 
-            {/* Footer */}
             <div className="flex justify-end gap-2 pt-2">
               <Button variant="secondary" onClick={onClose} disabled={saving}>
                 Hủy
@@ -337,7 +432,7 @@ export default function AttendanceEditModal({
             </div>
           </div>
         )}
-      </DialogContent>
+      </DialogContent> */}
     </Dialog>
   );
 }

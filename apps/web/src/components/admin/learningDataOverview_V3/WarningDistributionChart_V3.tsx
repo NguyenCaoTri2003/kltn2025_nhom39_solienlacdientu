@@ -31,13 +31,13 @@ export const WarningDistributionChart: React.FC<{ rows: Row[] }> = ({ rows }) =>
   const data = Object.entries(distribution).map(([label, count]) => ({ label, count }));
 
   return (
-    <div className="mt-6 p-4 border rounded-lg bg-white">
-      <h4 className="text-lg font-semibold mb-4">Biểu đồ phân bố tiêu chí/mức</h4>
+    <div className="mt-6 p-4 border rounded-lg bg-white dark:bg-card">
+      <h4 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">Biểu đồ phân bố tiêu chí/mức</h4>
       <ResponsiveContainer width="100%" height={350}>
-        <BarChart data={data} margin={{ top: 10, right: 20, left: 0, bottom: 5 }}>
+        <BarChart data={data} margin={{ top: 10, right: 20, left: 0, bottom: 5 }} className="dark:text-gray-900">
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis dataKey="label" />
-          <YAxis allowDecimals={false} />
+          <YAxis allowDecimals={false}/>
           <Tooltip
             formatter={(value: number) => [value, "Số SV"]}
             contentStyle={{ backgroundColor: "#f9fafb", borderRadius: 8, border: "none" }}

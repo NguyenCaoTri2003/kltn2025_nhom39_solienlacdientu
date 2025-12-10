@@ -106,13 +106,13 @@ export default function ChangePassword() {
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         <div className="mb-6 sm:mb-8">
-          <Button
+          {/* <Button
             variant="ghost"
             onClick={() => router.back()}
             className="mb-4 text-muted-foreground hover:text-foreground"
           >
             ← Quay lại
-          </Button>
+          </Button> */}
           <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">Đổi mật khẩu</h1>
           <p className="text-muted-foreground">Cập nhật mật khẩu để bảo mật tài khoản của bạn</p>
         </div>

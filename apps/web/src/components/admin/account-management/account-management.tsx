@@ -481,7 +481,7 @@ export function AccountManagement() {
        
       </div>
 
-      <div className="border rounded-xl p-5 bg-white shadow-sm space-y-6 mb-6">
+      <div className="border rounded-xl p-5 bg-white shadow-sm space-y-6 mb-6 dark:bg-card dark:border-border">
         {/* Header */}
         <div className="flex flex-wrap justify-between items-center gap-2">
           <h2 className="text-base font-semibold flex items-center gap-2">

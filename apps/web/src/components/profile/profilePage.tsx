@@ -131,9 +131,9 @@ export default function ProfilePage() {
         }
     };
     return (
-        <div className="min-h-screen bg-[#f7f8fa] p-10">
+        <div className="min-h-screen bg-[#f7f8fa] p-10 dark:bg-gray-900 dark:text-white">
             <div className="max-w-4xl mx-auto">
-                <div className="bg-white border border-gray-100 rounded-2xl shadow-lg p-8">
+                <div className="bg-white border border-gray-100 dark:bg-gray-800 dark:border-gray-700 dark:text-white rounded-2xl shadow-lg p-8">
                     {loading ? (
                         <div className="flex justify-center items-center py-10">
                             <Loading text="Đang tải..." />
@@ -171,7 +171,7 @@ export default function ProfilePage() {
                             />
                         </>
                     ) : (
-                        <div className="text-gray-500">Không có dữ liệu người dùng</div>
+                        <div className="text-gray-500 dark:text-gray-400">Không có dữ liệu người dùng</div>
                     )}
              
                 </div>
