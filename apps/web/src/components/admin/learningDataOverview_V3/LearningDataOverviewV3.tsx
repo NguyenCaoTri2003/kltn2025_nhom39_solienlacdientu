@@ -306,7 +306,7 @@ export default function LearningDataOverview_V3() {
         <h1 className="text-3xl font-bold text-foreground mb-2">Quản lý cảnh cáo học tập</h1>
       </div>
 
-      <div className="border rounded-xl p-5 bg-white shadow-sm space-y-6 mb-6">
+      <div className="border rounded-xl p-5 bg-white shadow-sm space-y-6 mb-6 dark:bg-card dark:border-border">
         <div className="flex justify-between items-center">
           <h2 className="text-base font-semibold flex items-center gap-2">
             <SlidersHorizontal className="h-4 w-4 text-gray-600" /> Bộ lọc tìm kiếm
@@ -550,7 +550,7 @@ export default function LearningDataOverview_V3() {
           {!error && rows.length > 0 && (
             <>
               {rows.map((r, idx) => (
-                <tr key={`${r.student_code}-${idx}`} className="hover:bg-gray-50">
+                <tr key={`${r.student_code}-${idx}`} className="hover:bg-gray-50 dark:hover:bg-gray-800">
                   <td className="px-4 py-3 border-b">{r.student_code}</td>
                   <td className="px-4 py-3 border-b">{r.full_name}</td>
                   <td className="px-4 py-3 border-b">{r.class_code}</td>

@@ -92,8 +92,8 @@ body {
   --popover-foreground: oklch(0.95 0.01 240);
   --primary: oklch(0.65 0.18 240);
   --primary-foreground: oklch(0.08 0.01 240);
-  --secondary: oklch(0.15 0.01 240);
-  --secondary-foreground: oklch(0.85 0.01 240);
+  --secondary: oklch(0.23 0.02 240);
+  --secondary-foreground: oklch(0.92 0.01 240);
   --muted: oklch(0.15 0.01 240);
   --muted-foreground: oklch(0.65 0.01 240);
   --accent: oklch(0.15 0.01 240);
@@ -189,4 +189,34 @@ body {
 
 .chat-messages-scrollbar::-webkit-scrollbar-thumb:hover {
   background-color: rgba(148, 163, 184, 0.7);
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--muted);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in oklch, var(--border) 80%, black);
+}
+
+.dark ::-webkit-scrollbar-track {
+  background: oklch(0.14 0.01 240);
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: oklch(0.28 0.02 240); 
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: oklch(0.35 0.03 240);
 }

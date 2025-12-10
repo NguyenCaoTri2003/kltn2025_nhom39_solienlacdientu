@@ -214,7 +214,7 @@ export default function LearningDataOverview_V2() {
         <p className="text-muted-foreground">Tạo và quản lý cảnh cáo học tập</p>
       </div>
 
-      <div className="border rounded-xl p-5 bg-white shadow-sm space-y-6 mb-6">
+      <div className="border rounded-xl p-5 bg-white shadow-sm space-y-6 mb-6 dark:bg-card dark:border-border">
         <div className="flex justify-between items-center">
           <h2 className="text-base font-semibold flex items-center gap-2">
             <SlidersHorizontal className="h-4 w-4 text-gray-600" /> Bộ lọc tìm kiếm
