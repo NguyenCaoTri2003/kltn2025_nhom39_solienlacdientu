@@ -60,7 +60,10 @@ export function AddUserModal({ open, onClose, onSuccess }: AddUserModalProps) {
         form.append("file", file);
         form.append("role", role);
 
+        const token = localStorage.getItem("token");
+
         const res = await fetch(`${API_BASE}/api/users/admin/import`, {
+          headers: {Authorization: `Bearer ${token}`},
           method: "POST",
           credentials: "include",
           body: form,
@@ -118,10 +121,11 @@ export function AddUserModal({ open, onClose, onSuccess }: AddUserModalProps) {
             student: payload.student,
             ...(parents.length > 0 ? { parents } : {}),
           };
+          const token = localStorage.getItem("token");
           const res = await fetch(`${API_BASE}/api/users/admin/create`, {
             method: "POST",
             credentials: "include",
-            headers: { "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
             body: JSON.stringify(body),
           });
           const data = await res.json().catch(() => ({}));
@@ -137,10 +141,11 @@ export function AddUserModal({ open, onClose, onSuccess }: AddUserModalProps) {
           onSuccess?.();
           onClose();
         } else {
+          const token = localStorage.getItem("token");
           const res = await fetch(`${API_BASE}/api/users/admin/create`, {
             method: "POST",
             credentials: "include",
-            headers: { "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
             body: JSON.stringify(payload),
           });
           const data = await res.json().catch(() => ({}));

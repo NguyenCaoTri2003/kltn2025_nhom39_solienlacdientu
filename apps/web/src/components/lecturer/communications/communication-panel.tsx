@@ -82,7 +82,13 @@ export default function CommunicationPanel() {
             text="Không có cuộc trò chuyện nào"
             className="py-1"
           />
-          <Button onClick={() => router.push("/lecturer/classes")}>Đến lớp học</Button>
+          <Button
+            onClick={() =>
+              router.push(userRole === "lecturer" ? "/lecturer/classes" : "/portal/classes")
+            }
+          >
+            Đến lớp học
+          </Button>
         </div>
       ) : (
         <ConversationList
