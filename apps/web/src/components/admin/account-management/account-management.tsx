@@ -139,9 +139,11 @@ export function AccountManagement() {
   useEffect(() => {
     let ignore = false;
     async function loadClasses() {
+      const token = localStorage.getItem("token");
       try {
         const res = await fetch(`${API_BASE}/api/classes`, {
           credentials: "include",
+          headers: {Authorization: `Bearer ${token}`}
         });
         const json = await res.json().catch(() => ({}));
         if (!ignore && res.ok && Array.isArray(json?.data)) {
@@ -165,8 +167,10 @@ export function AccountManagement() {
     let ignore = false;
     async function loadSemesters() {
       try {
+        const token = localStorage.getItem("token");
         const res = await fetch(`${API_BASE}/api/semesters`, {
           credentials: "include",
+          headers: {Authorization: `Bearer ${token}`}
         });
         const json = await res.json().catch(() => ({}));
         if (!ignore && res.ok && Array.isArray(json?.data)) {
