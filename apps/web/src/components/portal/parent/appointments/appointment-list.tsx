@@ -24,6 +24,7 @@ import { Appointment } from "@packages/core/entities/Appointment";
 import { toast } from "sonner";
 import { AppointmentEditModal } from "@/components/lecturer/appointment/appointment-edit-modal";
 import { motion } from "framer-motion";
+import { useRouter } from "next/navigation";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -42,6 +43,7 @@ export default function ParentAppointmentList() {
   const [hasSearched, setHasSearched] = useState(false);
   const [selected, setSelected] = useState<AppointmentWithLecturer | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
     const fetchAppointments = async () => {
@@ -60,7 +62,7 @@ export default function ParentAppointmentList() {
             headers: { Authorization: `Bearer ${token}` },
           }
         );
-        
+
         if (!res.ok) {
           const errorData = await res.json();
           throw new Error(errorData.error || "Không thể tải danh sách lịch hẹn");
@@ -268,6 +270,11 @@ export default function ParentAppointmentList() {
             text="Không có lịch hẹn nào"
             className="py-4"
           />
+          <div className="mt-6 flex justify-center">
+            <Button onClick={() => router.push("/portal/classes")} className="rounded-full">
+              Đến lớp học
+            </Button>
+          </div>
         </div>
       </div>
     );

@@ -84,7 +84,7 @@ export function AppointmentEditModal({
 
     return (
         <Dialog open={true} onOpenChange={onClose}>
-            <DialogContent className="max-w-lg border border-border/60 bg-card/95 backdrop-blur-xl shadow-[0_30px_80px_-40px_rgba(15,23,42,0.45)]">
+            <DialogContent className="max-w-lg border border-border/60 bg-card/95 backdrop-blur-xl shadow-[0_30px_80px_-40px_rgba(15,23,42,0.45)] max-h-[90vh] overflow-y-auto">
                 <DialogHeader className="border-b border-border/60 pb-4">
                     <DialogTitle className="text-2xl font-semibold">Chỉnh sửa lịch hẹn</DialogTitle>
                 </DialogHeader>
