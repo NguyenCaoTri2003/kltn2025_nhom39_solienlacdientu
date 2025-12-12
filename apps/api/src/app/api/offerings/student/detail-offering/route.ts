@@ -30,7 +30,7 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // 👨‍👩‍👧 Nếu là phụ huynh thì kiểm tra student_id có phải con mình không
+    // Nếu là phụ huynh thì kiểm tra student_id có phải con mình không
     if (user.role === "parent") {
       const parentRepo = new ParentRepository();
       const isChild = await parentRepo.isParentOf(user.id, studentId);
@@ -42,7 +42,7 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    // 🧩 Lấy thông tin chi tiết học phần
+    // Lấy thông tin chi tiết học phần
     const usecase = new StudentOfferingUseCase();
     const detail = await usecase.getOfferingDetail(studentId, offeringId);
 
@@ -55,7 +55,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ returnCode: 0, message: "OK", data: detail });
   } catch (err: any) {
-    console.error("❌ /api/student/offerings/detail error:", err);
+    console.error("/api/student/offerings/detail error:", err);
     return NextResponse.json(
       { returnCode: 1, message: err.message },
       { status: 500 }
