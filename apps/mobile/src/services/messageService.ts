@@ -1,8 +1,8 @@
 import { API_URL } from "../constants/config";
 import { Message, Conversation } from "@packages/core/entities/Messages";
 import { supabase } from "../lib/supabaseClient";
-import HeicConverter from "react-native-heic-converter";
 import * as ImageManipulator from "expo-image-manipulator";
+import * as FileSystem from "expo-file-system/legacy";
 
 function generateFileName(originalName: string) {
   const ext = originalName.split(".").pop();
@@ -10,22 +10,51 @@ function generateFileName(originalName: string) {
   return `${unique}.${ext}`;
 }
 
-async function uriToUint8Array(uri: string): Promise<Uint8Array> {
-  return new Promise((resolve, reject) => {
-    const xhr = new XMLHttpRequest();
-    xhr.open("GET", uri, true);
-    xhr.responseType = "arraybuffer";
-    xhr.onload = () => {
-      if (xhr.status >= 200 && xhr.status < 300) {
-        const arrayBuffer = xhr.response as ArrayBuffer;
-        resolve(new Uint8Array(arrayBuffer));
-      } else {
-        reject(new Error(`Failed to load file: status ${xhr.status}`));
-      }
-    };
-    xhr.onerror = () => reject(new TypeError("Network request failed"));
-    xhr.send(null);
+// async function uriToUint8Array(uri: string): Promise<Uint8Array> {
+//   return new Promise((resolve, reject) => {
+//     const xhr = new XMLHttpRequest();
+//     xhr.open("GET", uri, true);
+//     xhr.responseType = "arraybuffer";
+//     xhr.onload = () => {
+//       if (xhr.status >= 200 && xhr.status < 300) {
+//         const arrayBuffer = xhr.response as ArrayBuffer;
+//         resolve(new Uint8Array(arrayBuffer));
+//       } else {
+//         reject(new Error(`Failed to load file: status ${xhr.status}`));
+//       }
+//     };
+//     xhr.onerror = () => reject(new TypeError("Network request failed"));
+//     xhr.send(null);
+//   });
+// }
+
+export async function uriToUint8Array(uri: string): Promise<Uint8Array> {
+  try {
+    const response = await fetch(uri);
+
+    if (response.ok) {
+      const blob = await response.blob();
+      const buffer = await blob.arrayBuffer();
+      return new Uint8Array(buffer);
+    }
+
+    console.warn("Fetch failed - fallback to legacy FS");
+  } catch (err) {
+    console.warn("Fetch error - fallback to legacy FS", err);
+  }
+
+  const base64 = await FileSystem.readAsStringAsync(uri, {
+    encoding: "base64",
   });
+
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+
+  for (let i = 0; i < binary.length; i++) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+
+  return bytes;
 }
 
 export const messageService = {

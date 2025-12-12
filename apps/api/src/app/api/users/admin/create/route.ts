@@ -88,7 +88,7 @@ export async function POST(req: NextRequest) {
       }
       if (!student_parent) {
         return NextResponse.json(
-          { error: "Phụ huynh phải liên kết ít nhất một học sinh (student_parent)." },
+          { error: "Phụ huynh phải liên kết ít nhất một sinh viên (student_parent)." },
           { status: 400 }
         );
       }
@@ -100,7 +100,7 @@ export async function POST(req: NextRequest) {
     if (user.role === "student") {
       if (!student) {
         return NextResponse.json(
-          { error: "Thiếu thông tin student khi tạo học sinh." },
+          { error: "Thiếu thông tin student khi tạo sinh viên." },
           { status: 400 }
         );
       }

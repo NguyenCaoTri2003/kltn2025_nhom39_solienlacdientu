@@ -568,7 +568,7 @@ export default function LecturerDashboard() {
                                                                     <span>{a.parents.join(", ")}</span>
                                                                 </div>
                                                                 <div className="flex items-center gap-2 text-muted-foreground">
-                                                                    <span className="font-medium text-foreground">Học sinh:</span>
+                                                                    <span className="font-medium text-foreground">Sinh viên:</span>
                                                                     <span>{a.student.users.full_name}</span>
                                                                 </div>
                                                                 {a.location && (

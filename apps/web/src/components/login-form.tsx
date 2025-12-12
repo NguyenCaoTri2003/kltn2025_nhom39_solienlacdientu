@@ -21,8 +21,8 @@ export function LoginForm() {
     setError("")
 
     try {
-      // const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/login/lectureroradmin`, {
-       const res = await fetch(`/api/auth/login/lectureroradmin`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/login/lectureroradmin`, {
+      //  const res = await fetch(`/api/auth/login/lectureroradmin`, {
 
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -31,8 +31,6 @@ export function LoginForm() {
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || "Đăng nhập thất bại")
-
-      console.log("Login successful:", data)
 
       localStorage.setItem("user", JSON.stringify(data.user))
       localStorage.setItem("token", data.token)
@@ -101,7 +99,7 @@ export function LoginForm() {
           <img src="/logo-iuh.png" alt="IUH Logo" className="h-28 w-28 object-contain" />
           <h2 className="text-3xl font-bold mb-4 tracking-tight">Đại học Công nghiệp TP.HCM</h2>
           <p className="text-[#1565C0] max-w-sm text-sm leading-relaxed">
-            Hệ thống Sổ Liên Lạc Điện Tử giúp quản lý thông tin học sinh, trao đổi giữa nhà trường và phụ huynh, đảm bảo kết nối hiệu quả và minh bạch.
+            Hệ thống Sổ Liên Lạc Điện Tử giúp quản lý thông tin sinh viên, trao đổi giữa nhà trường và phụ huynh, đảm bảo kết nối hiệu quả và minh bạch.
           </p>
         </div>
       </div>

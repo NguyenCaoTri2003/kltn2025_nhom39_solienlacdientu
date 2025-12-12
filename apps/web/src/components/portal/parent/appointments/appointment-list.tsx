@@ -26,11 +26,9 @@ import { AppointmentEditModal } from "@/components/lecturer/appointment/appointm
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 interface AppointmentWithLecturer extends Appointment {
-  lecturer?: { id: number; users?: { full_name: string } };
-  from?: string;
+  lecturer: { id: number; users: { full_name: string } } | null;
+  from: string;
 }
 
 export default function ParentAppointmentList() {
@@ -70,10 +68,7 @@ export default function ParentAppointmentList() {
 
         const data = await res.json();
 
-        const sorted = data.sort(
-          (a: AppointmentWithLecturer, b: AppointmentWithLecturer) =>
-            new Date(b.start_time).getTime() - new Date(a.start_time).getTime()
-        );
+        const sorted = data.sort((a: Appointment, b: Appointment) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
 
         setAppointments(sorted);
         setFiltered(sorted);
@@ -287,7 +282,7 @@ export default function ParentAppointmentList() {
           <div className="relative flex-1 min-w-[240px] sm:w-72">
             <Search className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
             <Input
-              placeholder="Tìm theo tiêu đề, giảng viên, học sinh..."
+              placeholder="Tìm theo tiêu đề, giảng viên, sinh viên..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="pl-9 pr-10 h-11 rounded-full border border-border/50 bg-background/80 shadow-[0_12px_32px_-20px_rgba(15,23,42,0.6)] backdrop-blur focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:border-primary/40"
@@ -351,9 +346,16 @@ export default function ParentAppointmentList() {
                   transition={{ type: "spring", stiffness: 260, damping: 20 }}
                 >
                   <Card
-                    onClick={() => setSelected(a)}
+                    onClick={() => {
+                      if (a.from === "parent" && a.status === "pending") {
+                        setSelected(a);
+                      }
+                    }}
                     className={cn(
-                      "group cursor-pointer rounded-3xl border border-border/60 bg-gradient-to-br from-card/95 via-card/90 to-background/60 p-5 shadow-[0_20px_60px_-40px_rgba(15,23,42,0.55)] ring-1 ring-transparent transition-all duration-300 hover:-translate-y-1 hover:border-primary/50 hover:shadow-[0_28px_90px_-50px_rgba(59,130,246,0.75)] hover:ring-primary/40",
+                      "group rounded-3xl border border-border/60 bg-gradient-to-br from-card/95 via-card/90 to-background/60 p-5 shadow-[0_20px_60px_-40px_rgba(15,23,42,0.55)] ring-1 ring-transparent transition-all duration-300",
+                      a.from === "parent" && a.status === "pending"
+                        ? "cursor-pointer hover:-translate-y-1 hover:border-primary/50 hover:shadow-[0_28px_90px_-50px_rgba(59,130,246,0.75)] hover:ring-primary/40"
+                        : "opacity-80",
                       a.status === "pending"
                         ? "border-l-4 border-l-yellow-500"
                         : a.status === "confirmed"
@@ -412,7 +414,7 @@ export default function ParentAppointmentList() {
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="truncate">
-                            <span className="font-medium text-foreground">Học sinh:</span>{" "}
+                            <span className="font-medium text-foreground">Sinh viên:</span>{" "}
                             <span className="text-muted-foreground">
                               {a.student?.users?.full_name ?? "Không rõ"}
                             </span>

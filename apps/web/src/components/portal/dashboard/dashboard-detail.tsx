@@ -65,7 +65,6 @@ export default function Dashboard() {
         });
         const json = await res.json();
         setTodayClasses(json.data || []);
-        console.log("Today's classes data:", json.data);
       } catch (error) {
         console.error("Failed to load today's schedule:", error);
       } finally {

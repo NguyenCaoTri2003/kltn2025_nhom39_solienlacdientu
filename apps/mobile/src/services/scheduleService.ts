@@ -47,3 +47,27 @@ export async function fetchStudentSchedule(
   if (!res.ok) throw new Error("Failed to fetch schedule");
   return res.json();
 }
+
+export async function getTodayClasses(studentId: string) {
+  try {
+    const token = await getAuthToken();
+    const res = await fetch(
+      `${API_URL}/api/schedules/today/student?student_id=${studentId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    if (!res.ok) {
+      throw new Error(`Server returned ${res.status}`);
+    }
+
+    const json = await res.json();
+    return json.data || [];
+  } catch (error) {
+    console.error("getTodayClasses error:", error);
+    return [];
+  }
+}
