@@ -45,6 +45,11 @@ function StudentStack() {
         component={TuitionFeesScreen}
         options={{ title: "Học phí" }}
       />
+      <Stack.Screen
+        name="Attendance"
+        component={AttendanceScreen}
+        options={{ title: "Điểm danh" }}
+      />
     </Stack.Navigator>
   );
 }
@@ -69,6 +74,11 @@ function ParentStack() {
         name="Tuition"
         component={TuitionFeesScreen}
         options={{ title: "Học phí" }}
+      />
+      <Stack.Screen
+        name="Attendance"
+        component={AttendanceScreen}
+        options={{ title: "Điểm danh" }}
       />
     </Stack.Navigator>
   );
@@ -123,7 +133,7 @@ export default function AppNavigator() {
         options={{ title: "Trang chủ" }}
       />
       <Tab.Screen name="Schedule" component={ScheduleScreen} options={{ title: "Lịch học" }} />
-      <Tab.Screen name="Attendance" component={AttendanceScreen} options={{ title: "Điểm danh" }} />
+      {/* <Tab.Screen name="Attendance" component={AttendanceScreen} options={{ title: "Điểm danh" }} /> */}
       <Tab.Screen 
         name="Messages" 
         component={MessagesStack} 

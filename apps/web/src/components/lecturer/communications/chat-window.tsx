@@ -143,10 +143,31 @@ export default function ChatWindow({
     }, [messages.length]);
 
     const uploadFile = async (file: File): Promise<string> => {
-        const filePath = `${Date.now()}_${file.name}`;
-        const { error } = await supabase.storage.from("chat-uploads").upload(filePath, file);
+        const ext = file.name.split(".").pop() || "dat";
+
+        const now = new Date();
+        const yyyymmddhhmmss =
+            now.getFullYear().toString() +
+            String(now.getMonth() + 1).padStart(2, "0") +
+            String(now.getDate()).padStart(2, "0") +
+            String(now.getHours()).padStart(2, "0") +
+            String(now.getMinutes()).padStart(2, "0") +
+            String(now.getSeconds()).padStart(2, "0");
+
+        const fileName = `IMG${yyyymmddhhmmss}.${ext}`;
+
+        const { error } = await supabase
+            .storage
+            .from("chat-uploads")
+            .upload(fileName, file);
+
         if (error) throw error;
-        const { data } = supabase.storage.from("chat-uploads").getPublicUrl(filePath);
+
+        const { data } = supabase
+            .storage
+            .from("chat-uploads")
+            .getPublicUrl(fileName);
+
         return data.publicUrl;
     };
 

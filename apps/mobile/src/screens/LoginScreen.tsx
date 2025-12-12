@@ -107,7 +107,7 @@ export default function LoginScreen({ navigation }: any) {
                       role === r && styles.roleTextActive,
                     ]}
                   >
-                    {r === "student" ? "Học sinh" : "Phụ huynh"}
+                    {r === "student" ? "Sinh viên" : "Phụ huynh"}
                   </Text>
                 </TouchableOpacity>
               ))}

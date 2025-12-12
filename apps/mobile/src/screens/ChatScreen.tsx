@@ -189,28 +189,6 @@ export default function ChatScreen({ route }: any) {
 
         return newMsg;
       });
-
-      //   setConversations(prevConvs =>
-      //     prevConvs.map(c => {
-      //       if (c.id !== conversationId) return c;
-
-      //       const updatedMessages = messages.map(m =>
-      //         m.id === msg.id
-      //           ? { ...m, ...updated, is_recalled: true, content: "Tin nhắn đã được thu hồi", type: "text" }
-      //           : m
-      //       );
-
-      //       const remainingMessages = updatedMessages.filter(
-      //         m => !m.deleted_by?.includes(myId) && !m.is_recalled
-      //       );
-
-      //       return {
-      //         ...c,
-      //         lastMessage: remainingMessages.slice(-1)[0] || updatedMessages[0],
-      //       };
-      //     })
-      //   );
-      // }, 0);
     } catch (e) {
       alert("Thu hồi thất bại");
     }
@@ -375,7 +353,7 @@ export default function ChatScreen({ route }: any) {
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "padding"}
         keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
-        style={{ marginBottom: Platform.OS === "ios" ? -40 : -50 }}
+        style={{ marginBottom: Platform.OS === "ios" ? -40 : 0 }}
       >
         <View style={styles.inputRow}>
           <TouchableOpacity onPress={handleSelectImages}>

@@ -58,8 +58,7 @@ export function CreateWarningModal({
       setDebtCredits("");
       setProgressStatus("");
       setNote("");
-      
-      // Auto-fill từ studentData nếu có
+
       if (studentData) {
         if (studentData.cum_avg_score_4) {
           setCumulativeGpa(String(studentData.cum_avg_score_4));
@@ -68,10 +67,7 @@ export function CreateWarningModal({
         if (studentData.total_credit_failed_cumulative) {
           setDebtCredits(String(studentData.total_credit_failed_cumulative));
         }
-        
-        // if (studentData.academic_status) {
-        //   setProgressStatus(studentData.academic_status);
-        // }
+
         
         let autoReason = "";
         if (studentData.cum_avg_score_4 && studentData.cum_avg_score_4 < 2.0) {

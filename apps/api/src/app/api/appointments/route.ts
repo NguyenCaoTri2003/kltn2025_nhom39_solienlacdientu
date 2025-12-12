@@ -107,22 +107,6 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// export async function PATCH(req: NextRequest) {
-//   try {
-//     const body = await req.json();
-//     const { id, ...updates } = body;
-
-//     if (!id) {
-//       return NextResponse.json({ error: "Missing id" }, { status: 400 });
-//     }
-
-//     const result = await usecase.updateAppointment(id, updates);
-//     return NextResponse.json(result);
-//   } catch (e: any) {
-//     return NextResponse.json({ error: e.message }, { status: 400 });
-//   }
-// }
-
 export async function PATCH(req: NextRequest) {
   try {
     const user = await authenticate(req);

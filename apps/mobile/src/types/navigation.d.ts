@@ -5,6 +5,7 @@ export type RootStackParamList = {
   CourseOffering: undefined;
   CourseOfferingDetail: { id: number; studentId?: number };
   Grades: { studentId: number };
+  Attendance: undefined;
   Tuition: undefined;
   NotificationsList: undefined;
   NotificationDetail: { 

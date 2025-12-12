@@ -26,8 +26,6 @@ import { toast } from "sonner";
 import { AppointmentEditModal } from "./appointment-edit-modal";
 import { motion } from "framer-motion";
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 export default function AppointmentList() {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [filtered, setFiltered] = useState<Appointment[]>([]);
@@ -53,12 +51,8 @@ export default function AppointmentList() {
         );
         const data = await res.json();
 
-        const sorted = data.sort(
-          (a: Appointment, b: Appointment) =>
-            new Date(b.start_time).getTime() - new Date(a.start_time).getTime()
-        );
-
-        const merged = mergeAppointments(sorted);
+        const merged = mergeAppointments(data)
+         .sort((a: Appointment, b: Appointment) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
         setAppointments(merged);
         setFiltered(merged);
       } catch (err) {
@@ -271,7 +265,7 @@ export default function AppointmentList() {
           <div className="relative flex-1 min-w-[240px] sm:w-72">
             <Search className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
             <Input
-              placeholder="Tìm theo tiêu đề, phụ huynh, học sinh..."
+              placeholder="Tìm theo tiêu đề, phụ huynh, sinh viên..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="pl-9 pr-10 h-11 rounded-full border border-border/50 bg-background/80 shadow-[0_12px_32px_-20px_rgba(15,23,42,0.6)] backdrop-blur focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:border-primary/40"
@@ -331,15 +325,24 @@ export default function AppointmentList() {
                 transition={{ type: "spring", stiffness: 260, damping: 20 }}
               >
                 <Card
-                  onClick={() => setSelected(a)}
+                  onClick={() => {
+                      if (a.from === "lecturer" && a.status === "pending") {
+                        setSelected(a);
+                      }
+                    }}
                   className={cn(
-                    "group cursor-pointer rounded-3xl border border-border/60 bg-gradient-to-br from-card/95 via-card/90 to-background/60 p-5 shadow-[0_20px_60px_-40px_rgba(15,23,42,0.55)] ring-1 ring-transparent transition-all duration-300 hover:-translate-y-1 hover:border-primary/50 hover:shadow-[0_28px_90px_-50px_rgba(59,130,246,0.75)] hover:ring-primary/40",
-                    a.status === "pending"
-                      ? "border-l-4 border-l-yellow-500"
-                      : a.status === "confirmed"
-                        ? "border-l-4 border-l-green-500"
-                        : "border-l-4 border-l-gray-400"
-                  )}
+                      "group rounded-3xl border border-border/60 bg-gradient-to-br from-card/95 via-card/90 to-background/60 p-5 shadow-[0_20px_60px_-40px_rgba(15,23,42,0.55)] ring-1 ring-transparent transition-all duration-300",
+                      a.from === "lecturer" && a.status === "pending"
+                        ? "cursor-pointer hover:-translate-y-1 hover:border-primary/50 hover:shadow-[0_28px_90px_-50px_rgba(59,130,246,0.75)] hover:ring-primary/40"
+                        : "opacity-80",
+                      a.status === "pending"
+                        ? "border-l-4 border-l-yellow-500"
+                        : a.status === "confirmed"
+                          ? "border-l-4 border-l-green-500"
+                          : a.status === "cancelled"
+                            ? "border-l-4 border-l-red-500"
+                            : "border-l-4 border-l-gray-400"
+                    )}
                 >
                   <CardHeader className="pb-3">
                     <div className="flex items-start justify-between gap-2">
@@ -390,7 +393,7 @@ export default function AppointmentList() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="truncate">
-                          <span className="font-medium text-foreground">Học sinh:</span>{" "}
+                          <span className="font-medium text-foreground">Sinh viên:</span>{" "}
                           <span className="text-muted-foreground">
                             {a.student?.users?.full_name ?? "Không rõ"}
                           </span>
@@ -437,7 +440,7 @@ export default function AppointmentList() {
                       </div>
                     )}
 
-                    {a.status === "pending" && (
+                    {a.status === "pending" && a.from !== "lecturer" && (
                       <div className="flex gap-2 pt-2 border-t border-border/40">
                         <Button
                           size="sm"

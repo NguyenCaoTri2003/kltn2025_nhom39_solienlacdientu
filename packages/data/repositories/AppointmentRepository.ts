@@ -17,7 +17,8 @@ export class AppointmentRepository {
       lecturer:lecturer_id (id, users (full_name)),
       parent:parent_id (id, users (full_name)),
       student:student_id (id, users (full_name))
-    `);
+    `)
+    .order("updated_at", { ascending: false, nullsFirst: false });
 
     if (role === "lecturer") {
       query = query.eq("lecturer_id", userId);

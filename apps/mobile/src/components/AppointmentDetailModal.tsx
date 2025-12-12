@@ -57,7 +57,6 @@ export default function AppointmentDetailModal({
           <View style={styles.actions}>
             {data.from === "lecturer" && data.status === "pending" && (
               <>
-                {/* ✅ Chấp nhận */}
                 <TouchableOpacity
                   style={styles.acceptBtn}
                   onPress={() => onAccept(data)}
@@ -77,7 +76,6 @@ export default function AppointmentDetailModal({
                   )}
                 </TouchableOpacity>
 
-                {/* ❌ Từ chối */}
                 <TouchableOpacity
                   style={styles.rejectBtn}
                   onPress={() => onReject(data)}
@@ -99,11 +97,12 @@ export default function AppointmentDetailModal({
               </>
             )}
 
-            {/* ✏️ Chỉnh sửa */}
-            <TouchableOpacity style={styles.editBtn} onPress={onEdit}>
-              <Ionicons name="create-outline" size={16} color="#fff" />
-              <Text style={styles.btnText}>Chỉnh sửa</Text>
-            </TouchableOpacity>
+            {data.from === "parent" && data.status === "pending" && (
+              <TouchableOpacity style={styles.editBtn} onPress={onEdit}>
+                <Ionicons name="create-outline" size={16} color="#fff" />
+                <Text style={styles.btnText}>Chỉnh sửa</Text>
+              </TouchableOpacity>
+            )}
           </View>
         </TouchableOpacity>
       </TouchableOpacity>
