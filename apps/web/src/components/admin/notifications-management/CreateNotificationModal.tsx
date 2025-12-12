@@ -24,7 +24,7 @@ import {
 import { Loader2, X, Users } from "lucide-react";
 import { UserSelectionModal } from "./UserSelectionModal";
 import { Badge } from "@/components/ui/badge";
-import { uploadFileToStorage } from "@/services/uploadImage";
+import { uploadFileToStorage, handleImageChange as validateAndHandleImage } from "@/services/uploadImage";
 
 declare const process: { env: Record<string, string | undefined> };
 
@@ -55,21 +55,19 @@ export function CreateNotificationModal({
 
   const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) return;
+    const result = validateAndHandleImage(file, 10);
 
-    if (!file.type.startsWith("image/")) {
-      toast.error("Vui lòng chọn file ảnh");
+    if (!result.isValid) {
+      if (result.error) {
+        toast.error(result.error);
+      }
       return;
     }
 
-    if (file.size > 10 * 1024 * 1024) {
-      toast.error("Ảnh không được vượt quá 10MB");
-      return;
+    if (file && result.previewUrl) {
+      setSelectedImage(file);
+      setImagePreview(result.previewUrl);
     }
-
-    setSelectedImage(file);
-    const preview = URL.createObjectURL(file);
-    setImagePreview(preview);
   };
 
   const handleRemoveImage = () => {
@@ -336,7 +334,7 @@ export function CreateNotificationModal({
               </div>
             )}
             <p className="text-xs text-muted-foreground">
-              Chấp nhận: JPG, PNG, GIF, WEBP (tối đa 10MB)
+              Tối đa 10MB
             </p>
           </div>
         </div>

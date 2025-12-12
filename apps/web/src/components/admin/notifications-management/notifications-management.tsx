@@ -15,20 +15,21 @@ import { CreateNotificationModal } from "./CreateNotificationModal";
 import { NotificationRowActions } from "@/components/admin/modals_UI/NotificationRowActions";
 import { Checkbox } from "@/components/ui/checkbox";
 import { confirmWithToast } from "@/components/ui/confirm-with-toast";
+import { validateDateRange } from "@/services/dateValidation";
+import {
+  type NotificationRow,
+  fetchNotifications,
+  fetchAllNotifications,
+  deleteNotification,
+  deleteMultipleNotifications,
+  canDeleteNotification,
+  filterDeletableNotifications,
+  getSelectableNotifications,
+  calculateSelectAllState,
+  calculateToggleSelectAllIds,
+} from "@/services/notificationManagementService";
 
 type NotificationType = "university" | "lecturer" | "system";
-
-type NotificationRow = {
-  id: number;
-  title: string | null;
-  content: string | null;
-  type: NotificationType | null;
-  category: string | null;
-  created_at?: string;
-  url?: string | null;
-  broadcast_group_id?: string | null;
-  status?: "sent" | "deleted" | null;
-};
 
 export function NotificationsManagement() {
   const [createModalOpen, setCreateModalOpen] = useState(false);
@@ -55,6 +56,7 @@ export function NotificationsManagement() {
   const [status, setStatus] = useState<StatusOption>("all");
   const [from, setFrom] = useState<string>(""); // YYYY-MM-DD
   const [to, setTo] = useState<string>(""); // YYYY-MM-DD
+  const [dateError, setDateError] = useState<string | null>(null);
 
   const API_BASE = useMemo(() => process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000", []);
 
@@ -70,34 +72,26 @@ export function NotificationsManagement() {
   const fetchList = async (overridePage?: number, overridePageSize?: number, clearSelection: boolean = false) => {
     setLoading(true);
     try {
-      const params = new URLSearchParams();
       const currentPage = overridePage ?? page;
       const currentPageSize = overridePageSize ?? pageSize;
-      params.set("page", String(currentPage));
-      params.set("pageSize", String(currentPageSize));
-      if (title.trim()) params.set("title", title.trim());
-      if (content.trim()) params.set("content", content.trim());
-      if (type && type !== "all") params.set("type", type);
-      if (category && category !== "all") params.set("category", category);
-      if (status && status !== "all") params.set("status", status);
-      if (from) params.set("from", from); // interpreted at API as +7 day start
-      if (to) params.set("to", to);       // interpreted at API as +7 day end
-
       const token = getToken();
-      const res = await fetch(`${API_BASE}/api/notifications?${params.toString()}`, {
-        headers: {
-          "Authorization": `Bearer ${token}`,
-        },
-        credentials: "include",
+
+      const result = await fetchNotifications({
+        page: currentPage,
+        pageSize: currentPageSize,
+        title,
+        content,
+        type,
+        category,
+        status,
+        from,
+        to,
+        token,
+        apiBase: API_BASE,
       });
 
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok || data?.returnCode !== 0) {
-        throw new Error(data?.message || `Fetch failed (${res.status})`);
-      }
-      setItems(data.data || []);
-      setTotal(data.meta?.total || 0);
-      // Chỉ clear selection khi search/reset filter, không clear khi chuyển trang
+      setItems(result.data);
+      setTotal(result.total);
       if (clearSelection) {
         setSelectedIds(new Set());
       }
@@ -105,7 +99,6 @@ export function NotificationsManagement() {
       console.error("Fetch notifications failed:", e);
       setItems([]);
       setTotal(0);
-      // Chỉ clear selection khi có lỗi và clearSelection = true
       if (clearSelection) {
         setSelectedIds(new Set());
       }
@@ -115,9 +108,25 @@ export function NotificationsManagement() {
   };
 
 
+  const validateDates = (): boolean => {
+    setDateError(null);
+    const result = validateDateRange(from, to);
+    
+    if (!result.isValid) {
+      setDateError(result.error || null);
+      return false;
+    }
+    
+    return true;
+  };
+  
+
   const onSearch = () => {
+    if (!validateDates()) {
+      return; 
+    }
     setPage(1);
-    fetchList(1, pageSize, true); // Clear selection khi search
+    fetchList(1, pageSize, true); 
   };
 
   const onReset = () => {
@@ -128,29 +137,33 @@ export function NotificationsManagement() {
     setStatus("all");
     setFrom("");
     setTo("");
+    setDateError(null);
     setPage(1);
-    fetchList(1, pageSize, true); // Clear selection khi reset
+    fetchList(1, pageSize, true); 
   };
 
   const handleDelete = async (id: number) => {
+    const notification = items.find((it) => it.id === id);
+    if (!notification) {
+      toast.error("Không tìm thấy thông báo");
+      return;
+    }
+
+    if (!canDeleteNotification(notification)) {
+      toast.error("Chỉ có thể xóa thông báo đã gửi");
+      return;
+    }
+
     try {
       setLoading(true);
       const token = getToken();
-      const res = await fetch(`${API_BASE}/api/notifications`, {
-        method: "PUT",
-        headers: {
-          "Authorization": `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify({ notificationId: id }),
+      await deleteNotification({
+        notificationId: id,
+        token,
+        apiBase: API_BASE,
       });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok || data?.returnCode !== 0) {
-        throw new Error(data?.message || `Delete failed (${res.status})`);
-      }
       toast.success("Đã xóa thông báo");
-      fetchList(page, pageSize, false); // Giữ selection sau khi xóa
+      fetchList(page, pageSize, false);
     } catch (e) {
       console.error("Delete notification failed:", e);
       toast.error(e instanceof Error ? e.message : "Xóa thông báo thất bại");
@@ -165,7 +178,14 @@ export function NotificationsManagement() {
       return;
     }
 
-    const confirmMessage = `Bạn có chắc chắn muốn xóa ${selectedIds.size} thông báo đã chọn?`;
+    const sentNotificationIds = filterDeletableNotifications(items, Array.from(selectedIds));
+
+    if (sentNotificationIds.length === 0) {
+      toast.error("Không có thông báo nào có thể xóa. Chỉ có thể xóa thông báo đã gửi");
+      return;
+    }
+
+    const confirmMessage = `Bạn có chắc chắn muốn xóa ${sentNotificationIds.length} thông báo đã gửi?`;
     const confirmed = await confirmWithToast(confirmMessage);
     if (!confirmed) {
       return;
@@ -174,23 +194,13 @@ export function NotificationsManagement() {
     try {
       setLoading(true);
       const token = getToken();
-      const notificationIds = Array.from(selectedIds);
-      const res = await fetch(`${API_BASE}/api/notifications`, {
-        method: "PUT",
-        headers: {
-          "Authorization": `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify({ notificationIds }),
+      const result = await deleteMultipleNotifications({
+        notificationIds: sentNotificationIds,
+        token,
+        apiBase: API_BASE,
       });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok || data?.returnCode !== 0) {
-        throw new Error(data?.message || `Delete failed (${res.status})`);
-      }
-      const affectedCount = data?.data?.affected || selectedIds.size;
-      toast.success(`Đã xóa ${affectedCount} thông báo`);
-      setSelectedIds(new Set()); // Clear selection sau khi xóa nhiều
+      toast.success(`Đã xóa ${result.affected} thông báo`);
+      setSelectedIds(new Set());
       fetchList(page, pageSize, false);
     } catch (e) {
       console.error("Delete multiple notifications failed:", e);
@@ -204,50 +214,28 @@ export function NotificationsManagement() {
 
   const toggleSelectAll = async (checked: boolean | "indeterminate") => {
     if (checked === true || checked === "indeterminate") {
-      // Load tất cả notifications theo filter hiện tại
       try {
         setLoading(true);
-        const params = new URLSearchParams();
-        params.set("page", "1");
-        params.set("pageSize", "10000"); // Lấy tất cả (limit lớn)
-        if (title.trim()) params.set("title", title.trim());
-        if (content.trim()) params.set("content", content.trim());
-        if (type && type !== "all") params.set("type", type);
-        if (category && category !== "all") params.set("category", category);
-        if (status && status !== "all") params.set("status", status);
-        if (from) params.set("from", from);
-        if (to) params.set("to", to);
-
         const token = getToken();
-        const res = await fetch(`${API_BASE}/api/notifications?${params.toString()}`, {
-          headers: {
-            "Authorization": `Bearer ${token}`,
-          },
-          credentials: "include",
+        const allNotifications = await fetchAllNotifications({
+          title,
+          content,
+          type,
+          category,
+          status,
+          from,
+          to,
+          token,
+          apiBase: API_BASE,
         });
 
-        const data = await res.json().catch(() => ({}));
-        if (res.ok && data?.returnCode === 0 && Array.isArray(data.data)) {
-          const allNotifications = data.data as NotificationRow[];
-          const allIds = allNotifications.map((it) => it.id);
-
-          // Kiểm tra xem đã chọn hết chưa
-          const allSelected = allIds.every((id) => selectedIds.has(id));
-
-          if (allSelected) {
-            // Bỏ chọn tất cả
-            const newSelected = new Set(selectedIds);
-            allIds.forEach((id) => newSelected.delete(id));
-            setSelectedIds(newSelected);
-          } else {
-            // Chọn tất cả
-            const newSelected = new Set(selectedIds);
-            allIds.forEach((id) => newSelected.add(id));
-            setSelectedIds(newSelected);
-            toast.success(`Đã chọn ${allIds.length} thông báo`);
-          }
-        } else {
-          toast.error("Không thể tải danh sách thông báo");
+        const { newSelectedIds, count } = calculateToggleSelectAllIds(allNotifications, selectedIds);
+        const wasAllSelected = count > 0 && getSelectableNotifications(allNotifications).every((it) => selectedIds.has(it.id));
+        
+        setSelectedIds(newSelectedIds);
+        
+        if (!wasAllSelected && count > 0) {
+          toast.success(`Đã chọn ${count} thông báo đã gửi`);
         }
       } catch (e) {
         console.error("Error selecting all notifications:", e);
@@ -261,7 +249,13 @@ export function NotificationsManagement() {
   };
 
   const toggleSelectItem = (id: number, checked: boolean | "indeterminate") => {
+    const notification = items.find((it) => it.id === id);
+
     if (checked === true) {
+      if (!canDeleteNotification(notification)) {
+        toast.error("Chỉ có thể chọn thông báo đã gửi để xóa");
+        return;
+      }
       setSelectedIds(new Set([...selectedIds, id]));
     } else {
       const newSelected = new Set(selectedIds);
@@ -270,8 +264,8 @@ export function NotificationsManagement() {
     }
   };
 
-  const allSelected = items.length > 0 && items.every((it) => selectedIds.has(it.id));
-  const someSelected = items.some((it) => selectedIds.has(it.id)) && !allSelected;
+  const sentItems = getSelectableNotifications(items);
+  const { allSelected, someSelected } = calculateSelectAllState(items, selectedIds);
 
   const renderStatusBadge = (s?: "sent" | "deleted" | null) => {
     const label = statusNotification(s || undefined) || "-";
@@ -394,8 +388,12 @@ export function NotificationsManagement() {
             <Input
               type="date"
               value={from}
-              onChange={(e) => setFrom(e.target.value)}
-              className="bg-white border-border"
+              onChange={(e) => {
+                setFrom(e.target.value);
+                setDateError(null); 
+              }}
+              max={to || undefined} 
+              className={`bg-white border-border ${dateError ? "border-red-500" : ""}`}
             />
           </div>
 
@@ -404,9 +402,17 @@ export function NotificationsManagement() {
             <Input
               type="date"
               value={to}
-              onChange={(e) => setTo(e.target.value)}
-              className="bg-white border-border"
+              onChange={(e) => {
+                setTo(e.target.value);
+                setDateError(null); 
+              }}
+              min={from || undefined} 
+              max={new Date().toISOString().split('T')[0]} 
+              className={`bg-white border-border ${dateError ? "border-red-500" : ""}`}
             />
+            {dateError && (
+              <p className="text-sm text-red-500 mt-1">{dateError}</p>
+            )}
           </div>
         </div>
 
@@ -480,7 +486,7 @@ export function NotificationsManagement() {
                 key="select-all"
                 checked={allSelected ? true : someSelected ? "indeterminate" : false}
                 onCheckedChange={toggleSelectAll}
-                disabled={loading || items.length === 0}
+                disabled={loading || sentItems.length === 0}
               />,
               "Tiêu đề",
               "Loại",
@@ -503,7 +509,7 @@ export function NotificationsManagement() {
                   <Checkbox
                     checked={selectedIds.has(it.id)}
                     onCheckedChange={(checked) => toggleSelectItem(it.id, checked)}
-                    disabled={loading}
+                    disabled={loading || it.status !== "sent"}
                   />
                 </td>
                 <td className="px-4 py-2 max-w-[420px] truncate" title={it.title || it.content || undefined}>
@@ -549,7 +555,7 @@ export function NotificationsManagement() {
         onClose={() => setCreateModalOpen(false)}
         onSuccess={() => {
           setCreateModalOpen(false);
-          fetchList(page, pageSize, false); // Giữ selection sau khi tạo mới
+          fetchList(page, pageSize, false); 
         }}
       />
 

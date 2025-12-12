@@ -23,17 +23,16 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 import { translateStatus, translateRole } from "@packages/utils/translations";
+import {
+  type ApiUser,
+  getToken,
+  fetchUsers,
+  fetchAllUsers,
+  calculateSelectAllInPage,
+  calculateToggleSelectAllUsers,
+} from "@/services/userSelectionService";
 
 declare const process: { env: Record<string, string | undefined> };
-
-type ApiUser = {
-  id: number | string;
-  full_name: string;
-  email: string;
-  role: "admin" | "lecturer" | "student" | "parent";
-  status: "active" | "inactive" | "suspended";
-  _code?: string | null;
-};
 
 interface UserSelectionModalProps {
   open: boolean;
@@ -54,7 +53,6 @@ export function UserSelectionModal({
   const [selectedIds, setSelectedIds] = useState<Set<number>>(
     new Set(selectedUserIds)
   );
-  // Lưu thông tin user đã chọn để hiển thị (không chỉ ID)
   const [selectedUsers, setSelectedUsers] = useState<Map<number, ApiUser>>(new Map());
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
@@ -72,66 +70,40 @@ export function UserSelectionModal({
       status: string = "active",
       role: string = "all"
     ) => {
-      const token = localStorage.getItem("token");
+      const token = getToken();
       try {
         setLoading(true);
-        const params = new URLSearchParams();
-        params.set("page", String(pageNum));
-        params.set("limit", String(pageSize));
-        if (search.trim()) {
-          params.set("search", search.trim());
-        }
-        if (status && status !== "all") {
-          params.set("status", status);
-        }
-        if (role && role !== "all") {
-          params.set("role", role);
-        }
-
-        const res = await fetch(`${API_BASE}/api/users?${params.toString()}`, {
-          credentials: "include",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
+        const result = await fetchUsers({
+          page: pageNum,
+          limit: pageSize,
+          search,
+          status: status as "all" | "active" | "inactive" | "suspended",
+          role: role as "all" | "admin" | "lecturer" | "student" | "parent",
+          token,
+          apiBase: API_BASE,
         });
 
-        const result = await res.json().catch(() => ({}));
-        if (
-          res.ok &&
-          result.returnCode === 0 &&
-          Array.isArray(result.data?.users)
-        ) {
-          const pag = result.data?.pagination;
-          const loadedUsers = result.data.users as ApiUser[];
-          setUsers(loadedUsers);
-          
-          // Cập nhật selectedUsers với những user đã được chọn
-          // Lưu tất cả user trong trang hiện tại vào selectedUsers
-          // (sẽ được filter khi render dựa trên selectedIds)
-          setSelectedUsers((prev) => {
-            const updated = new Map(prev);
-            loadedUsers.forEach((user) => {
-              const userId = Number(user.id);
-              updated.set(userId, user);
-            });
-            return updated;
+        setUsers(result.users);
+
+        // Cập nhật selectedUsers với những user đã được chọn
+        setSelectedUsers((prev) => {
+          const updated = new Map(prev);
+          result.users.forEach((user) => {
+            const userId = Number(user.id);
+            updated.set(userId, user);
           });
-          
-          if (pag) {
-            setTotal(pag.total);
-            setTotalPages(pag.totalPages);
-            setPage(pag.page);
-          }
-        } else {
-          setUsers([]);
-          setTotal(0);
-          setTotalPages(1);
-        }
+          return updated;
+        });
+
+        setTotal(result.pagination.total);
+        setTotalPages(result.pagination.totalPages);
+        setPage(result.pagination.page);
       } catch (error) {
         console.error("Error loading users:", error);
         toast.error("Lỗi khi tải danh sách người dùng");
         setUsers([]);
+        setTotal(0);
+        setTotalPages(1);
       } finally {
         setLoading(false);
       }
@@ -143,7 +115,6 @@ export function UserSelectionModal({
     if (open) {
       loadUsers(searchQuery, 1, statusFilter, roleFilter);
       setSelectedIds(new Set(selectedUserIds));
-      // selectedUsers sẽ được cập nhật tự động khi loadUsers được gọi
     }
   }, [open, selectedUserIds, statusFilter, roleFilter, loadUsers, searchQuery]);
 
@@ -151,7 +122,7 @@ export function UserSelectionModal({
     if (open) {
       const timeoutId = setTimeout(() => {
         loadUsers(searchQuery, 1, statusFilter, roleFilter);
-      }, 500); // Debounce 500ms
+      }, 500); 
 
       return () => clearTimeout(timeoutId);
     }
@@ -162,11 +133,9 @@ export function UserSelectionModal({
     const newSelectedUsers = new Map(selectedUsers);
     
     if (newSelected.has(userId)) {
-      // Bỏ chọn
       newSelected.delete(userId);
       newSelectedUsers.delete(userId);
     } else {
-      // Chọn - lưu thông tin user
       newSelected.add(userId);
       const user = users.find((u) => Number(u.id) === userId);
       if (user) {
@@ -178,67 +147,43 @@ export function UserSelectionModal({
   };
 
   const handleSelectAll = async () => {
-    const token = localStorage.getItem("token");
+    const token = getToken();
     try {
       setLoading(true);
-      const params = new URLSearchParams();
-      params.set("page", "1");
-      params.set("limit", "10000"); // Lấy tất cả user (limit lớn)
-      if (searchQuery.trim()) {
-        params.set("search", searchQuery.trim());
-      }
-      if (statusFilter && statusFilter !== "all") {
-        params.set("status", statusFilter);
-      }
-      if (roleFilter && roleFilter !== "all") {
-        params.set("role", roleFilter);
-      }
-
-      const res = await fetch(`${API_BASE}/api/users?${params.toString()}`, {
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
+      const allUsers = await fetchAllUsers({
+        search: searchQuery,
+        status: statusFilter,
+        role: roleFilter,
+        token,
+        apiBase: API_BASE,
       });
 
-      const result = await res.json().catch(() => ({}));
-      if (
-        res.ok &&
-        result.returnCode === 0 &&
-        Array.isArray(result.data?.users)
-      ) {
-        const allUsers = result.data.users as ApiUser[];
-        const allUserIds = allUsers.map((u) => Number(u.id));
-        
-        // Kiểm tra xem đã chọn hết chưa
-        const allSelected = allUserIds.every((id) => selectedIds.has(id));
-        
-        if (allSelected) {
-          // Bỏ chọn tất cả
-          const newSelected = new Set(selectedIds);
-          const newSelectedUsers = new Map(selectedUsers);
-          allUserIds.forEach((id) => {
-            newSelected.delete(id);
-            newSelectedUsers.delete(id);
-          });
-          setSelectedIds(newSelected);
-          setSelectedUsers(newSelectedUsers);
-        } else {
-          // Chọn tất cả - lưu thông tin user
-          const newSelected = new Set(selectedIds);
-          const newSelectedUsers = new Map(selectedUsers);
+      const { newSelectedIds, newSelectedUsers, count } = calculateToggleSelectAllUsers(
+        allUsers,
+        selectedIds
+      );
+
+      const wasAllSelected = allUsers.length > 0 && 
+        allUsers.every((u) => selectedIds.has(Number(u.id)));
+
+      setSelectedIds(newSelectedIds);
+
+      setSelectedUsers((prev) => {
+        const updated = new Map(prev);
+        if (wasAllSelected) {
           allUsers.forEach((user) => {
-            const userId = Number(user.id);
-            newSelected.add(userId);
-            newSelectedUsers.set(userId, user);
+            updated.delete(Number(user.id));
           });
-          setSelectedIds(newSelected);
-          setSelectedUsers(newSelectedUsers);
-          toast.success(`Đã chọn ${allUserIds.length} người dùng`);
+        } else {
+          newSelectedUsers.forEach((user, userId) => {
+            updated.set(userId, user);
+          });
         }
-      } else {
-        toast.error("Không thể tải danh sách người dùng");
+        return updated;
+      });
+
+      if (!wasAllSelected && count > 0) {
+        toast.success(`Đã chọn ${count} người dùng`);
       }
     } catch (error) {
       console.error("Error selecting all users:", error);
@@ -404,10 +349,7 @@ export function UserSelectionModal({
             <div className="p-2 border-b bg-gray-50 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Checkbox
-                  checked={
-                    users.length > 0 && 
-                    users.every((u) => selectedIds.has(Number(u.id)))
-                  }
+                  checked={calculateSelectAllInPage(users, selectedIds)}
                   onCheckedChange={handleSelectAll}
                   disabled={loading}
                 />
