@@ -16,6 +16,50 @@ export const formatImageFileName = (file: File) => {
   return `IMG${timestamp}${extension}`;
 };
 
+
+export const validateImageSize = (file: File, maxSizeMB: number = 10): boolean => {
+  const maxSizeBytes = maxSizeMB * 1024 * 1024;
+  return file.size <= maxSizeBytes;
+};
+
+
+export const validateImageFile = (
+  file: File,
+  maxSizeMB: number = 10,
+): { isValid: boolean; error?: string } => {
+  if (!file) {
+    return { isValid: false, error: "Vui lòng chọn file ảnh" };
+  }
+
+  if (!validateImageSize(file, maxSizeMB)) {
+    return {
+      isValid: false,
+      error: `Ảnh không được vượt quá ${maxSizeMB}MB`,
+    };
+  }
+
+  return { isValid: true };
+};
+
+export const handleImageChange = (
+  file: File | null | undefined,
+  maxSizeMB: number = 10,
+): { isValid: boolean; error?: string; previewUrl?: string } => {
+  if (!file) {
+    return { isValid: false, error: "Vui lòng chọn file ảnh" };
+  }
+
+  const validation = validateImageFile(file, maxSizeMB);
+  if (!validation.isValid) {
+    return { isValid: false, error: validation.error };
+  }
+
+  const previewUrl = URL.createObjectURL(file);
+
+  return { isValid: true, previewUrl };
+};
+
+
 export const uploadFileToStorage = async (file: File, bucket = "image"): Promise<string> => {
   const filePath = formatImageFileName(file);
   const { error } = await supabase.storage.from(bucket).upload(filePath, file);
