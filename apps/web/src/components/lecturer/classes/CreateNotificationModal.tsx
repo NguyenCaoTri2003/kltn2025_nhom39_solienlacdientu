@@ -3,7 +3,6 @@
 import { useState, useEffect, useMemo } from "react";
 import Image from "next/image";
 import { toast } from "sonner";
-import { supabase } from "@packages/data/supabaseClient";
 import {
   Dialog,
   DialogContent,
@@ -25,19 +24,12 @@ import {
 } from "@/components/ui/select";
 import { Loader2, X } from "lucide-react";
 import { Student } from "@packages/core/entities/Student";
+import { uploadFileToStorage } from "@/services/uploadImage";
 
 declare const process: { env: Record<string, string | undefined> };
 
 type NotificationType = "university" | "lecturer" | "system";
 type NotificationCategory = "ACADEMIC" | "SYSTEM" | "FINANCE" | "GENERAL";
-
-const uploadFileToStorage = async (file: File): Promise<string> => {
-  const filePath = `${Date.now()}_${file.name}`;
-  const { error } = await supabase.storage.from("chat-uploads").upload(filePath, file);
-  if (error) throw error;
-  const { data } = supabase.storage.from("chat-uploads").getPublicUrl(filePath);
-  return data.publicUrl;
-};
 
 interface CreateNotificationModalProps {
   open: boolean;
@@ -96,8 +88,8 @@ export function CreateNotificationModal({
       return;
     }
 
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error("Ảnh không được vượt quá 5MB");
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("Ảnh không được vượt quá 10MB");
       return;
     }
 
@@ -353,7 +345,7 @@ export function CreateNotificationModal({
                 </div>
               )}
               <p className="text-xs text-muted-foreground">
-                Chấp nhận: JPG, PNG, GIF, WEBP (tối đa 5MB)
+                Chấp nhận: JPG, PNG, GIF, WEBP (tối đa 10MB)
               </p>
             </div>
 
