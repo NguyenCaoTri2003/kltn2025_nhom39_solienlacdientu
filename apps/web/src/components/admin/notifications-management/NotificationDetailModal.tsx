@@ -1,5 +1,6 @@
 "use client";
 import Image from "next/image";
+import { translateNotificationCategory, translateSenderType } from "@packages/utils/translations";
 
 export type NotificationDetail = {
   id: number;
@@ -44,8 +45,8 @@ export function NotificationDetailModal({ open, onClose, item }: NotificationDet
 
           <Field label="Tiêu đề" value={item?.title || "(Không tiêu đề)"} />
           <Field label="Nội dung" value={item?.content || "-"} multiline />
-          <Field label="Loại" value={item?.type || "-"} />
-          <Field label="Danh mục" value={item?.category || "-"} />
+          <Field label="Loại" value={translateSenderType(item?.type as string) || "-"} />
+          <Field label="Danh mục" value={translateNotificationCategory(item?.category as string) || "-"} />
           <Field
             label="Thời gian"
             value={item?.created_at ? new Date(item.created_at).toLocaleString("vi-VN") : "-"}
