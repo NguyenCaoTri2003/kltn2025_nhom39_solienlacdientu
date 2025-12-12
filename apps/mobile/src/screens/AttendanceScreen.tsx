@@ -97,10 +97,8 @@ export default function AttendanceScreen() {
     setModalVisible(false);
   };
 
-  // ===== Khi thay đổi con =====
   const handleSelectChild = (index: number) => {
     setSelectedChildIndex(index);
-    // reset dữ liệu con trước
     setSemester(null);
     setOfferings([]);
     setSelectedOffering(null);
@@ -227,7 +225,19 @@ export default function AttendanceScreen() {
             {loadingAttendance ? (
               <ActivityIndicator size="small" color="#1E3A8A" />
             ) : attendance.length === 0 ? (
-              selectedOffering && <Text style={styles.noOffering}>Chưa có dữ liệu điểm danh.</Text>
+              selectedOffering &&
+              <View style={styles.center}>
+                <Ionicons
+                  name="calendar-outline"
+                  size={48}
+                  color="#9CA3AF"
+                  style={{ marginBottom: 12 }}
+                />
+
+                <Text style={{ color: "#6B7280", marginBottom: 12, fontSize: 16 }}>
+                  Chưa có duyệt điểm danh nào.
+                </Text>
+              </View>
             ) : (
               [...attendance]
                 .sort(
@@ -256,7 +266,6 @@ export default function AttendanceScreen() {
     </SafeAreaView>
   );
 }
-
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: "#fff" },
@@ -350,4 +359,5 @@ const styles = StyleSheet.create({
   },
   childTabText: { color: "#374151", fontSize: 14, fontWeight: "500" },
   childTabTextActive: { color: "#fff" },
+  center: { alignItems: "center", marginTop: 20 },
 });

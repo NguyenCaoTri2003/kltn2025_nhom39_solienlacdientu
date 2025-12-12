@@ -133,19 +133,15 @@ export function WarningHistoryModal({ open, onClose, studentId, semesterId, apiB
     };
   }, [open, semesterId, data?.semester_id, API_BASE, semesters]);
 
-  // Helper function để normalize level - chỉ chấp nhận 4 giá trị mới
   const normalizeWarningLevel = (level: string): string => {
     const levelUpper = level.toUpperCase();
-    // Chỉ chấp nhận 4 giá trị mới
     const validLevels = ["FIRST", "SECOND", "FINAL", "EXPULSION"];
     if (validLevels.includes(levelUpper)) {
       return levelUpper;
     }
-    // Nếu không phải giá trị hợp lệ, trả về FIRST làm mặc định
     return "FIRST";
   };
 
-  // Helper function để lấy variant và màu cho Badge dựa trên level
   const getWarningLevelBadge = (level: string) => {
     const normalizedLevel = normalizeWarningLevel(level);
     switch (normalizedLevel) {

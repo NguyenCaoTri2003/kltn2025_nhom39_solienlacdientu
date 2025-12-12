@@ -11,7 +11,6 @@ Sau đây là các màn hình và chức năng của sinh viên (role = student)
 6. Thông báo: nhận thông báo từ nhà trường, giảng viên.
 7. Thông tin cá nhân: xem chi tiết thông tin cá nhân và thông tin của phụ huynh.
 8. Học phí: hiển thị học phí chi tiết của kì hiện tại có thể xem các kì trước đó.
-
 Sau đây là các màn hình và chức năng của phụ huynh (role = parent):
 1. Trang chủ: hiển thị thông tin cơ bản của phụ huynh, danh sách con mình, lịch hẹn hôm nay, các nút thao tác nhanh: Xem điểm danh, học phí, thông tin cá nhân, Đổi mật khẩu.
 2. Lớp học phần: xem danh sách lớp học phần đã đăng ký theo kỳ, năm học của từng con.

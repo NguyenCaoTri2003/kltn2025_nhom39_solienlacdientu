@@ -162,6 +162,17 @@ export default function NotificationScreen() {
     }
   };
 
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <HeaderBar title="Thông báo" />
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <ActivityIndicator size="large" color="#005BAC" />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   const renderNotification = ({ item }: { item: any }) => {
     const isRead = item.is_read;
     const cardStyle = isRead ? styles.notificationCard : [styles.notificationCard, styles.unreadCard];

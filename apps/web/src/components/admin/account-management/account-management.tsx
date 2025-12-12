@@ -151,7 +151,7 @@ export function AccountManagement() {
           setClasses(list.map((c) => ({ id: c.id, class_code: c.class_code })));
         }
       } catch {
-        // ignore
+        console.log("Failed to load classes");
       }
     }
     if (roleFilter === "student" && classes.length === 0) {

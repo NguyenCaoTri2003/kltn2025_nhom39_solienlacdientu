@@ -14,7 +14,7 @@ export class AppointmentUseCase {
         end_time: string,
         location?: string
     ) {
-        // Lấy danh sách phụ huynh của các học sinh
+        // Lấy danh sách phụ huynh của các sinh viên
         const { data: parents, error: parentError } = await supabase
             .from("student_parent")
             .select("student_id, parent_id")
@@ -25,7 +25,7 @@ export class AppointmentUseCase {
         }
 
         if (!parents || parents.length === 0) {
-            throw new Error("Không tìm thấy phụ huynh của các học sinh này");
+            throw new Error("Không tìm thấy phụ huynh của các sinh viên này");
         }
 
         const records = parents
@@ -67,7 +67,7 @@ export class AppointmentUseCase {
             .eq("student_id", studentId)
             .maybeSingle();
 
-        if (!sp) throw new Error("Bạn không phải phụ huynh của học sinh này");
+        if (!sp) throw new Error("Bạn không phải phụ huynh của sinh viên này");
 
         return this.repo.createAppointments([
             {

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -21,12 +21,18 @@ import {
 import { useNavigation } from "@react-navigation/native";
 import { useUser } from "../../context/UserContext";
 import { useNotificationContext } from "../../context/NotificationContext";
+import { getTodayClasses } from "../../services/scheduleService";
 
 export default function StudentHomeScreen() {
   const { user } = useAuth();
   const navigation = useNavigation();
   const { userData, loading } = useUser();
   const { unreadCount } = useNotificationContext();
+
+  console.log("User Data in StudentHomeScreen:", userData);
+
+  const [todayClasses, setTodayClasses] = useState([]);
+  const [loadingToday, setLoadingToday] = useState(false);
 
   const hours = new Date().getHours();
   const greeting =
@@ -35,6 +41,34 @@ export default function StudentHomeScreen() {
       : hours < 18
         ? "Chào buổi chiều 🌤️"
         : "Chào buổi tối 🌙";
+
+  useEffect(() => {
+    if (!userData?.id) return;
+
+    async function loadToday() {
+      setLoadingToday(true);
+      const data = await getTodayClasses(
+        String(userData?.id)
+      );
+      setTodayClasses(data);
+      setLoadingToday(false);
+    }
+
+    loadToday();
+  }, [userData]);
+
+  function getBadgeStyle(type: string) {
+    switch (type) {
+      case "theory":
+        return { backgroundColor: "#DBEAFE" }; 
+      case "practice":
+        return { backgroundColor: "#DCFCE7" };
+      case "exam":
+        return { backgroundColor: "#FEF3C7" }; 
+      default:
+        return { backgroundColor: "#E5E7EB" };
+    }
+  }
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -93,12 +127,6 @@ export default function StudentHomeScreen() {
 
         <View style={styles.featureGrid}>
           <FeatureButton
-            icon={<Calendar color="#2563EB"
-              size={28} />}
-            label="Lịch học"
-            onPress={() => navigation.navigate("Schedule" as never)}
-          />
-          <FeatureButton
             icon={<BarChart color="#2563EB" size={28} />}
             label="Kết quả học tập"
             onPress={() => navigation.navigate("Grades" as never)}
@@ -118,11 +146,48 @@ export default function StudentHomeScreen() {
             label="Điểm danh"
             onPress={() => navigation.navigate("Attendance" as never)}
           />
-          <FeatureButton
-            icon={<BookOpen color="#2563EB" size={28} />}
-            label="Khảo sát"
-          />
         </View>
+
+        <Text style={styles.sectionTitle}>Lịch học hôm nay</Text>
+
+        {todayClasses
+          .sort((a: any, b: any) => a.start_period - b.start_period)
+          .map((item: any) => (
+            <View key={item.id} style={styles.classCard}>
+              {/* Header row */}
+              <View style={styles.rowBetween}>
+                <Text style={styles.subjectName}>{item?.course_offering?.name}</Text>
+
+                <View style={[styles.badgeClassToday, getBadgeStyle(item.type)]}>
+                  <Text style={styles.badgeTextClassToday}>
+                    {item?.type === "theory"
+                      ? "Lý thuyết"
+                      : item?.type === "practice"
+                        ? "Thực hành"
+                        : item?.type === "exam"
+                          ? "Lịch thi"
+                          : "Khác"}
+                  </Text>
+                </View>
+              </View>
+
+              {/* Class + class code */}
+              <Text style={styles.classInfo}>
+                {item?.course_offering?.class?.name} - {item?.course_offering?.class_code}
+              </Text>
+
+              {/* Period */}
+              <Text style={styles.period}>
+                Tiết: {item?.start_period} - {item?.start_period + item?.period_count - 1}
+              </Text>
+
+              {/* Lecturer */}
+              <Text style={styles.lecturer}>
+                GV: {item?.course_offering?.lecturers?.users?.full_name}
+              </Text>
+            </View>
+          ))}
+
       </ScrollView>
     </SafeAreaView>
   );
@@ -198,7 +263,6 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
 
-  /** Profile Card */
   profileCard: {
     flexDirection: "row",
     backgroundColor: "#F9FAFB",
@@ -226,7 +290,6 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
 
-  /** Feature Section */
   sectionTitle: {
     fontSize: 18,
     fontWeight: "700",
@@ -257,6 +320,57 @@ const styles = StyleSheet.create({
   featureLabel: {
     fontSize: 15,
     fontWeight: "500",
+    color: "#1E3A8A",
+  },
+  classCard: {
+    backgroundColor: "#FFFFFF",
+    padding: 16,
+    borderRadius: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+  },
+
+  rowBetween: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+
+  subjectName: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#1E3A8A",
+  },
+
+  classInfo: {
+    marginTop: 6,
+    fontSize: 14,
+    color: "#374151",
+  },
+
+  period: {
+    marginTop: 6,
+    fontSize: 14,
+    color: "#111827",
+    fontWeight: "500",
+  },
+
+  lecturer: {
+    marginTop: 6,
+    fontSize: 14,
+    color: "#6B7280",
+  },
+
+  badgeClassToday: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 10,
+  },
+
+  badgeTextClassToday: {
+    fontSize: 12,
+    fontWeight: "600",
     color: "#1E3A8A",
   },
 });

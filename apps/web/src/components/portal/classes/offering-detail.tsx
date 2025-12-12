@@ -124,7 +124,7 @@ export default function OfferingDetail() {
     lecturerId?: number;
   }) => {
     if (!studentId) {
-      toast.error("Không tìm thấy thông tin học sinh!");
+      toast.error("Không tìm thấy thông tin sinh viên!");
       return;
     }
 

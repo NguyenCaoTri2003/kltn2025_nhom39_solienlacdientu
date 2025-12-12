@@ -15,6 +15,7 @@ import { useAuth } from "../context/AuthContext";
 import dayjs from "dayjs";
 import { getRoleLabel } from "../utils/roleHelper";
 import HeaderBar from "../components/HeaderBar";
+import { Ionicons } from "@expo/vector-icons";
 
 export default function MessageListScreen() {
   const { conversations, loading, refresh } = useMessageContext();
@@ -22,7 +23,14 @@ export default function MessageListScreen() {
   const { user } = useAuth();
   const myId = user?.id;
 
-  if (loading) return <ActivityIndicator style={{ flex: 1 }} />;
+  if (loading) return (
+    <SafeAreaView style={styles.container}>
+      <HeaderBar title="Hộp thư đến" unShowOnBack />
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <ActivityIndicator size="large" color="#005BAC" />
+      </View>
+    </SafeAreaView>
+  )
 
   function formatLastMessage(lastMessage: any, myId?: number, partnerName?: string, previousMessage?: any) {
     if (!lastMessage) return "Chưa có tin nhắn";
@@ -39,9 +47,6 @@ export default function MessageListScreen() {
       return "Chưa có tin nhắn";
     }
 
-    console.log("Last message:", lastMessage);
-
-
     switch (lastMessage.type) {
       case "text":
         return `${senderLabel}: ${lastMessage.content}`;
@@ -52,6 +57,30 @@ export default function MessageListScreen() {
       default:
         return `${senderLabel}: Tin nhắn mới`;
     }
+  }
+
+  function EmptyMessage() {
+    return (
+      <View style={styles.emptyContainer}>
+        <Ionicons
+          name="chatbubble-ellipses-outline"
+          size={50}
+          color="#9CA3AF"
+          style={{ marginBottom: 10 }}
+        />
+
+        <Text style={styles.emptyText}>Chưa có tin nhắn nào.</Text>
+
+        <TouchableOpacity
+          style={styles.goButton}
+          onPress={() => navigation.navigate("Home", { screen: "CourseOffering" })}
+        >
+          <Text style={{ color: "white", fontWeight: "600" }}>
+            Đến lớp học phần
+          </Text>
+        </TouchableOpacity>
+      </View>
+    );
   }
 
   return (
@@ -68,6 +97,7 @@ export default function MessageListScreen() {
         refreshing={loading}
         onRefresh={refresh}
         contentContainerStyle={styles.listContent}
+        ListEmptyComponent={<EmptyMessage />}
         renderItem={({ item }) => {
           const partner = item.user1?.id === myId ? item.user2 : item.user1;
           const lastMsgTime = item.lastMessage?.created_at
@@ -225,4 +255,21 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     paddingHorizontal: 4,
   },
+  emptyContainer: {
+    marginTop: 20,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  emptyText: {
+    color: "#6B7280",
+    fontSize: 16,
+    marginTop: 4,
+  },
+  goButton: {
+    backgroundColor: "#005BAC",
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    marginTop: 8,
+  }
 });
