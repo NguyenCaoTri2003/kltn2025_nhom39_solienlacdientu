@@ -12,20 +12,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  isValidEmail,
-  isValidPhone,
-  isValidFullName,
-  isValidCitizenId,
-  isValidAddress,
-  isValidEthnic,
-  isValidStudentCode,
-  isValidLecturerCode,
-  isValidOccupation,
-  isValidAcademicYear,
-  isValidPlaceOrContactAddress,
-} from "@packages/utils/Regex";
+  validateField as validateFieldService,
+  validateParentField as validateParentFieldService,
+  validateForm as validateFormService,
+  type RoleType,
+} from "@/services/userFormValidationService";
 
-type RoleType = "student" | "lecturer" | "parent" | "admin";
 
 export type SingleFormData = {
   user: {
@@ -158,52 +150,9 @@ export function AddSingleUserForm({ role, onChange, onValidityChange }: AddSingl
     setParentForms((prev) => prev.map((f, i) => (i === idx ? { ...f, ...patch } : f)));
   };
 
-  // Validation functions
+  // Validation functions using service
   const validateField = (name: string, value: string) => {
-    let message = "";
-
-    switch (name) {
-      case "fullName":
-        if (!value.trim()) message = "Vui lòng không để trống họ và tên";
-        else if (!isValidFullName(value)) message = "Họ và tên không hợp lệ (tối đa 128 ký tự)";
-        break;
-      case "email":
-        if (value && !isValidEmail(value)) message = "Email không hợp lệ (tối đa 255 ký tự)";
-        break;
-      case "phone":
-        if (value && !isValidPhone(value)) message = "Số điện thoại không hợp lệ (10-11 số, bắt đầu bằng 0)";
-        break;
-      case "citizenId":
-        if (value && !isValidCitizenId(value)) message = "CCCD không hợp lệ (chỉ số, từ 9 đến 20 ký tự)";
-        break;
-      case "address":
-        if (value && !isValidAddress(value)) message = "Địa chỉ không hợp lệ (tối đa 255 ký tự)";
-        break;
-      case "ethnic":
-        if (value && !isValidEthnic(value)) message = "Dân tộc không hợp lệ (tối đa 20 ký tự)";
-        break;
-      case "studentCode":
-        if (!value.trim()) message = "Vui lòng không để trống mã sinh viên";
-        else if (!isValidStudentCode(value)) message = "Mã sinh viên không hợp lệ (chữ, số, gạch dưới, tối đa 20 ký tự)";
-        break;
-      case "lecturerCode":
-        if (!value.trim()) message = "Vui lòng không để trống mã giảng viên";
-        else if (!isValidLecturerCode(value)) message = "Mã giảng viên không hợp lệ (chữ, số, gạch dưới, tối đa 20 ký tự)";
-        break;
-      case "occupation":
-        if (value && !isValidOccupation(value)) message = "Nghề nghiệp không hợp lệ (tối đa 100 ký tự)";
-        break;
-      case "academicYear":
-        if (!value.trim()) message = "Vui lòng không để trống niên khóa";
-        else if (!isValidAcademicYear(value)) message = "Niên khóa không hợp lệ (VD: 2024-2025, 4-20 ký tự)";
-        break;
-      case "placeOfBirth":
-        if (value && !isValidPlaceOrContactAddress(value)) message = "Nơi sinh không hợp lệ (tối đa 255 ký tự)";
-        break;
-      case "contactAddress":
-        if (value && !isValidPlaceOrContactAddress(value)) message = "Địa chỉ liên lạc không hợp lệ (tối đa 255 ký tự)";
-        break;
-    }
+    const message = validateFieldService(name, value);
     setErrors((prev) => ({
       ...prev,
       [name]: message,
@@ -211,32 +160,7 @@ export function AddSingleUserForm({ role, onChange, onValidityChange }: AddSingl
   };
 
   const validateParentField = (idx: number, name: keyof ParentForm, value: string) => {
-    let message = "";
-    switch (name) {
-      case "full_name":
-        if (value && !isValidFullName(value)) message = "Họ và tên không hợp lệ (tối đa 128 ký tự)";
-        break;
-      case "email":
-        if (value && !isValidEmail(value)) message = "Email không hợp lệ (tối đa 255 ký tự)";
-        break;
-      case "phone":
-        if (value && !isValidPhone(value)) message = "Số điện thoại không hợp lệ (10-11 số, bắt đầu bằng 0)";
-        break;
-      case "citizen_id_card":
-        if (value && !isValidCitizenId(value)) message = "CCCD không hợp lệ (chỉ số, từ 9 đến 20 ký tự)";
-        break;
-      case "address":
-        if (value && !isValidAddress(value)) message = "Địa chỉ không hợp lệ (tối đa 255 ký tự)";
-        break;
-      case "ethnic":
-        if (value && !isValidEthnic(value)) message = "Dân tộc không hợp lệ (tối đa 20 ký tự)";
-        break;
-      case "occupation":
-        if (value && !isValidOccupation(value)) message = "Nghề nghiệp không hợp lệ (tối đa 100 ký tự)";
-        break;
-      default:
-        message = "";
-    }
+    const message = validateParentFieldService(name, value);
     setParentErrors((prev) => {
       const next = [...prev];
       if (!next[idx]) next[idx] = {};
@@ -389,59 +313,59 @@ export function AddSingleUserForm({ role, onChange, onValidityChange }: AddSingl
     onChange,
   ]);
 
+  // Validate classId when selectedClassId changes
+  useEffect(() => {
+    if (role === "student") {
+      validateField("classId", selectedClassId ? String(selectedClassId) : "");
+    }
+  }, [selectedClassId, role]);
+
   // Notify parent about validity whenever error states change
   useEffect(() => {
-    // Only consider errors relevant to current role
-    const mainFieldKeysByRole: Record<RoleType, string[]> = {
-      student: [
-        "fullName",
-        "email",
-        "phone",
-        "citizenId",
-        "address",
-        "ethnic",
-        "studentCode",
-        "placeOfBirth",
-        "contactAddress",
-        "academicYear",
-      ],
-      lecturer: [
-        "fullName",
-        "email",
-        "phone",
-        "citizenId",
-        "address",
-        "ethnic",
-        "lecturerCode",
-      ],
-      parent: [
-        "fullName",
-        "email",
-        "phone",
-        "citizenId",
-        "address",
-        "ethnic",
-        "occupation",
-      ],
-      admin: [
-        "fullName",
-        "email",
-        "phone",
-        "citizenId",
-        "address",
-        "ethnic",
-      ],
+    const formValues = {
+      fullName,
+      email,
+      phone,
+      citizenId,
+      address: "", // Not used in validation, but required by type
+      ethnic: "", // Not used in validation, but required by type
+      studentCode,
+      lecturerCode,
+      occupation: "", // Not used in validation, but required by type
+      academicYear,
+      dateOfBirth,
+      placeOfBirth,
+      contactAddress,
+      classId: selectedClassId,
+      facultyId: selectedFacultyId,
+      academicRank,
+      childStudentId,
+      relationship,
     };
 
-    const keys = mainFieldKeysByRole[role] || [];
-    const hasMainErrors = keys.some((k) => !!errors[k]);
-
-    // Parent subforms only apply for student role
-    const hasParentErrors =
-      role === "student" && parentErrors.some((pe) => pe && Object.values(pe).some((v) => !!v));
-
-    onValidityChange?.(!(hasMainErrors || hasParentErrors));
-  }, [errors, parentErrors, onValidityChange, role]);
+    const isValid = validateFormService(role, formValues, errors, parentErrors);
+    onValidityChange?.(isValid);
+  }, [
+    errors,
+    parentErrors,
+    onValidityChange,
+    role,
+    fullName,
+    email,
+    phone,
+    citizenId,
+    studentCode,
+    selectedClassId,
+    dateOfBirth,
+    placeOfBirth,
+    contactAddress,
+    academicYear,
+    lecturerCode,
+    selectedFacultyId,
+    academicRank,
+    childStudentId,
+    relationship,
+  ]);
 
 
   switch (role) {
@@ -454,12 +378,15 @@ export function AddSingleUserForm({ role, onChange, onValidityChange }: AddSingl
           <Label>Mã sinh viên<p className="text-red-500">*</p></Label>
           <Input maxLength={20} placeholder="Nhập mã sinh viên..." value={studentCode} onChange={(e) => { setStudentCode(e.target.value); validateField("studentCode", e.target.value); }} />
           {errors.studentCode && <p className="text-sm text-red-500">{errors.studentCode}</p>}
-          <Label>Lớp</Label>
+          <Label>Lớp<p className="text-red-500">*</p></Label>
           <Select
             value={selectedClassId ? String(selectedClassId) : ""}
-            onValueChange={(v: string) => setSelectedClassId(Number(v))}
+            onValueChange={(v: string) => {
+              setSelectedClassId(Number(v));
+              validateField("classId", v);
+            }}
           >
-            <SelectTrigger>
+            <SelectTrigger className={errors.classId ? "border-red-500" : ""}>
               <SelectValue placeholder="Chọn lớp" />
             </SelectTrigger>
             <SelectContent className="w-[var(--radix-select-trigger-width)] max-h-60">
@@ -470,22 +397,78 @@ export function AddSingleUserForm({ role, onChange, onValidityChange }: AddSingl
               ))}
             </SelectContent>
           </Select>
-          <Label>Ngày sinh</Label>
-          <Input type="date" placeholder="Nhập ngày sinh..." value={dateOfBirth} onChange={(e) => setDateOfBirth(e.target.value)} />
-          <Label>Nơi sinh</Label>
-          <Input maxLength={255} placeholder="Nhập nơi sinh..." value={placeOfBirth} onChange={(e) => { setPlaceOfBirth(e.target.value); validateField("placeOfBirth", e.target.value); }} />
+          {errors.classId && <p className="text-sm text-red-500">{errors.classId}</p>}
+          <Label>Ngày sinh<p className="text-red-500">*</p></Label>
+          <Input 
+            type="date" 
+            placeholder="Nhập ngày sinh..." 
+            value={dateOfBirth} 
+            onChange={(e) => {
+              setDateOfBirth(e.target.value);
+              validateField("dateOfBirth", e.target.value);
+            }}
+            className={errors.dateOfBirth ? "border-red-500" : ""}
+          />
+          {errors.dateOfBirth && <p className="text-sm text-red-500">{errors.dateOfBirth}</p>}
+          <Label>Nơi sinh<p className="text-red-500">*</p></Label>
+          <Input 
+            maxLength={255} 
+            placeholder="Nhập nơi sinh..." 
+            value={placeOfBirth} 
+            onChange={(e) => { 
+              setPlaceOfBirth(e.target.value); 
+              validateField("placeOfBirth", e.target.value); 
+            }}
+            className={errors.placeOfBirth ? "border-red-500" : ""}
+          />
           {errors.placeOfBirth && <p className="text-sm text-red-500">{errors.placeOfBirth}</p>}
-          <Label>Địa chỉ liên lạc</Label>
-          <Input maxLength={255} placeholder="Nhập địa chỉ liên lạc..." value={contactAddress} onChange={(e) => { setContactAddress(e.target.value); validateField("contactAddress", e.target.value); }} />
+          <Label>Địa chỉ liên lạc<p className="text-red-500">*</p></Label>
+          <Input 
+            maxLength={255} 
+            placeholder="Nhập địa chỉ liên lạc..." 
+            value={contactAddress} 
+            onChange={(e) => { 
+              setContactAddress(e.target.value); 
+              validateField("contactAddress", e.target.value); 
+            }}
+            className={errors.contactAddress ? "border-red-500" : ""}
+          />
           {errors.contactAddress && <p className="text-sm text-red-500">{errors.contactAddress}</p>}
-          <Label>Email</Label>
-          <Input maxLength={100} placeholder="Nhập email..." value={email} onChange={(e) => { setEmail(e.target.value); validateField("email", e.target.value); }} />
+          <Label>Email<p className="text-red-500">*</p></Label>
+          <Input 
+            maxLength={100} 
+            placeholder="Nhập email..." 
+            value={email} 
+            onChange={(e) => { 
+              setEmail(e.target.value); 
+              validateField("email", e.target.value); 
+            }}
+            className={errors.email ? "border-red-500" : ""}
+          />
           {errors.email && <p className="text-sm text-red-500">{errors.email}</p>}
-          <Label>Số điện thoại</Label>
-          <Input maxLength={11} placeholder="Nhập số điện thoại..." value={phone} onChange={(e) => { setPhone(e.target.value); validateField("phone", e.target.value); }} />
+          <Label>Số điện thoại<p className="text-red-500">*</p></Label>
+          <Input 
+            maxLength={11} 
+            placeholder="Nhập số điện thoại..." 
+            value={phone} 
+            onChange={(e) => { 
+              setPhone(e.target.value); 
+              validateField("phone", e.target.value); 
+            }}
+            className={errors.phone ? "border-red-500" : ""}
+          />
           {errors.phone && <p className="text-sm text-red-500">{errors.phone}</p>}
-          <Label>CCCD</Label>
-          <Input maxLength={20} placeholder="Nhập CCCD..." value={citizenId} onChange={(e) => { setCitizenId(e.target.value); validateField("citizenId", e.target.value); }} />
+          <Label>CCCD<p className="text-red-500">*</p></Label>
+          <Input 
+            maxLength={20} 
+            placeholder="Nhập CCCD..." 
+            value={citizenId} 
+            onChange={(e) => { 
+              setCitizenId(e.target.value); 
+              validateField("citizenId", e.target.value); 
+            }}
+            className={errors.citizenId ? "border-red-500" : ""}
+          />
           {errors.citizenId && <p className="text-sm text-red-500">{errors.citizenId}</p>}
           <Label>Địa chỉ</Label>
           <Input maxLength={255} placeholder="Nhập địa chỉ..." value={address} onChange={(e) => { setAddress(e.target.value); validateField("address", e.target.value); }} />
@@ -515,8 +498,17 @@ export function AddSingleUserForm({ role, onChange, onValidityChange }: AddSingl
             </SelectContent>
           </Select>
 
-          <Label>Niên khoá</Label>
-          <Input maxLength={20} placeholder="Nhập niên khoá..." value={academicYear} onChange={(e) => { setAcademicYear(e.target.value); validateField("academicYear", e.target.value); }} />
+          <Label>Niên khoá<p className="text-red-500">*</p></Label>
+          <Input 
+            maxLength={20} 
+            placeholder="Nhập niên khoá..." 
+            value={academicYear} 
+            onChange={(e) => { 
+              setAcademicYear(e.target.value); 
+              validateField("academicYear", e.target.value); 
+            }}
+            className={errors.academicYear ? "border-red-500" : ""}
+          />
           {errors.academicYear && <p className="text-sm text-red-500">{errors.academicYear}</p>}
           <div className="space-y-3 mt-4 p-2 border border-gray-200 rounded">
             <div className="flex items-center justify-between">
@@ -576,18 +568,39 @@ export function AddSingleUserForm({ role, onChange, onValidityChange }: AddSingl
     case "lecturer":
       return (
         <div className="space-y-2">
-          <Label>Họ và tên</Label>
-          <Input maxLength={128} placeholder="Nhập họ và tên..." value={fullName} onChange={(e) => { setFullName(e.target.value); validateField("fullName", e.target.value); }} />
+          <Label>Họ và tên<p className="text-red-500">*</p></Label>
+          <Input 
+            maxLength={128} 
+            placeholder="Nhập họ và tên..." 
+            value={fullName} 
+            onChange={(e) => { 
+              setFullName(e.target.value); 
+              validateField("fullName", e.target.value); 
+            }}
+            className={errors.fullName ? "border-red-500" : ""}
+          />
           {errors.fullName && <p className="text-sm text-red-500">{errors.fullName}</p>}
-          <Label>Mã giảng viên</Label>
-          <Input maxLength={20} placeholder="Nhập mã giảng viên..." value={lecturerCode} onChange={(e) => { setLecturerCode(e.target.value); validateField("lecturerCode", e.target.value); }} />
+          <Label>Mã giảng viên<p className="text-red-500">*</p></Label>
+          <Input 
+            maxLength={20} 
+            placeholder="Nhập mã giảng viên..." 
+            value={lecturerCode} 
+            onChange={(e) => { 
+              setLecturerCode(e.target.value); 
+              validateField("lecturerCode", e.target.value); 
+            }}
+            className={errors.lecturerCode ? "border-red-500" : ""}
+          />
           {errors.lecturerCode && <p className="text-sm text-red-500">{errors.lecturerCode}</p>}
-          <Label>Khoa</Label>
+          <Label>Khoa<p className="text-red-500">*</p></Label>
           <Select
             value={selectedFacultyId ? String(selectedFacultyId) : ""}
-            onValueChange={(v: string) => setSelectedFacultyId(Number(v))}
+            onValueChange={(v: string) => {
+              setSelectedFacultyId(Number(v));
+              validateField("facultyId", v);
+            }}
           >
-            <SelectTrigger>
+            <SelectTrigger className={errors.facultyId ? "border-red-500" : ""}>
               <SelectValue placeholder="Chọn Khoa" />
             </SelectTrigger>
             <SelectContent className="w-[var(--radix-select-trigger-width)] max-h-60">
@@ -598,9 +611,16 @@ export function AddSingleUserForm({ role, onChange, onValidityChange }: AddSingl
               ))}
             </SelectContent>
           </Select>
-          <Label>Học hàm</Label>
-          <Select value={academicRank} onValueChange={(v: string) => setAcademicRank(v)}>
-            <SelectTrigger>
+          {errors.facultyId && <p className="text-sm text-red-500">{errors.facultyId}</p>}
+          <Label>Học hàm<p className="text-red-500">*</p></Label>
+          <Select 
+            value={academicRank} 
+            onValueChange={(v: string) => {
+              setAcademicRank(v);
+              validateField("academicRank", v);
+            }}
+          >
+            <SelectTrigger className={errors.academicRank ? "border-red-500" : ""}>
               <SelectValue placeholder="Chọn học hàm" />
             </SelectTrigger>
             <SelectContent className="w-[var(--radix-select-trigger-width)]">
@@ -610,14 +630,42 @@ export function AddSingleUserForm({ role, onChange, onValidityChange }: AddSingl
               <SelectItem value="professor">Giáo sư</SelectItem>
             </SelectContent>
           </Select>
-          <Label>Email</Label>
-          <Input maxLength={100} placeholder="Nhập email..." value={email} onChange={(e) => { setEmail(e.target.value); validateField("email", e.target.value); }} />
+          {errors.academicRank && <p className="text-sm text-red-500">{errors.academicRank}</p>}
+          <Label>Email<p className="text-red-500">*</p></Label>
+          <Input 
+            maxLength={100} 
+            placeholder="Nhập email..." 
+            value={email} 
+            onChange={(e) => { 
+              setEmail(e.target.value); 
+              validateField("email", e.target.value); 
+            }}
+            className={errors.email ? "border-red-500" : ""}
+          />
           {errors.email && <p className="text-sm text-red-500">{errors.email}</p>}
-          <Label>Số điện thoại</Label>
-          <Input maxLength={11} placeholder="Nhập số điện thoại..." value={phone} onChange={(e) => { setPhone(e.target.value); validateField("phone", e.target.value); }} />
+          <Label>Số điện thoại<p className="text-red-500">*</p></Label>
+          <Input 
+            maxLength={11} 
+            placeholder="Nhập số điện thoại..." 
+            value={phone} 
+            onChange={(e) => { 
+              setPhone(e.target.value); 
+              validateField("phone", e.target.value); 
+            }}
+            className={errors.phone ? "border-red-500" : ""}
+          />
           {errors.phone && <p className="text-sm text-red-500">{errors.phone}</p>}
-          <Label>CCCD</Label>
-          <Input maxLength={20} placeholder="Nhập CCCD..." value={citizenId} onChange={(e) => { setCitizenId(e.target.value); validateField("citizenId", e.target.value); }} />
+          <Label>CCCD<p className="text-red-500">*</p></Label>
+          <Input 
+            maxLength={20} 
+            placeholder="Nhập CCCD..." 
+            value={citizenId} 
+            onChange={(e) => { 
+              setCitizenId(e.target.value); 
+              validateField("citizenId", e.target.value); 
+            }}
+            className={errors.citizenId ? "border-red-500" : ""}
+          />
           {errors.citizenId && <p className="text-sm text-red-500">{errors.citizenId}</p>}
           <Label>Địa chỉ</Label>
           <Input maxLength={255} placeholder="Nhập địa chỉ..." value={address} onChange={(e) => { setAddress(e.target.value); validateField("address", e.target.value); }} />
@@ -631,18 +679,42 @@ export function AddSingleUserForm({ role, onChange, onValidityChange }: AddSingl
     case "parent":
       return (
         <div className="space-y-2">
-          <Label>Họ và tên</Label>
-          <Input maxLength={128} placeholder="Nhập họ và tên..." value={fullName} onChange={(e) => { setFullName(e.target.value); validateField("fullName", e.target.value); }} />
+          <Label>Họ và tên<p className="text-red-500">*</p></Label>
+          <Input 
+            maxLength={128} 
+            placeholder="Nhập họ và tên..." 
+            value={fullName} 
+            onChange={(e) => { 
+              setFullName(e.target.value); 
+              validateField("fullName", e.target.value); 
+            }}
+            className={errors.fullName ? "border-red-500" : ""}
+          />
           {errors.fullName && <p className="text-sm text-red-500">{errors.fullName}</p>}
           <Label>Nghề nghiệp</Label>
           <Input maxLength={100} placeholder="Nhập nghề nghiệp..." value={occupation} onChange={(e) => { setOccupation(e.target.value); validateField("occupation", e.target.value); }} />
           {errors.occupation && <p className="text-sm text-red-500">{errors.occupation}</p>}
-          <Label>ID sinh viên con</Label>
-          <Input maxLength={100} placeholder="Nhập ID sinh viên con..." value={childStudentId} onChange={(e) => { setChildStudentId(e.target.value); validateField("childStudentId", e.target.value); }} />
+          <Label>ID sinh viên con<p className="text-red-500">*</p></Label>
+          <Input 
+            maxLength={100} 
+            placeholder="Nhập ID sinh viên con..." 
+            value={childStudentId} 
+            onChange={(e) => { 
+              setChildStudentId(e.target.value); 
+              validateField("childStudentId", e.target.value); 
+            }}
+            className={errors.childStudentId ? "border-red-500" : ""}
+          />
           {errors.childStudentId && <p className="text-sm text-red-500">{errors.childStudentId}</p>}
-          <Label>Mối quan hệ</Label>
-          <Select value={relationship} onValueChange={(v: string) => setRelationship(v)}>
-            <SelectTrigger>
+          <Label>Mối quan hệ<p className="text-red-500">*</p></Label>
+          <Select 
+            value={relationship} 
+            onValueChange={(v: string) => {
+              setRelationship(v);
+              validateField("relationship", v);
+            }}
+          >
+            <SelectTrigger className={errors.relationship ? "border-red-500" : ""}>
               <SelectValue placeholder="Chọn mối quan hệ" />
             </SelectTrigger>
             <SelectContent className="w-[var(--radix-select-trigger-width)]">
@@ -651,14 +723,42 @@ export function AddSingleUserForm({ role, onChange, onValidityChange }: AddSingl
               <SelectItem value="guardian">Người giám hộ</SelectItem>
             </SelectContent>
           </Select>
-          <Label>Email</Label>
-          <Input maxLength={100} placeholder="Nhập email..." value={email} onChange={(e) => { setEmail(e.target.value); validateField("email", e.target.value); }} />
+          {errors.relationship && <p className="text-sm text-red-500">{errors.relationship}</p>}
+          <Label>Email<p className="text-red-500">*</p></Label>
+          <Input 
+            maxLength={100} 
+            placeholder="Nhập email..." 
+            value={email} 
+            onChange={(e) => { 
+              setEmail(e.target.value); 
+              validateField("email", e.target.value); 
+            }}
+            className={errors.email ? "border-red-500" : ""}
+          />
           {errors.email && <p className="text-sm text-red-500">{errors.email}</p>}
-          <Label>Số điện thoại</Label>
-          <Input maxLength={11} placeholder="Nhập số điện thoại..." value={phone} onChange={(e) => { setPhone(e.target.value); validateField("phone", e.target.value); }} />
+          <Label>Số điện thoại<p className="text-red-500">*</p></Label>
+          <Input 
+            maxLength={11} 
+            placeholder="Nhập số điện thoại..." 
+            value={phone} 
+            onChange={(e) => { 
+              setPhone(e.target.value); 
+              validateField("phone", e.target.value); 
+            }}
+            className={errors.phone ? "border-red-500" : ""}
+          />
           {errors.phone && <p className="text-sm text-red-500">{errors.phone}</p>}
-          <Label>CCCD</Label>
-          <Input maxLength={20} placeholder="Nhập CCCD..." value={citizenId} onChange={(e) => { setCitizenId(e.target.value); validateField("citizenId", e.target.value); }} />
+          <Label>CCCD<p className="text-red-500">*</p></Label>
+          <Input 
+            maxLength={20} 
+            placeholder="Nhập CCCD..." 
+            value={citizenId} 
+            onChange={(e) => { 
+              setCitizenId(e.target.value); 
+              validateField("citizenId", e.target.value); 
+            }}
+            className={errors.citizenId ? "border-red-500" : ""}
+          />
           {errors.citizenId && <p className="text-sm text-red-500">{errors.citizenId}</p>}
           <Label>Địa chỉ</Label>
           <Input maxLength={255} placeholder="Nhập địa chỉ..." value={address} onChange={(e) => { setAddress(e.target.value); validateField("address", e.target.value); }} />
@@ -672,17 +772,53 @@ export function AddSingleUserForm({ role, onChange, onValidityChange }: AddSingl
     case "admin":
       return (
         <div className="space-y-2">
-          <Label>Họ và tên</Label>
-          <Input maxLength={128} placeholder="Nhập họ và tên..." value={fullName} onChange={(e) => { setFullName(e.target.value); validateField("fullName", e.target.value); }} />
+          <Label>Họ và tên<p className="text-red-500">*</p></Label>
+          <Input 
+            maxLength={128} 
+            placeholder="Nhập họ và tên..." 
+            value={fullName} 
+            onChange={(e) => { 
+              setFullName(e.target.value); 
+              validateField("fullName", e.target.value); 
+            }}
+            className={errors.fullName ? "border-red-500" : ""}
+          />
           {errors.fullName && <p className="text-sm text-red-500">{errors.fullName}</p>}
-          <Label>Email</Label>
-          <Input maxLength={100} placeholder="Nhập email..." value={email} onChange={(e) => { setEmail(e.target.value); validateField("email", e.target.value); }} />
+          <Label>Email<p className="text-red-500">*</p></Label>
+          <Input 
+            maxLength={100} 
+            placeholder="Nhập email..." 
+            value={email} 
+            onChange={(e) => { 
+              setEmail(e.target.value); 
+              validateField("email", e.target.value); 
+            }}
+            className={errors.email ? "border-red-500" : ""}
+          />
           {errors.email && <p className="text-sm text-red-500">{errors.email}</p>}
-          <Label>Số điện thoại</Label>
-          <Input maxLength={11} placeholder="Nhập số điện thoại..." value={phone} onChange={(e) => { setPhone(e.target.value); validateField("phone", e.target.value); }} />
+          <Label>Số điện thoại<p className="text-red-500">*</p></Label>
+          <Input 
+            maxLength={11} 
+            placeholder="Nhập số điện thoại..." 
+            value={phone} 
+            onChange={(e) => { 
+              setPhone(e.target.value); 
+              validateField("phone", e.target.value); 
+            }}
+            className={errors.phone ? "border-red-500" : ""}
+          />
           {errors.phone && <p className="text-sm text-red-500">{errors.phone}</p>}
-          <Label>CCCD</Label>
-          <Input maxLength={20} placeholder="Nhập CCCD..." value={citizenId} onChange={(e) => { setCitizenId(e.target.value); validateField("citizenId", e.target.value); }} />
+          <Label>CCCD<p className="text-red-500">*</p></Label>
+          <Input 
+            maxLength={20} 
+            placeholder="Nhập CCCD..." 
+            value={citizenId} 
+            onChange={(e) => { 
+              setCitizenId(e.target.value); 
+              validateField("citizenId", e.target.value); 
+            }}
+            className={errors.citizenId ? "border-red-500" : ""}
+          />
           {errors.citizenId && <p className="text-sm text-red-500">{errors.citizenId}</p>}
           <Label>Địa chỉ</Label>
           <Input maxLength={255} placeholder="Nhập địa chỉ..." value={address} onChange={(e) => { setAddress(e.target.value); validateField("address", e.target.value); }} />
