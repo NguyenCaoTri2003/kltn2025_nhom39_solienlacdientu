@@ -337,6 +337,13 @@ export function AccountManagement() {
             setSemesterFilter("all");
             setSelectedIds([]);
             setSelectedStatus(null);
+            setAccounts([]);
+            setTotal(0);
+            setTotalPages(1);
+            setHasSearched(false);
+            setQuery("");
+            setSearchInput("");
+            setPage(1);
           }}
           className="w-full max-w-fit"
         >

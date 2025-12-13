@@ -36,6 +36,11 @@ export interface ListResult {
 }
 
 export class NotificationsRepository {
+  /**
+   * Tìm kiếm thông báo với các bộ lọc và phân trang
+   * Hỗ trợ lọc theo tiêu đề, nội dung, loại, danh mục, khoảng thời gian và trạng thái
+   * @returns Danh sách thông báo kèm thông tin phân trang
+   */
   async search(params: {
     page?: number;
     pageSize?: number;
@@ -77,6 +82,11 @@ export class NotificationsRepository {
     };
   }
 
+  /**
+   * Tìm kiếm thông báo không phân trang (raw search)
+   * Hỗ trợ lọc theo tiêu đề, nội dung, loại, danh mục, khoảng thời gian và trạng thái
+   * @returns Mảng các thông báo (tối đa 10000 bản ghi)
+   */
   async searchRaw(params: {
     title?: string;
     content?: string;
@@ -105,6 +115,12 @@ export class NotificationsRepository {
     if (error) throw error;
     return (data ?? []) as NotificationRow[];
   }
+
+  /**
+   * Tạo một thông báo mới
+   * Mặc định status = "sent" nếu không được chỉ định
+   * @returns Thông báo vừa được tạo
+   */
   async create(payload: {
     user_id?: number | null;
     title?: string | null;
@@ -136,6 +152,11 @@ export class NotificationsRepository {
     return data as NotificationRow;
   }
 
+  /**
+   * Tạo nhiều thông báo cùng lúc (bulk insert)
+   * Mặc định status = "sent" cho tất cả các thông báo nếu không được chỉ định
+   * @returns Số lượng thông báo đã được tạo thành công
+   */
   async createBulk(rows: Array<{
     user_id?: number | null;
     title?: string | null;
@@ -166,6 +187,10 @@ export class NotificationsRepository {
     return (data?.length ?? 0);
   }
 
+  /**
+   * Lấy thông báo theo ID
+   * @returns Thông báo tương ứng với ID, hoặc null nếu không tìm thấy
+   */
   async getById(id: number): Promise<NotificationRow | null> {
     const { data, error } = await supabase
       .from("notifications")
@@ -182,6 +207,11 @@ export class NotificationsRepository {
     return data as NotificationRow;
   }
 
+  /**
+   * Lấy danh sách thông báo có phân trang
+   * Có thể lọc theo user_id
+   * @returns Danh sách thông báo kèm thông tin phân trang
+   */
   async list(params: ListParams = {}): Promise<ListResult> {
     const page = Math.max(1, Math.floor(params.page ?? 1));
     const pageSize = Math.min(100, Math.max(1, Math.floor(params.pageSize ?? 20)));
@@ -209,12 +239,19 @@ export class NotificationsRepository {
     };
   }
 
+  /**
+   * Xóa vĩnh viễn một thông báo khỏi database
+   */
   async delete(id: number): Promise<void> {
     const { error } = await supabase.from("notifications").delete().eq("id", id);
     if (error) throw error;
   }
 
-
+  /**
+   * Lấy danh sách thông báo của một user cụ thể có phân trang
+   * Chỉ lấy các thông báo chưa bị xóa (is_deleted = false)
+   * @returns Danh sách thông báo của user kèm thông tin phân trang
+   */
   async getUserNotifications(userId: number, params: ListParams = {}): Promise<ListResult> {
     const page = Math.max(1, Math.floor(params.page ?? 1));
     const pageSize = Math.min(100, Math.max(1, Math.floor(params.pageSize ?? 20)));
@@ -243,6 +280,10 @@ export class NotificationsRepository {
     };
   }
 
+  /**
+   * Đánh dấu một thông báo là đã đọc
+   * Cập nhật is_read = true cho thông báo có ID tương ứng
+   */
   async markAsRead(notificationId: number): Promise<void> {
     const { error } = await supabase
       .from("notifications")
@@ -251,6 +292,10 @@ export class NotificationsRepository {
     if (error) throw error;
   }
 
+  /**
+   * Đánh dấu một thông báo là đã xóa (soft delete)
+   * Cập nhật is_deleted = true cho thông báo có ID tương ứng
+   */
   async markAsDeleted(notificationId: number): Promise<void> {
     const { error } = await supabase
       .from("notifications")
@@ -259,6 +304,10 @@ export class NotificationsRepository {
     if (error) throw error;
   }
 
+  /**
+   * Đánh dấu tất cả thông báo chưa đọc của một user là đã đọc
+   * Cập nhật is_read = true cho tất cả thông báo của user có is_read = false
+   */
   async markAllAsRead(userId: number): Promise<void> {
     const { error } = await supabase
       .from("notifications")
@@ -268,6 +317,10 @@ export class NotificationsRepository {
     if (error) throw error;
   }
 
+  /**
+   * Đánh dấu tất cả thông báo chưa xóa của một user là đã xóa (soft delete)
+   * Cập nhật is_deleted = true cho tất cả thông báo của user có is_deleted = false
+   */
   async deleteAll(userId: number): Promise<void> {
     const { error } = await supabase
       .from("notifications")
