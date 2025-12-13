@@ -279,3 +279,69 @@ export const fetchSemesters = async (
   }));
 };
 
+/**
+ * Fetch thông tin chi tiết của một user
+ */
+export const fetchUserById = async (
+  userId: string,
+  token: string | null,
+  apiBase: string
+): Promise<any> => {
+  const res = await fetch(`${apiBase}/api/users/${userId}`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    credentials: "include",
+    cache: "no-store",
+  });
+
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    let errorMessage = "Không thể tải thông tin người dùng";
+    if (res.status === 401) {
+      errorMessage = "Bạn chưa đăng nhập hoặc phiên đăng nhập đã hết hạn (401)";
+    } else if (res.status === 403) {
+      errorMessage = "Bạn không có quyền truy cập tài nguyên này (403)";
+    } else if (data?.error) {
+      errorMessage = data.error;
+    }
+    throw new Error(errorMessage);
+  }
+
+  return await res.json();
+};
+
+/**
+ * Cập nhật thông tin của một user
+ */
+export const updateUser = async (
+  userId: string,
+  updates: Record<string, string>,
+  token: string | null,
+  apiBase: string
+): Promise<any> => {
+  const res = await fetch(`${apiBase}/api/users/${userId}`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    credentials: "include",
+    body: JSON.stringify({ user: updates }),
+  });
+
+  const data = await res.json().catch(() => ({}));
+
+  if (!res.ok) {
+    let errorMessage = "Không thể cập nhật thông tin";
+    if (res.status === 401) {
+      errorMessage = "Bạn chưa đăng nhập hoặc phiên đăng nhập đã hết hạn (401)";
+    } else if (res.status === 403) {
+      errorMessage = "Bạn không có quyền cập nhật thông tin (403)";
+    } else if (data?.error) {
+      errorMessage = data.error;
+    }
+    throw new Error(errorMessage);
+  }
+
+  return data;
+};
+
