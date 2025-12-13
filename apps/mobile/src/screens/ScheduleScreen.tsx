@@ -193,18 +193,26 @@ export default function ScheduleScreen() {
             renderItem={({ item }) => {
               const isPractice = item.type === "practice";
               const isExam = item.type === "exam";
+              const isCancelled = item.status === "cancelled";
 
               return (
                 <View
                   style={[
                     styles.card,
-                    isPractice
-                      ? styles.practiceCard
+                    isCancelled
+                      ? styles.cancelledCard
                       : isExam
                         ? styles.examCard
-                        : styles.theoryCard,
+                        : isPractice
+                          ? styles.practiceCard
+                          : styles.theoryCard,
                   ]}
                 >
+                  {isCancelled && (
+                    <View style={styles.cancelledBadge}>
+                      <Text style={styles.cancelledBadgeText}>ĐÃ HỦY</Text>
+                    </View>
+                  )}
                   <Text style={styles.title}>{item.course_offering.name}</Text>
 
                   <Text>{item?.course_offering?.class_name} - {item?.course_offering?.class_code} </Text>
@@ -360,19 +368,20 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   theoryCard: {
-    backgroundColor: "#E0F2FE",
+    backgroundColor: "#DBEAFE",
     borderLeftWidth: 4,
-    borderLeftColor: "#0284C7",
+    borderLeftColor: "#2563EB",
   },
+
   practiceCard: {
-    backgroundColor: "#F3E8FF",
+    backgroundColor: "#DCFCE7",
     borderLeftWidth: 4,
-    borderLeftColor: "#9333EA",
+    borderLeftColor: "#16A34A",
   },
   examCard: {
-    backgroundColor: "#FEF3C7",
+    backgroundColor: "#FEF9C3",
     borderLeftWidth: 4,
-    borderLeftColor: "#F59E0B",
+    borderLeftColor: "#CA8A04",
   },
   title: { fontSize: 16, fontWeight: "700", color: "#111827", marginBottom: 6 },
   note: { color: "#6B7280", fontStyle: "italic", marginTop: 6 },
@@ -386,5 +395,25 @@ const styles = StyleSheet.create({
     backgroundColor: "#DBEAFE",
     borderRadius: 8,
     marginLeft: 6
+  },
+  cancelledCard: {
+    backgroundColor: "#FEE2E2",
+    borderLeftWidth: 4,
+    borderLeftColor: "#DC2626",
+  },
+  cancelledBadge: {
+    alignSelf: "flex-start",
+    backgroundColor: "#FEE2E2", 
+    borderColor: "#DC2626",
+    borderWidth: 1,
+    paddingVertical: 2,
+    paddingHorizontal: 8,
+    borderRadius: 999,
+    marginBottom: 6,
+  },
+  cancelledBadgeText: {
+    color: "#DC2626",
+    fontSize: 12,
+    fontWeight: "700",
   },
 });
