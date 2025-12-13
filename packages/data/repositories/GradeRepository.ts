@@ -329,14 +329,10 @@ export class GradeRepository {
     if (e1) throw e1;
     if (!rawEnrollments || rawEnrollments.length === 0) return [];
 
-    // ép kiểu
     const enrollments = rawEnrollments as unknown as Enrollment[];
 
     const enrollmentIds = enrollments.map(e => e.id);
 
-    //
-    // ===== STEP 2: Theory grades =====
-    //
     const { data: rawTheory, error: tErr } = await supabase
       .from("grades")
       .select(`id, score_type, score, comment, enrollment_id`)
@@ -346,9 +342,6 @@ export class GradeRepository {
 
     const theoryGrades = rawTheory as unknown as TheoryGrade[];
 
-    //
-    // ===== STEP 3: Practice enrollment =====
-    //
     const { data: rawPracticeEnrollments, error: e2 } = await supabase
       .from("practice_enrollment")
       .select(`
@@ -369,9 +362,6 @@ export class GradeRepository {
 
     const practiceEnrollmentIds = practiceEnrollmentList.map(p => p.id);
 
-    //
-    // ===== STEP 4: Practice grades =====
-    //
     const { data: rawPracticeGrades, error: pErr } = await supabase
       .from("grades")
       .select(`id, score_type, score, comment, practice_enrollment_id`)
@@ -381,9 +371,6 @@ export class GradeRepository {
 
     const practiceGrades = rawPracticeGrades as PracticeGrade[];
 
-    //
-    // ===== STEP 5: Grade summary =====
-    //
     const { data: rawSummaries, error: sErr } = await supabase
       .from("grade_summary")
       .select("*")
@@ -396,12 +383,8 @@ export class GradeRepository {
       return acc;
     }, {} as Record<number, GradeSummary>);
 
-    //
-    // ===== STEP 6: group by student =====
-    //
     const grouped: Record<number, any> = {};
 
-    // init student entries
     for (const e of enrollments) {
       grouped[e.student_id] = {
         student_id: e.student_id,
@@ -415,9 +398,6 @@ export class GradeRepository {
       };
     }
 
-    //
-    // attach theory grades
-    //
     theoryGrades.forEach(g => {
       const enrollment = enrollments.find(e => e.id === g.enrollment_id);
       if (!enrollment) return;
@@ -430,9 +410,7 @@ export class GradeRepository {
       });
     });
 
-    //
-    // attach practice grades
-    //
+   
     practiceGrades.forEach(g => {
       const pEnroll = practiceEnrollmentList.find(p => p.id === g.practice_enrollment_id);
       if (!pEnroll) return;

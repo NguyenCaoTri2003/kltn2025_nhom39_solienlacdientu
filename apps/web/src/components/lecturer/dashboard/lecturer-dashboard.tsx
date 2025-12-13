@@ -89,7 +89,6 @@ export default function LecturerDashboard() {
             ? localStorage.getItem("token") ?? undefined
             : undefined;
 
-    // Lấy thông tin user từ localStorage
     useEffect(() => {
         try {
             const raw = localStorage.getItem("user");
@@ -270,7 +269,6 @@ export default function LecturerDashboard() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.4 }}
                 >
-                    {/* Header */}
                     <div className="flex flex-col gap-2 mb-6">
                         <h1 className="text-2xl sm:text-3xl font-semibold flex items-center gap-2 text-foreground">
                             <BookText className="w-6 h-6 text-muted-foreground" />
@@ -298,7 +296,6 @@ export default function LecturerDashboard() {
                         </div>
                     ) : (
                         <div className="space-y-6">
-                            {/* Stats Cards - Modern design */}
                             <motion.div
                                 className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
                                 initial={{ opacity: 0, y: 20 }}
@@ -396,7 +393,6 @@ export default function LecturerDashboard() {
                                 </motion.div>
                             </motion.div>
 
-                            {/* Main Content Grid */}
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                                 {/* Lịch học hôm nay */}
                                 <motion.div
@@ -510,7 +506,6 @@ export default function LecturerDashboard() {
                                     </Card>
                                 </motion.div>
 
-                                {/* Lịch hẹn hôm nay */}
                                 <motion.div
                                     initial={{ opacity: 0, x: 20 }}
                                     animate={{ opacity: 1, x: 0 }}

@@ -112,6 +112,7 @@ export default function ClassDetail() {
         (sum, enrollment) => sum + (enrollment.students ? 1 : 0),
         0
       ) ?? 0;
+      
     const occupancy = capacity > 0 ? Math.round((registered * 100) / capacity) : 0;
 
     return {
@@ -280,86 +281,6 @@ export default function ClassDetail() {
             </div>
           </div>
         </Card>
-
-        {/* <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <div className="group rounded-3xl border border-border/60 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent p-5 shadow-[0_24px_80px_-50px_rgba(37,99,235,0.6)] transition hover:-translate-y-1 hover:border-primary/50 hover:shadow-[0_32px_100px_-55px_rgba(37,99,235,0.7)]">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-                  Tổng sinh viên
-                </p>
-                <p className="mt-2 text-3xl font-semibold text-foreground">
-                  {summaryStats.totalStudents}
-                </p>
-              </div>
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/15 text-primary">
-                <Users className="h-5 w-5" />
-              </div>
-            </div>
-            <p className="mt-4 text-xs text-muted-foreground">
-              {summaryStats.registered} sinh viên đã đăng ký
-            </p>
-          </div>
-
-          <div className="group rounded-3xl border border-border/60 bg-gradient-to-br from-emerald-500/10 via-emerald-500/5 to-transparent p-5 shadow-[0_24px_80px_-50px_rgba(16,185,129,0.6)] transition hover:-translate-y-1 hover:border-emerald-500/60 hover:shadow-[0_32px_100px_-55px_rgba(16,185,129,0.7)]">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-                  Sức chứa
-                </p>
-                <p className="mt-2 text-3xl font-semibold text-foreground">
-                  {summaryStats.capacity}
-                </p>
-              </div>
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-600">
-                <GraduationCap className="h-5 w-5" />
-              </div>
-            </div>
-            <p className="mt-4 text-xs text-muted-foreground">
-              {summaryStats.registered}/{summaryStats.capacity} sinh viên tham gia
-            </p>
-          </div>
-
-          <div className="group rounded-3xl border border-border/60 bg-gradient-to-br from-indigo-500/10 via-indigo-500/5 to-transparent p-5 shadow-[0_24px_80px_-50px_rgba(99,102,241,0.6)] transition hover:-translate-y-1 hover:border-indigo-500/60 hover:shadow-[0_32px_100px_-55px_rgba(99,102,241,0.7)]">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-                  Tỉ lệ đăng ký
-                </p>
-                <p className="mt-2 text-3xl font-semibold text-foreground">
-                  {summaryStats.capacity > 0 ? `${summaryStats.occupancy}%` : "-"}
-                </p>
-              </div>
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-indigo-500/15 text-indigo-600">
-                <Info className="h-5 w-5" />
-              </div>
-            </div>
-            <p className="mt-4 text-xs text-muted-foreground">
-              {summaryStats.capacity > 0
-                ? `${summaryStats.registered}/${summaryStats.capacity} sinh viên`
-                : "Chưa có dữ liệu"}
-            </p>
-          </div>
-
-          <div className="group rounded-3xl border border-border/60 bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-transparent p-5 shadow-[0_24px_80px_-50px_rgba(245,158,11,0.6)] transition hover:-translate-y-1 hover:border-amber-500/60 hover:shadow-[0_32px_100px_-55px_rgba(245,158,11,0.7)]">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-                  Nhóm thực hành
-                </p>
-                <p className="mt-2 text-3xl font-semibold text-foreground">
-                  {summaryStats.practiceGroupCount}
-                </p>
-              </div>
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-amber-500/15 text-amber-600">
-                <Users className="h-5 w-5" />
-              </div>
-            </div>
-            <p className="mt-4 text-xs text-muted-foreground">
-              {summaryStats.practiceStudentCount} sinh viên tham gia thực hành
-            </p>
-          </div>
-        </div> */}
 
         {practiceGroups.length > 0 && (
           <section className="space-y-5">

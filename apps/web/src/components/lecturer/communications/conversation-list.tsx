@@ -47,8 +47,6 @@ export default function ConversationList({
 
     const msg = conv.lastMessage;
       
-    
-    console.log("Last message:", msg);
     const sender =
     msg.sender_id === myId
     ? "Bạn"
