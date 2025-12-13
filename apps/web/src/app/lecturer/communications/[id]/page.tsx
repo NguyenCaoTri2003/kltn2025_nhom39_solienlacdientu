@@ -1,15 +1,3 @@
-// import Navbar from "@/components/navbar";
-// import CommunicationClientPage from "@/components/lecturer/communications/communication-client-page";
-
-// export default async function CommunicationDetailPage() {
-//   return (
-//     <div className="h-[725px] bg-background flex flex-col">
-//       <Navbar />
-//       <CommunicationClientPage />
-//     </div>
-//   );
-// }
-
 "use client";
 
 import { useParams } from "next/navigation";
