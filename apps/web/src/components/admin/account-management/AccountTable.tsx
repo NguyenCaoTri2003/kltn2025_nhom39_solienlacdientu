@@ -27,6 +27,7 @@ interface AccountTableProps {
   ) => Promise<{ ok: boolean; message?: string }>;
   onOpenResetPassword: (id: string, name: string) => void;
   onOpenViewDetail: (id: string, name: string) => void;
+  onOpenEdit?: (id: string, name: string) => void;
   hasSearched: boolean;
 }
 
@@ -68,6 +69,7 @@ export function AccountTable({
   onChangeStatus,
   onOpenResetPassword,
   onOpenViewDetail,
+  onOpenEdit,
   hasSearched,
 }: AccountTableProps) {
   const handleSelectAll = async () => {
@@ -236,6 +238,7 @@ export function AccountTable({
                 onChangeStatus={onChangeStatus}
                 onOpenResetPassword={onOpenResetPassword}
                 onOpenViewDetail={onOpenViewDetail}
+                onOpenEdit={onOpenEdit}
               />
             </td>
           </tr>

@@ -14,6 +14,7 @@ import { ResetPasswordModal } from "@/components/admin/modals_UI/ResetPasswordMo
 import { AddUserModal } from "@/components/admin/modals_UI/AddUserModal";
 import UserDetailModal from "@/components/admin/modals_UI/UserDetailModal";
 import { BulkStatusUpdateModal } from "@/components/admin/modals_UI/BulkStatusUpdateModal";
+import { EditUserModal } from "@/components/admin/modals_UI/EditUserModal";
 import {
   fetchAccounts,
   updateUserStatus,
@@ -84,7 +85,7 @@ export function AccountManagement() {
     };
   }, [roleFilter, API_BASE, faculties.length]);
 
-  // Fetch classes when roleFilter is student
+  // lấy danh sách lớp khi roleFilter là student
   useEffect(() => {
     let ignore = false;
     async function loadClasses() {
@@ -106,7 +107,7 @@ export function AccountManagement() {
     };
   }, [roleFilter, API_BASE, classes.length]);
 
-  // Fetch semesters when roleFilter is student
+  // lấy danh sách học kỳ khi roleFilter là student
   useEffect(() => {
     let ignore = false;
     async function loadSemesters() {
@@ -117,7 +118,6 @@ export function AccountManagement() {
           setSemesters(list);
         }
       } catch {
-        // ignore
       }
     }
     if (roleFilter === "student" && semesters.length === 0) {
@@ -128,18 +128,22 @@ export function AccountManagement() {
     };
   }, [roleFilter, API_BASE, semesters.length]);
 
-  // Model reset password
+  // modal đặt lại mật khẩu
   const [resetOpen, setResetOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<{
     id: string;
     name: string;
   } | null>(null);
 
-  // Modal view detail
+  // modal xem chi tiết người dùng
   const [detailOpen, setDetailOpen] = useState(false);
   const [detailUser, setDetailUser] = useState<{ id: string; name: string } | null>(null);
 
-  // Model add user
+  // modal sửa thông tin người dùng
+  const [editOpen, setEditOpen] = useState(false);
+  const [editUser, setEditUser] = useState<{ id: string; name: string } | null>(null);
+
+  // modal thêm người dùng
   const [addUserOpen, setAddUserOpen] = useState(false);
 
   const [accounts, setAccounts] = useState<Account[]>([]);
@@ -151,7 +155,7 @@ export function AccountManagement() {
   const [selectedStatus, setSelectedStatus] = useState<AccountStatus | null>(null);
   const [bulkUpdateModalOpen, setBulkUpdateModalOpen] = useState(false);
 
-  // Hàm gọi API server-side pagination
+  //  lấy danh sách người dùng với pagination
   const loadAccounts = async (
     nextPage: number,
     nextPageSize: number,
@@ -198,7 +202,6 @@ export function AccountManagement() {
   };
 
   const currentPage = Math.min(page, totalPages);
-  // startIndex không còn dùng để tính hiển thị local
 
   const handleFiltersReset = () => {
     setSearchInput("");
@@ -408,6 +411,10 @@ export function AccountManagement() {
                         setDetailUser({ id, name });
                         setDetailOpen(true);
                       }}
+                      onOpenEdit={(id, name) => {
+                        setEditUser({ id, name });
+                        setEditOpen(true);
+                      }}
             hasSearched={hasSearched}
           />
 
@@ -445,7 +452,7 @@ export function AccountManagement() {
         onClose={() => setAddUserOpen(false)}
         onSuccess={() => {
           toast.success("Tạo tài khoản mới thành công!");
-          loadAccounts(page, pageSize, query); // reload danh sách
+          loadAccounts(page, pageSize, query); 
         }}
       />
       {/* Modal xem chi tiết người dùng */}
@@ -470,6 +477,32 @@ export function AccountManagement() {
           setSelectedStatus(null);
         }}
         apiBase={API_BASE}
+      />
+      {/* Modal sửa thông tin tài khoản */}
+      <EditUserModal
+        open={editOpen}
+        userId={editUser?.id || null}
+        onClose={() => {
+          setEditOpen(false);
+          setEditUser(null);
+        }}
+        onSuccess={() => {
+          toast.success("Cập nhật thông tin thành công!");
+          loadAccounts(page, pageSize, query, roleFilter, statusFilter, {
+            facultyId:
+              roleFilter === "lecturer" && facultyFilter !== "all"
+                ? Number(facultyFilter)
+                : null,
+            classId:
+              roleFilter === "student" && classFilter !== "all"
+                ? Number(classFilter)
+                : null,
+            semesterId:
+              roleFilter === "student" && semesterFilter !== "all"
+                ? Number(semesterFilter)
+                : null,
+          });
+        }}
       />
     </div>
   );

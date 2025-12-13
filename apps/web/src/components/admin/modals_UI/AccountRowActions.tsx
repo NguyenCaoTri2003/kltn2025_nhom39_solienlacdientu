@@ -24,6 +24,7 @@ interface Props {
   ) => Promise<{ ok: boolean; message?: string }>;
   onOpenResetPassword: (id: string, name: string) => void;
   onOpenViewDetail?: (id: string, name: string) => void;
+  onOpenEdit?: (id: string, name: string) => void;
 }
 
 export function AccountRowActions({
@@ -34,6 +35,7 @@ export function AccountRowActions({
   onChangeStatus,
   onOpenResetPassword,
   onOpenViewDetail,
+  onOpenEdit,
 }: Props) {
   return (
     <DropdownMenu>
@@ -46,9 +48,9 @@ export function AccountRowActions({
         <DropdownMenuItem className="text-popover-foreground hover:bg-accent" onClick={() => onOpenViewDetail?.(accountId, accountName)}>
           <Eye className="w-4 h-4 mr-2" /> Xem chi tiết
         </DropdownMenuItem>
-        {/* <DropdownMenuItem className="text-popover-foreground hover:bg-accent">
+        <DropdownMenuItem className="text-popover-foreground hover:bg-accent" onClick={() => onOpenEdit?.(accountId, accountName)}>
           <Pencil className="w-4 h-4 mr-2" /> Chỉnh sửa
-        </DropdownMenuItem> */}
+        </DropdownMenuItem>
         {accountStatus === "active" ? (
           <DropdownMenuItem
             className="text-red-400 hover:bg-accent"
