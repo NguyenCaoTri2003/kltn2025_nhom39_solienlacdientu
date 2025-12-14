@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { authenticate } from "@packages/utils/auth";
-import { AcademicWarningUseCase } from "@packages/core/usecases/AcademicWarningUseCase";
+import { academicWarningV3UseCase } from "@packages/core/usecases/AcademicWarningV3UseCase";
 import { UserRepository } from "@packages/data/repositories/UserRepository";
-
-const uc = new AcademicWarningUseCase();
 
 
 export async function GET(
@@ -41,7 +39,7 @@ export async function GET(
   const fromFilter = searchParams.get("from");
   const toFilter = searchParams.get("to");
 
-  const result = await uc.getStudentWarnings(studentId, semesterId);
+  const result = await academicWarningV3UseCase.getStudentWarnings(studentId, semesterId);
 
     // Apply optional filters on the warnings list
     let warnings = result.warnings || [];

@@ -29,6 +29,44 @@ export class AcademicWarningV3UseCase {
     const n = Number(v);
     return Number.isFinite(n) && n > 0 ? Math.floor(n) : undefined;
   }
+
+  async createWarning(input: {
+    studentId: number;
+    semesterId: number;
+    level: "FIRST" | "SECOND" | "FINAL" | string;
+    reason: string;
+    createdBy?: number;
+    cumulativeGpa?: number | null;
+    debtCredits?: number | null;
+    progressStatus?: string | null;
+    note?: string | null;
+  }) {
+    return this.repo.createWarning(input);
+  }
+
+  async getHistory(studentId: number) {
+    return this.repo.getHistory(studentId);
+  }
+
+  async getStudentGrades(studentId: number, semesterId: number) {
+    return this.repo.getStudentGrades(studentId, semesterId);
+  }
+
+  async getStudentWarnings(studentId: number, semesterId?: number) {
+    return this.repo.getStudentWarnings(studentId, semesterId);
+  }
+
+  async markStudentAsWarned(studentId: number, semesterId: number, level: string) {
+    return this.repo.markStudentAsWarned(studentId, semesterId, level);
+  }
+
+  async isStudentWarned(studentId: number, semesterId: number) {
+    return this.repo.isStudentWarned(studentId, semesterId);
+  }
+
+  async getTotalCount(): Promise<number> {
+    return this.repo.getTotalCount();
+  }
 }
 
 export const academicWarningV3UseCase = new AcademicWarningV3UseCase();

@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { authenticate } from "@packages/utils/auth";
-import { AcademicWarningUseCase } from "@packages/core/usecases/AcademicWarningUseCase";
-
-const uc = new AcademicWarningUseCase();
+import { academicWarningV3UseCase } from "@packages/core/usecases/AcademicWarningV3UseCase";
 
 export async function POST(req: NextRequest) {
   try {
@@ -58,7 +56,7 @@ export async function POST(req: NextRequest) {
     console.log("Marking student as warned:", { studentId, semesterId, level: levelStr });
 
     // Kiểm tra xem đã có cảnh cáo nào cho student + semester này chưa
-    const isAlreadyWarned = await uc.isStudentWarned(Number(studentId), Number(semesterId));
+    const isAlreadyWarned = await academicWarningV3UseCase.isStudentWarned(Number(studentId), Number(semesterId));
     if (isAlreadyWarned) {
       return NextResponse.json({
         returnCode: -1,
@@ -68,7 +66,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Đánh dấu student đã được cảnh cáo
-    await uc.markStudentAsWarned(Number(studentId), Number(semesterId), levelStr);
+    await academicWarningV3UseCase.markStudentAsWarned(Number(studentId), Number(semesterId), levelStr);
 
     return NextResponse.json({
       returnCode: 0,

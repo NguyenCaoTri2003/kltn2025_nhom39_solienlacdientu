@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { authenticate } from "@packages/utils/auth";
-import { AcademicWarningUseCase } from "@packages/core/usecases/AcademicWarningUseCase";
-
-const academicWarningUseCase = new AcademicWarningUseCase();
+import { academicWarningV3UseCase } from "@packages/core/usecases/AcademicWarningV3UseCase";
 
 export async function GET(req: NextRequest) {
   try {
@@ -21,7 +19,7 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const count = await academicWarningUseCase.getTotalCount();
+    const count = await academicWarningV3UseCase.getTotalCount();
 
     return NextResponse.json({
       returnCode: 0,
