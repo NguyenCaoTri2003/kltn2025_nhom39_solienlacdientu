@@ -439,7 +439,7 @@ export default function LecturerDashboard() {
                                                                 duration: 0.15
                                                             }
                                                         }}
-                                                        onClick={() => router.push(`/lecturer/classes/${s.offeringId}`)}
+                                                        onClick={() => router.push(`/lecturer/classes/${s?.course_offerings?.id}`)}
                                                     >
                                                         <div className="flex items-start justify-between gap-4">
                                                             <div className="flex-1 space-y-2">

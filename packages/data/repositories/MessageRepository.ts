@@ -57,51 +57,6 @@ export class MessageRepository {
     }));
   }
 
-  // async listConversations(userId: number) {
-  //   const { data, error } = await supabase
-  //     .from("conversations")
-  //     .select(`
-  //     id,
-  //     user1:users!user1_id(id, full_name, role, avatar_url),
-  //     user2:users!user2_id(id, full_name, role, avatar_url),
-  //     messages(id, content, created_at, sender_id, type, is_read),
-  //     messages_unread:messages(count)
-  //   `)
-  //     .or(`user1_id.eq.${userId},user2_id.eq.${userId}`)
-  //     .order("updated_at", { ascending: false });
-
-  //   if (error) throw error;
-
-  //   const conversationsWithUnread = await Promise.all(
-  //     data.map(async (c) => {
-  //       const { data: lastMsgs } = await supabase
-  //         .from("messages")
-  //         .select("id, content, created_at, sender_id, type, is_read, is_recalled, deleted_by")
-  //         .eq("conversation_id", c.id)
-  //         .order("created_at", { ascending: false })
-  //         .limit(1);
-
-  //       const lastMessage = lastMsgs?.[0] || null;
-
-  //       const { count } = await supabase
-  //         .from("messages")
-  //         .select("id", { count: "exact", head: true })
-  //         .eq("conversation_id", c.id)
-  //         .neq("sender_id", userId)
-  //         .eq("is_read", false);
-
-  //       return {
-  //         ...c,
-  //         lastMessage,
-  //         unreadCount: count || 0,
-  //         isUnread: (count || 0) > 0,
-  //       };
-  //     })
-  //   );
-
-  //   return conversationsWithUnread;
-  // }
-
   async listConversations(userId: number) {
     // Lấy danh sách conversation của user
     const { data: convs, error } = await supabase
