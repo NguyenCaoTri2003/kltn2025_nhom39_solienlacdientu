@@ -1,6 +1,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { authenticate } from "@packages/utils/auth";
+import { canManageAccounts } from "@packages/utils/adminPermissions";
 import { UserRepository } from "@packages/data/repositories/UserRepository";
 import { logUserChange } from "@packages/core/usecases/UserAuditLogUseCase";
 import {
@@ -35,9 +36,9 @@ export async function POST(req: NextRequest) {
         { status: 401 }
       );
     }
-    if (authUser.role !== "admin") {
+    if (!canManageAccounts(authUser)) {
       return NextResponse.json(
-        { returnCode: -1, message: "Permission denied: Admin only", data: null },
+        { returnCode: -1, message: "You do not have permission to manage accounts!", data: null },
         { status: 403 }
       );
     }

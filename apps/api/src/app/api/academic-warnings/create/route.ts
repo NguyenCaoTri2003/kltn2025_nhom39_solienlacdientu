@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { authenticate } from "@packages/utils/auth";
+import { canManageAcademic } from "@packages/utils/adminPermissions";
 import { academicWarningV3UseCase } from "@packages/core/usecases/AcademicWarningV3UseCase";
 import { notificationsUseCase } from "@packages/core/usecases/NotificationsUseCase";
 import { translateWarningLevel } from "@packages/utils/translations";
@@ -25,9 +26,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (user.role !== "admin") {
+    if (!canManageAcademic(user)) {
       return NextResponse.json(
-        { returnCode: -1, message: "Forbidden", data: null },
+        { returnCode: -1, message: "You do not have permission to manage academic affairs!", data: null },
         { status: 403 }
       );
     }

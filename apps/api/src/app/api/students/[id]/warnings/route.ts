@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { authenticate } from "@packages/utils/auth";
+import { canManageAcademic, isAdmin } from "@packages/utils/adminPermissions";
 import { academicWarningV3UseCase } from "@packages/core/usecases/AcademicWarningV3UseCase";
 import { UserRepository } from "@packages/data/repositories/UserRepository";
 
@@ -22,8 +23,25 @@ export async function GET(
     const { id } = await ctx.params;
     const studentId = Number(id);
 
-
-    if (user.role !== "admin" && user.role !== "lecturer" && user.id !== studentId) {
+    // Student có thể xem cảnh cáo của chính mình
+    if (user.id === studentId) {
+      // Cho phép
+    }
+    // Lecturer có thể xem
+    else if (user.role === "lecturer") {
+      // Cho phép
+    }
+    // Admin phải có quyền quản lý học vụ
+    else if (isAdmin(user)) {
+      if (!canManageAcademic(user)) {
+        return NextResponse.json(
+          { returnCode: -1, message: "You do not have permission to manage academic affairs!", data: null },
+          { status: 403 }
+        );
+      }
+    }
+    // Các role khác không được phép
+    else {
       return NextResponse.json(
         { returnCode: -1, message: "Unauthorized access", data: null },
         { status: 403 }

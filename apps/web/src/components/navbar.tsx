@@ -10,6 +10,7 @@ export default async function Navbar() {
   const userName: string = user?.full_name || "";
   const avatarUrl: string | null = user?.avatar_url || null;
   const userId = user?.id || null;
+  const adminType: string | null = user?.admin_type || null;
 
-  return <NavbarClient userRole={userRole} userName={userName} avatarUrl={avatarUrl} userId={userId} />;
+  return <NavbarClient userRole={userRole} userName={userName} avatarUrl={avatarUrl} userId={userId} adminType={adminType} />;
 }
