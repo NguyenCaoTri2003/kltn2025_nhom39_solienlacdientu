@@ -303,7 +303,7 @@ export default function Dashboard() {
                           className="p-4 border border-gray-200 dark:border-gray-700 rounded-md bg-gray-50 dark:bg-gray-700 cursor-pointer hover:bg-green-50 dark:hover:bg-green-900/20 hover:border-green-300 dark:hover:border-green-700 transition-all duration-150"
                           whileHover={{ scale: 1.02, y: -2 }}
                           transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                          onClick={() => router.push(`/portal/classes/${c.id}`)}
+                          onClick={() => router.push(`/portal/classes/${c?.course_offering?.id}`)}
                         >
                           <p className="font-semibold text-gray-900 dark:text-gray-100">
                             {c?.course_offering?.name || "Không rõ tên"}
