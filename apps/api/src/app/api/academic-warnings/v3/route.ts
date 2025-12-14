@@ -19,6 +19,7 @@ export async function GET(req: NextRequest) {
     const classCode = searchParams.get("classCode") || searchParams.get("classroom") || undefined;
     const academicYear = searchParams.get("academicYear") || undefined;
     const onlyProposed = searchParams.get("onlyProposed") || undefined;
+    const isWarned = searchParams.get("isWarned") || undefined;
     const page = searchParams.get("page") || undefined;
     const pageSize = searchParams.get("pageSize") || searchParams.get("limit") || undefined;
 
@@ -28,6 +29,7 @@ export async function GET(req: NextRequest) {
       classCode, 
       academicYear,
       onlyProposed,
+      isWarned,
       page, 
       pageSize 
     });

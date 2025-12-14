@@ -9,6 +9,7 @@ export class AcademicWarningV3UseCase {
     classCode?: string;
     academicYear?: string;
     onlyProposed?: boolean | string;
+    isWarned?: boolean | string;
     page?: number | string;
     pageSize?: number | string;
   }): Promise<AcademicWarningV3Result> {
@@ -18,6 +19,7 @@ export class AcademicWarningV3UseCase {
       classCode: typeof params.classCode === "string" ? params.classCode.trim() : undefined,
       academicYear: typeof params.academicYear === "string" ? params.academicYear.trim() : undefined,
       onlyProposed: params.onlyProposed === true || params.onlyProposed === "true" || params.onlyProposed === "1",
+      isWarned: params.isWarned === true || params.isWarned === "true" ? true : params.isWarned === false || params.isWarned === "false" ? false : undefined,
       page: this.toPositiveInt(params.page) ?? 1,
       pageSize: Math.min(this.toPositiveInt(params.pageSize) ?? 20, 100),
     });

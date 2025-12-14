@@ -75,18 +75,17 @@ export async function POST(req: NextRequest) {
     console.log("Bắt đầu tạo cảnh cáo học vụ...");
     console.log("Student ID:", studentId, "Semester ID:", semesterId, "Level:", levelStr);
 
-    // Bước 0: Kiểm tra duplicate warning (TẠM THỜI TẮT)
-    // console.log("Kiểm tra duplicate warning...");
-    // const existingWarnings = await uc.getStudentWarnings(Number(studentId), Number(semesterId));
-    // const hasSameLevel = existingWarnings.warnings.some(w => w.level === levelStr);
+    // Bước 0: Kiểm tra duplicate warning - nếu đã có cảnh cáo cho student + semester này thì không cho tạo
+    console.log("Kiểm tra duplicate warning...");
+    const isAlreadyWarned = await uc.isStudentWarned(Number(studentId), Number(semesterId));
     
-    // if (hasSameLevel) {
-    //   console.warn(`Student ${studentId} đã có cảnh cáo ${levelStr} trong semester ${semesterId}`);
-    //   return NextResponse.json(
-    //     { returnCode: -1, message: `Sinh viên đã có ${levelStr} trong học kỳ này`, data: null },
-    //     { status: 409 }
-    //   );
-    // }
+    if (isAlreadyWarned) {
+      console.warn(`Student ${studentId} đã có cảnh cáo trong semester ${semesterId}`);
+      return NextResponse.json(
+        { returnCode: -1, message: `Sinh viên đã được cảnh cáo trong học kỳ này. Mỗi học kỳ chỉ được cảnh cáo 1 lần.`, data: null },
+        { status: 400 }
+      );
+    }
 
     // Bước 1: Tạo dòng trong academic_warnings (với transaction)
     console.log("Tạo dòng trong academic_warnings...");

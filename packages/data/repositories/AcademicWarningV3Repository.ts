@@ -61,6 +61,7 @@ export class AcademicWarningV3Repository {
     classCode?: string;
     academicYear?: string;
     onlyProposed?: boolean; // Chỉ lấy sinh viên có đề xuất cảnh cáo hoặc thôi học
+    isWarned?: boolean; // Filter theo trạng thái đã cảnh cáo: true = đã cảnh cáo, false = chưa cảnh cáo
     page?: number;
     pageSize?: number;
   }): Promise<AcademicWarningV3Result> {
@@ -413,11 +414,20 @@ export class AcademicWarningV3Repository {
       if (!warnsAllErr && Array.isArray(warnsAll)) {
         const totalCounts = new Map<number, number>();
         const warningLevels = new Map<number, Array<{ level: string; semester_id: number | null }>>();
+        // Map để check is_warned: key = "student_id:semester_id", value = true/false
+        const warnedMap = new Map<string, boolean>();
         
         for (const w of warnsAll as any[]) {
           const sid = Number(w.student_id);
           if (!Number.isFinite(sid)) continue;
           totalCounts.set(sid, (totalCounts.get(sid) ?? 0) + 1);
+          
+          // Đánh dấu đã cảnh cáo cho cặp student_id + semester_id
+          const semId = w.semester_id ? Number(w.semester_id) : null;
+          if (semId != null) {
+            const key = `${sid}:${semId}`;
+            warnedMap.set(key, true);
+          }
           
           if (!warningLevels.has(sid)) {
             warningLevels.set(sid, []);
@@ -443,12 +453,21 @@ export class AcademicWarningV3Repository {
           consecutiveCounts.set(sid, consecutive);
         });
 
-        items = items.map((it) => ({
-          ...it,
-          previous_warnings_count: totalCounts.get(it.user_id) ?? 0,
-          consecutive_warnings_count: consecutiveCounts.get(it.user_id) ?? 0,
-          warnings_count_total: totalCounts.get(it.user_id) ?? 0,
-        }));
+        items = items.map((it) => {
+          const userId = it.user_id;
+          const semesterId = it.semester_id;
+          // Check is_warned: nếu có record trong academic_warnings với cặp student_id + semester_id
+          const warnedKey = semesterId != null ? `${userId}:${semesterId}` : null;
+          const isWarned = warnedKey != null ? (warnedMap.get(warnedKey) ?? false) : false;
+          
+          return {
+            ...it,
+            previous_warnings_count: totalCounts.get(userId) ?? 0,
+            consecutive_warnings_count: consecutiveCounts.get(userId) ?? 0,
+            warnings_count_total: totalCounts.get(userId) ?? 0,
+            is_warned: isWarned,
+          };
+        });
       }
     }
 
@@ -546,6 +565,11 @@ export class AcademicWarningV3Repository {
         expulsion_reasons: expulsionReasons,
       };
     });
+
+    // Filter theo is_warned nếu có
+    if (params.isWarned !== undefined) {
+      items = items.filter((it) => it.is_warned === params.isWarned);
+    }
 
     if (params.onlyProposed === true) {
       items = items.filter((it) => it.proposed_warning_level != null || it.expulsion_candidate === true);

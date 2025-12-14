@@ -57,6 +57,16 @@ export async function POST(req: NextRequest) {
 
     console.log("Marking student as warned:", { studentId, semesterId, level: levelStr });
 
+    // Kiểm tra xem đã có cảnh cáo nào cho student + semester này chưa
+    const isAlreadyWarned = await uc.isStudentWarned(Number(studentId), Number(semesterId));
+    if (isAlreadyWarned) {
+      return NextResponse.json({
+        returnCode: -1,
+        message: `Sinh viên đã được cảnh cáo trong học kỳ này. Mỗi học kỳ chỉ được cảnh cáo 1 lần.`,
+        data: null,
+      }, { status: 400 });
+    }
+
     // Đánh dấu student đã được cảnh cáo
     await uc.markStudentAsWarned(Number(studentId), Number(semesterId), levelStr);
 
