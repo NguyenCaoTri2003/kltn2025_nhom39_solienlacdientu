@@ -30,6 +30,7 @@ interface AttendanceEditModalProps {
   students: StudentItem[];
   enrollmentMap: Record<number, number>;
   onSubmit: (records: any[]) => Promise<void>;
+  availableDates: string[];
 }
 
 export default function AttendanceEditModal({
@@ -42,94 +43,63 @@ export default function AttendanceEditModal({
   students,
   enrollmentMap,
   onSubmit,
+  availableDates,
 }: AttendanceEditModalProps) {
   const [loading, setLoading] = useState(false);
-  const [dates, setDates] = useState<string[]>([]);
   const [selectedDate, setSelectedDate] = useState<string>("");
   const [records, setRecords] = useState<Record<number, any>>({});
   const [saving, setSaving] = useState(false);
 
-  const fetchAllAttendances = async () => {
-    const token = localStorage.getItem("token");
-    const res = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/api/attendance?lecturer_id=${lecturerId}&offering_id=${offeringId}`,
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
-    if (!res.ok) throw new Error("Không thể tải danh sách ngày");
-    const json = await res.json();
-    return json.data ?? [];
-  };
-
   useEffect(() => {
     if (!open) return;
-
-    const loadDates = async () => {
-      try {
-        setLoading(true);
-        const data = await fetchAllAttendances();
-        const filtered = data.filter((a: any) => {
-          if (a.type !== type) return false;
-          if (type === "practice" && groupId != null) {
-            return a.practice_group_id === groupId;
-          }
-          return true;
-        });
-        const availableDates = Array.from(
-          new Set(filtered.map((a: any) => (a.attendance_date || "").split("T")[0]))
-        )
-          .filter(Boolean)
-          .sort((a, b) => new Date(b as string).getTime() - new Date(a as string).getTime());
-        setDates(availableDates as string[]);
-        setSelectedDate((prev: any) => {
-          if (prev && availableDates.includes(prev)) return prev;
-          return availableDates[0] ?? "";
-        });
-      } catch (err) {
-        console.error(err);
-        toast.error("Lỗi tải danh sách ngày điểm danh.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadDates();
-  }, [open, type, groupId, lecturerId, offeringId]);
+    if (availableDates.length > 0) {
+      setSelectedDate((prev) => (prev && availableDates.includes(prev) ? prev : availableDates[0]));
+    } else {
+      setSelectedDate("");
+    }
+  }, [open, availableDates]);
 
   useEffect(() => {
-    if (!selectedDate) {
+    if (!selectedDate || !open) {
       setRecords({});
       return;
     }
 
-    const loadForDate = async () => {
+    const loadAttendanceForDate = async () => {
       try {
         setLoading(true);
-        const data = await fetchAllAttendances();
+        const token = localStorage.getItem("token");
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/api/attendance?lecturer_id=${lecturerId}&offering_id=${offeringId}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        if (!res.ok) throw new Error("Không thể tải dữ liệu điểm danh");
+        const data = (await res.json()).data ?? [];
+
+        // Lọc attendance cho ngày hiện tại
         const filtered = data.filter((r: any) => {
           if (!r.attendance_date) return false;
           const dateOnly = r.attendance_date.split("T")[0];
           if (dateOnly !== selectedDate) return false;
           if (r.type !== type) return false;
-          if (type === "practice" && groupId != null) {
-            return r.practice_group_id === groupId;
-          }
+          if (type === "practice" && groupId != null) return r.practice_group_id === groupId;
           return true;
         });
 
+        // Map theo studentId
         const byStudent: Record<number, any> = {};
         filtered.forEach((r: any) => {
           const sid =
             r.enrollment?.student_id ??
               r.student_id ??
               (r.enrollment && r.enrollment.student && r.enrollment.student.id)
-              ? (r.enrollment?.student_id ?? r.enrollment?.student?.id)
+              ? r.enrollment?.student_id ?? r.enrollment?.student?.id
               : undefined;
           const studentId = Number(sid);
-          if (studentId) {
-            byStudent[studentId] = r;
-          }
+          if (studentId) byStudent[studentId] = r;
         });
 
+        // Chuẩn hóa records cho tất cả sinh viên
         const newRecords: Record<number, any> = {};
         students.forEach((s) => {
           const exist = byStudent[s.id];
@@ -148,14 +118,14 @@ export default function AttendanceEditModal({
         setRecords(newRecords);
       } catch (err) {
         console.error(err);
-        toast.error("Lỗi tải dữ liệu điểm danh ngày này.");
+        toast.error("Lỗi tải dữ liệu điểm danh cho ngày này.");
       } finally {
         setLoading(false);
       }
     };
 
-    loadForDate();
-  }, [selectedDate, type, groupId, offeringId, lecturerId, students, enrollmentMap]);
+    loadAttendanceForDate();
+  }, [selectedDate, type, groupId, offeringId, lecturerId, students, enrollmentMap, open]);
 
   const sortedStudents = [...students].sort((a, b) => {
     const lastA = a.fullName.trim().split(" ").slice(-1)[0].toLowerCase();
@@ -232,7 +202,7 @@ export default function AttendanceEditModal({
 
       await onSubmit(toSubmit);
       onClose();
-    } catch (err: any) {
+    } catch (err) {
       console.error(err);
     } finally {
       setSaving(false);
@@ -255,6 +225,7 @@ export default function AttendanceEditModal({
             </div>
           ) : (
             <div className="space-y-4">
+              {/* Chọn ngày */}
               <div>
                 <label className="block text-sm font-medium mb-1">Chọn ngày điểm danh</label>
                 <Select value={selectedDate} onValueChange={(v: any) => setSelectedDate(v)}>
@@ -262,12 +233,12 @@ export default function AttendanceEditModal({
                     <SelectValue placeholder="Chọn ngày" />
                   </SelectTrigger>
                   <SelectContent>
-                    {dates.length === 0 ? (
+                    {availableDates.length === 0 ? (
                       <SelectItem value={format(new Date(), "yyyy-MM-dd")}>
                         {format(new Date(), "dd/MM/yyyy")} (Ngày mới)
                       </SelectItem>
                     ) : (
-                      dates.map((d) => (
+                      availableDates.map((d) => (
                         <SelectItem key={d} value={d}>
                           {format(new Date(d), "dd/MM/yyyy")}
                         </SelectItem>
@@ -277,6 +248,52 @@ export default function AttendanceEditModal({
                 </Select>
               </div>
 
+              <div className="mb-4">
+                <p className="text-sm text-muted-foreground mb-2">
+                  Chọn một trạng thái để áp dụng cho tất cả sinh viên trong ngày này. Bạn vẫn có thể chỉnh sửa riêng từng người bên dưới.
+                </p>
+
+                <div className="flex flex-wrap gap-2">
+                  {["present", "absent", "late", "excused"].map((status) => {
+                    const labelMap: Record<string, string> = {
+                      present: "Có mặt",
+                      absent: "Vắng",
+                      late: "Đi trễ",
+                      excused: "Có phép",
+                    };
+                    const colorMap: Record<string, string> = {
+                      present: "bg-green-100 text-green-800 border-green-300 hover:bg-green-200",
+                      absent: "bg-red-100 text-red-800 border-red-300 hover:bg-red-200",
+                      late: "bg-yellow-100 text-yellow-800 border-yellow-300 hover:bg-yellow-200",
+                      excused: "bg-blue-100 text-blue-800 border-blue-300 hover:bg-blue-200",
+                    };
+
+                    return (
+                      <button
+                        key={status}
+                        type="button"
+                        className={`px-4 py-1 cursor-pointer rounded-lg font-medium border shadow-sm transition-colors duration-200 ${colorMap[status]}`}
+                        onClick={() => {
+                          setRecords((prev) => {
+                            const next: typeof prev = {};
+                            Object.keys(prev).forEach((studentId) => {
+                              next[Number(studentId)] = {
+                                ...prev[Number(studentId)],
+                                status,
+                              };
+                            });
+                            return next;
+                          });
+                        }}
+                      >
+                        {labelMap[status]}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Bảng điểm danh */}
               <div className="border rounded-md overflow-x-auto">
                 <Table>
                   <TableHeader>
@@ -329,6 +346,7 @@ export default function AttendanceEditModal({
           )}
         </div>
 
+        {/* Footer */}
         <div className="p-4 border-t flex justify-end gap-2 bg-background">
           <Button variant="secondary" onClick={onClose} disabled={saving}>Hủy</Button>
           <Button onClick={handleSave} disabled={saving || !selectedDate}>
@@ -336,103 +354,7 @@ export default function AttendanceEditModal({
             Lưu thay đổi
           </Button>
         </div>
-
       </DialogContent>
-
-      {/* <DialogContent className="max-w-4xl">
-        <DialogHeader>
-          <DialogTitle>Sửa điểm danh</DialogTitle>
-        </DialogHeader>
-
-        {loading ? (
-          <div className="flex justify-center items-center py-10">
-            <Loader2 className="w-5 h-5 animate-spin mr-2" /> Đang tải dữ liệu...
-          </div>
-        ) : (
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium mb-1">Chọn ngày điểm danh</label>
-              <Select value={selectedDate} onValueChange={(v: any) => setSelectedDate(v)}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Chọn ngày" />
-                </SelectTrigger>
-                <SelectContent>
-                  {dates.length === 0 ? (
-                    <SelectItem value={format(new Date(), "yyyy-MM-dd")}>
-                      {format(new Date(), "dd/MM/yyyy")} (Ngày mới)
-                    </SelectItem>
-                  ) : (
-                    dates.map((d) => (
-                      <SelectItem key={d} value={d}>
-                        {format(new Date(d), "dd/MM/yyyy")}
-                      </SelectItem>
-                    ))
-                  )}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="border rounded-md overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>MSSV</TableHead>
-                    <TableHead>Họ tên</TableHead>
-                    <TableHead className="text-center">Trạng thái</TableHead>
-                    <TableHead className="text-center">Ghi chú</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {sortedStudents.map((s) => {
-                    const record = records[s.id] ?? {};
-                    return (
-                      <TableRow key={s.id}>
-                        <TableCell>{s.studentCode}</TableCell>
-                        <TableCell>{s.fullName}</TableCell>
-                        <TableCell className="text-center">
-                          <Select
-                            value={record?.status ?? ""}
-                            onValueChange={(v: any) => handleStatusChange(s.id, v)}
-                          >
-                            <SelectTrigger className="w-[150px] mx-auto">
-                              <SelectValue placeholder="Chọn trạng thái" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="present">Có mặt</SelectItem>
-                              <SelectItem value="absent">Vắng</SelectItem>
-                              <SelectItem value="late">Đi trễ</SelectItem>
-                              <SelectItem value="excused">Có phép</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <textarea
-                            className="w-full max-w-[240px] p-1 border rounded resize-y"
-                            rows={2}
-                            value={record?.note ?? ""}
-                            onChange={(e) => handleNoteChange(s.id, e.target.value)}
-                            placeholder="Ghi chú (nếu có)"
-                          />
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </div>
-
-            <div className="flex justify-end gap-2 pt-2">
-              <Button variant="secondary" onClick={onClose} disabled={saving}>
-                Hủy
-              </Button>
-              <Button onClick={handleSave} disabled={saving || !selectedDate}>
-                {saving && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
-                Lưu thay đổi
-              </Button>
-            </div>
-          </div>
-        )}
-      </DialogContent> */}
     </Dialog>
   );
 }

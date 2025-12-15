@@ -16,6 +16,8 @@ import EmptyState from "@/components/empty-state";
 import { AttendanceSummaryStats } from "./attendance-summary-stats";
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
+import AttendanceEditModal from "./attendance-edit-modal";
+import { StudentAttendance } from "@packages/core/entities/Student";
 
 interface Attendance {
   id: number;
@@ -66,19 +68,35 @@ export default function AttendanceSummary() {
     practiceDatesByGroup: {},
   });
 
-  // cell đang edit
   const [editingCell, setEditingCell] = useState<{
     studentId: number;
     date: string;
     groupKey: string;
   } | null>(null);
 
-  // cell đang save
   const [savingCell, setSavingCell] = useState<{
     studentId: number;
     date: string;
   } | null>(null);
 
+  const [selectedStudents, setSelectedStudents] = useState<Set<number>>(new Set());
+  const [multiEditModal, setMultiEditModal] = useState<{ open: boolean; group?: any; date?: string }>({ open: false });
+
+  const toggleSelectStudent = (id: number) => {
+    setSelectedStudents(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = (students: StudentAttendance[]) => {
+    setSelectedStudents(prev => {
+      if (students.every(s => prev.has(s.id))) return new Set();
+      return new Set(students.map(s => s.id));
+    });
+  };
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -280,7 +298,6 @@ export default function AttendanceSummary() {
       const json = await res.json();
       if (!res.ok) throw new Error(json.message);
 
-      // Cập nhật state
       setAttendances((prev) => {
         const filtered = prev.filter(
           (a) =>
@@ -300,6 +317,10 @@ export default function AttendanceSummary() {
       setEditingCell(null);
     }
   };
+
+  const enrollments = offering.students
+    .filter((e) => e.students !== undefined)
+    .map((e) => ({ id: e.id, students: e.students as StudentAttendance }));
 
   return (
     <div className="relative">
@@ -414,36 +435,55 @@ export default function AttendanceSummary() {
                         </Button>
                       )}
                     </div>
+                    <div>
+                      {selectedStudents.size > 0 && (
+                        <Button
+                          className="rounded-full"
+                          onClick={() =>
+                            setMultiEditModal({
+                              open: true,
+                              group: group,
+                              date: group.dates[0]
+                            })
+                          }
+                        >
+                          Chỉnh sửa nhiều ({selectedStudents.size})
+                        </Button>
+                      )}
+                    </div>
                   </div>
 
-                  <AttendanceTable
-                    students={students}
-                    attendanceMap={attendanceMap}
-                    group={group}
-                    currentPage={currentPage}
-                    pageSize={pageSize}
-                    selectedStudents={new Set()}
-                    toggleSelectStudent={() => { }}
-                    toggleSelectAll={() => { }}
-                    loading={loading}
-                    editingCell={editingCell}
-                    savingCell={savingCell}
-                    onStartEdit={(studentId, date) =>
-                      setEditingCell({ studentId, date, groupKey: group.key })
-                    }
-                    onSave={(studentId, date, status) =>
-                      saveAttendance(studentId, date, status, group)
-                    }
-                    onOpenNote={({ studentId, date, record }) =>
-                      setNoteModal({
-                        open: true,
-                        studentId,
-                        date,
-                        group,
-                        currentNote: record.note,
-                      })
-                    }
-                  />
+                  <div className="mt-6 space-y-4">
+                    <AttendanceTable
+                      students={students}
+                      attendanceMap={attendanceMap}
+                      group={group}
+                      currentPage={currentPage}
+                      pageSize={pageSize}
+                      selectedStudents={selectedStudents}
+                      toggleSelectStudent={toggleSelectStudent}
+                      toggleSelectAll={toggleSelectAll}
+                      loading={loading}
+                      editingCell={editingCell}
+                      savingCell={savingCell}
+                      onStartEdit={(studentId, date) =>
+                        setEditingCell({ studentId, date, groupKey: group.key })
+                      }
+                      onSave={(studentId, date, status) =>
+                        saveAttendance(studentId, date, status, group)
+                      }
+                      onOpenNote={({ studentId, date, record }) =>
+                        setNoteModal({
+                          open: true,
+                          studentId,
+                          date,
+                          group,
+                          currentNote: record.note,
+                        })
+                      }
+                      allTabStudents={baseStudents}
+                    />
+                  </div>
 
                   <Pagination
                     totalItems={baseStudents.length}
@@ -499,7 +539,7 @@ export default function AttendanceSummary() {
                     noteModal.studentId!,
                     noteModal.date!,
                     attendanceMap[noteModal.studentId!]?.[noteModal.date!]?.[0]?.status || "present",
-                    groupTabs.find(g => g.key === activeTab)!, 
+                    groupTabs.find(g => g.key === activeTab)!,
                     noteModal.currentNote
                   );
                   setNoteModal({ open: false });
@@ -510,6 +550,39 @@ export default function AttendanceSummary() {
             </div>
           </DialogContent>
         </Dialog>
+
+        <AttendanceEditModal
+          open={multiEditModal.open}
+          onClose={() => setMultiEditModal({ open: false })}
+          offeringId={offering.id}
+          lecturerId={currentLecturerId}
+          type={activeTab.startsWith("practice") ? "practice" : "theory"}
+          groupId={activeTab.startsWith("practice") ? Number(activeTab.split("-")[1]) : undefined}
+          students={allStudents.filter(s => selectedStudents.has(s.id))}
+          enrollmentMap={enrollments.reduce((map, e) => {
+            map[e.students.id] = e.id;
+            return map;
+          }, {} as Record<number, number>)}
+          availableDates={
+            activeTab === "theory"
+              ? scheduleDates.theoryDates
+              : scheduleDates.practiceDatesByGroup[Number(activeTab.split("-")[1])] || []
+          }
+          onSubmit={async (records) => {
+            for (const r of records) {
+              await saveAttendance(
+                r.student_id,
+                r.attendance_date.split("T")[0],
+                r.status,
+                { key: activeTab, groupId: r.practice_group_id }
+              );
+            }
+            // Clear selected
+            setSelectedStudents(new Set());
+          }}
+        />
+
+
       </div>
     </div>
   );

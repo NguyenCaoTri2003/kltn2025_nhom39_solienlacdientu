@@ -14,6 +14,7 @@ import { Info, Loader2 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { vi } from "date-fns/locale";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
+import { StudentAttendance } from "@packages/core/entities/Student";
 
 interface AttendanceRecord {
     id: number;
@@ -25,12 +26,6 @@ interface AttendanceRecord {
     enrollment: { student_id: number };
 }
 
-interface Student {
-    id: number;
-    studentCode: string;
-    fullName: string;
-}
-
 interface Group {
     key: string;
     groupId?: number;
@@ -38,14 +33,14 @@ interface Group {
 }
 
 interface AttendanceTableProps {
-    students: Student[];
+    students: StudentAttendance[];
     attendanceMap: Record<number, Record<string, AttendanceRecord[]>>;
     group: Group;
     currentPage: number;
     pageSize: number;
     selectedStudents: Set<number>;
     toggleSelectStudent: (id: number) => void;
-    toggleSelectAll: (students: Student[]) => void;
+    toggleSelectAll: (students: StudentAttendance[]) => void;
     onOpenNote: (payload: {
         studentId: number;
         date: string;
@@ -69,6 +64,7 @@ interface AttendanceTableProps {
         date: string,
         status: "present" | "absent" | "late" | "excused"
     ) => void;
+    allTabStudents: StudentAttendance[];
 }
 
 export default function AttendanceTable({
@@ -85,7 +81,8 @@ export default function AttendanceTable({
     editingCell,
     savingCell,
     onStartEdit,
-    onSave
+    onSave,
+    allTabStudents,
 }: AttendanceTableProps) {
     const formatVNDate = (dateStr: string) =>
         format(parseISO(dateStr), "dd/MM/yyyy", { locale: vi });
@@ -106,7 +103,7 @@ export default function AttendanceTable({
     };
 
     const allSelected =
-        students.length > 0 && students.every((s) => selectedStudents.has(s.id));
+        allTabStudents.length > 0 && allTabStudents.every((s) => selectedStudents.has(s.id));
 
     const stickyCell =
         "sticky bg-background z-20 shadow-[1px_0_0_0_#e5e7eb] dark:shadow-[1px_0_0_0_#334155]";
@@ -122,7 +119,7 @@ export default function AttendanceTable({
                         <TableHead className={`left-0 w-[48px] ${stickyCell}`}>
                             <Checkbox
                                 checked={allSelected}
-                                onCheckedChange={() => toggleSelectAll(students)}
+                                onCheckedChange={() => toggleSelectAll(allTabStudents)}
                                 disabled={loading}
                             />
                         </TableHead>

@@ -155,7 +155,6 @@ export class AttendanceRepository {
     }) {
         console.log("Upsert attendance record:", record);
 
-        // ✅ Chỉ xử lý practice_group_id khi type = practice
         const pgId =
             record.type === "practice" && record.practice_group_id !== undefined && record.practice_group_id !== null
                 ? Number(record.practice_group_id)
