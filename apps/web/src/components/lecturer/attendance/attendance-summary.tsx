@@ -15,6 +15,7 @@ import { normalize } from "@/utils/normalize";
 import EmptyState from "@/components/empty-state";
 import { AttendanceSummaryStats } from "./attendance-summary-stats";
 import { Card } from "@/components/ui/card";
+import { Textarea } from "@/components/ui/textarea";
 
 interface Attendance {
   id: number;
@@ -49,9 +50,13 @@ export default function AttendanceSummary() {
   const [hasSearched, setHasSearched] = useState(false);
   const [filteredStudents, setFilteredStudents] = useState<any[]>([]);
 
-  const [noteModal, setNoteModal] = useState<{ open: boolean; note?: string }>({
-    open: false,
-  });
+  const [noteModal, setNoteModal] = useState<{
+    open: boolean;
+    studentId?: number;
+    date?: string;
+    group?: any;
+    currentNote?: string;
+  }>({ open: false });
 
   const [scheduleDates, setScheduleDates] = useState<{
     theoryDates: string[];
@@ -233,12 +238,20 @@ export default function AttendanceSummary() {
     studentId: number,
     date: string,
     status: "present" | "absent" | "late" | "excused",
-    group: any
+    group: any,
+    note?: string
   ) => {
     try {
       setSavingCell({ studentId, date });
 
       const token = localStorage.getItem("token");
+
+      const practiceGroupId =
+        group.key.startsWith("practice-")
+          ? Number(group.key.split("-")[1])
+          : null;
+
+      const existingAttendance = attendanceMap[studentId]?.[date]?.[0];
 
       const payload = {
         offering_id: Number(id),
@@ -246,11 +259,11 @@ export default function AttendanceSummary() {
         attendance_date: date,
         status,
         type: group.key === "theory" ? "theory" : "practice",
-        practice_group_id:
-          group.key.startsWith("practice-")
-            ? Number(group.key.split("-")[1])
-            : null,
+        practice_group_id: Number.isNaN(practiceGroupId) ? null : practiceGroupId,
+        note: note ?? existingAttendance?.note ?? "",
       };
+
+      console.log("Saving attendance with payload:", payload);
 
       const res = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/api/attendance`,
@@ -267,12 +280,13 @@ export default function AttendanceSummary() {
       const json = await res.json();
       if (!res.ok) throw new Error(json.message);
 
+      // Cập nhật state
       setAttendances((prev) => {
         const filtered = prev.filter(
           (a) =>
             !(
               a.enrollment.student_id === studentId &&
-              a.attendance_date.startsWith(date) &&
+              a.attendance_date.split("T")[0] === date &&
               a.type === payload.type &&
               a.practice_group_id === payload.practice_group_id
             )
@@ -402,20 +416,6 @@ export default function AttendanceSummary() {
                     </div>
                   </div>
 
-                  {/* <AttendanceTable
-                    students={students}
-                    attendanceMap={attendanceMap}
-                    group={group}
-                    currentPage={currentPage}
-                    pageSize={pageSize}
-                    selectedStudents={new Set()}
-                    toggleSelectStudent={() => { }}
-                    toggleSelectAll={() => { }}
-                    onOpenNote={(note) =>
-                      setNoteModal({ open: true, note })
-                    }
-                  /> */}
-
                   <AttendanceTable
                     students={students}
                     attendanceMap={attendanceMap}
@@ -434,7 +434,15 @@ export default function AttendanceSummary() {
                     onSave={(studentId, date, status) =>
                       saveAttendance(studentId, date, status, group)
                     }
-                    onOpenNote={(note) => setNoteModal({ open: true, note })}
+                    onOpenNote={({ studentId, date, record }) =>
+                      setNoteModal({
+                        open: true,
+                        studentId,
+                        date,
+                        group,
+                        currentNote: record.note,
+                      })
+                    }
                   />
 
                   <Pagination
@@ -456,16 +464,50 @@ export default function AttendanceSummary() {
           })}
         </Tabs>
 
-        {/* Note modal */}
         <Dialog
           open={noteModal.open}
           onOpenChange={(open) => setNoteModal({ open })}
         >
-          <DialogContent>
+          <DialogContent className="max-w-lg sm:w-full">
             <DialogHeader>
               <DialogTitle>Ghi chú điểm danh</DialogTitle>
             </DialogHeader>
-            <p>{noteModal.note || "Không có ghi chú"}</p>
+
+            <Textarea
+              rows={4}
+              placeholder="Nhập ghi chú..."
+              value={noteModal.currentNote || ""}
+              onChange={(e) =>
+                setNoteModal((prev) => ({
+                  ...prev,
+                  currentNote: e.target.value,
+                }))
+              }
+            />
+
+            <div className="flex justify-end gap-2 mt-4">
+              <Button
+                variant="outline"
+                onClick={() => setNoteModal({ open: false })}
+              >
+                Hủy
+              </Button>
+
+              <Button
+                onClick={() => {
+                  saveAttendance(
+                    noteModal.studentId!,
+                    noteModal.date!,
+                    attendanceMap[noteModal.studentId!]?.[noteModal.date!]?.[0]?.status || "present",
+                    groupTabs.find(g => g.key === activeTab)!, 
+                    noteModal.currentNote
+                  );
+                  setNoteModal({ open: false });
+                }}
+              >
+                Lưu
+              </Button>
+            </div>
           </DialogContent>
         </Dialog>
       </div>

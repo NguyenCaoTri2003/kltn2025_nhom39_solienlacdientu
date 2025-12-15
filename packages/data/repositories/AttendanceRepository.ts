@@ -112,36 +112,123 @@ export class AttendanceRepository {
         return true;
     }
 
+    // async upsertAttendance(record: {
+    //     enrollment_id: number;
+    //     attendance_date: string;
+    //     type: string;
+    //     practice_group_id?: number | null;
+    //     status: string;
+    //     note?: string | null;
+    // }) {
+    //     console.log("Upsert attendance record:", record);
+    //     const conflictColumns =
+    //         record.practice_group_id === null
+    //             ? "enrollment_id,attendance_date,type"
+    //             : "enrollment_id,attendance_date,type,practice_group_id";
+
+    //     const { data, error } = await supabase
+    //         .from("attendance")
+    //         .upsert(record, {
+    //             onConflict: conflictColumns,
+    //         })
+    //         .select(`
+    //   *,
+    //   enrollment:enrollment_id (
+    //     id,
+    //     student_id,
+    //     offering_id
+    //   )
+    // `)
+    //         .single();
+
+    //     if (error) throw error;
+    //     return data;
+    // }
+
     async upsertAttendance(record: {
         enrollment_id: number;
         attendance_date: string;
-        type: string;
+        type: "theory" | "practice";
         practice_group_id?: number | null;
         status: string;
         note?: string | null;
     }) {
-        const conflictColumns =
-            record.practice_group_id === null
-                ? "enrollment_id,attendance_date,type"
-                : "enrollment_id,attendance_date,type,practice_group_id";
+        console.log("Upsert attendance record:", record);
 
-        const { data, error } = await supabase
+        // ✅ Chỉ xử lý practice_group_id khi type = practice
+        const pgId =
+            record.type === "practice" && record.practice_group_id !== undefined && record.practice_group_id !== null
+                ? Number(record.practice_group_id)
+                : null;
+
+        console.log("Sanitized practice_group_id:", pgId);
+
+        if (pgId !== null && isNaN(pgId)) {
+            throw new Error("practice_group_id must be a number or null");
+        }
+
+        const matchObj: Record<string, any> = {
+            enrollment_id: record.enrollment_id,
+            attendance_date: record.attendance_date,
+            type: record.type,
+        };
+
+        if (record.type === "practice") {
+            matchObj.practice_group_id = pgId;
+        }
+
+        const { data: existing, error: selectError } = await supabase
             .from("attendance")
-            .upsert(record, {
-                onConflict: conflictColumns,
-            })
-            .select(`
-      *,
-      enrollment:enrollment_id (
-        id,
-        student_id,
-        offering_id
-      )
-    `)
+            .select("*")
+            .match(matchObj)
             .single();
 
-        if (error) throw error;
-        return data;
+        if (selectError && selectError.code !== "PGRST116") {
+            throw selectError;
+        }
+
+        if (existing) {
+            const { data, error } = await supabase
+                .from("attendance")
+                .update({
+                    status: record.status,
+                    note: record.note ?? existing.note,
+                })
+                .eq("id", existing.id)
+                .select(`
+                *,
+                enrollment:enrollment_id (
+                    id,
+                    student_id,
+                    offering_id
+                )
+            `)
+                .single();
+
+            if (error) throw error;
+            return data;
+        } else {
+            const insertObj: Record<string, any> = {
+                ...record,
+            };
+            if (record.type === "practice") insertObj.practice_group_id = pgId;
+
+            const { data, error } = await supabase
+                .from("attendance")
+                .insert(insertObj)
+                .select(`
+                *,
+                enrollment:enrollment_id (
+                    id,
+                    student_id,
+                    offering_id
+                )
+            `)
+                .single();
+
+            if (error) throw error;
+            return data;
+        }
     }
 
 }

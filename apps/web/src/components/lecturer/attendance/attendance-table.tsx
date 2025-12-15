@@ -46,7 +46,11 @@ interface AttendanceTableProps {
     selectedStudents: Set<number>;
     toggleSelectStudent: (id: number) => void;
     toggleSelectAll: (students: Student[]) => void;
-    onOpenNote: (note?: string) => void;
+    onOpenNote: (payload: {
+        studentId: number;
+        date: string;
+        record: AttendanceRecord;
+    }) => void;
     loading?: boolean;
     editingCell: {
         studentId: number;
@@ -157,88 +161,118 @@ export default function AttendanceTable({
                             </TableCell>
                         </TableRow>
                     ) : (
-                        students.map((s, idx) => (
-                            <TableRow key={s.id}>
-                                <TableCell className={`left-0 w-[48px] ${stickyCell}`}>
-                                    <Checkbox
-                                        checked={selectedStudents.has(s.id)}
-                                        onCheckedChange={() => toggleSelectStudent(s.id)}
-                                        disabled={loading}
-                                    />
-                                </TableCell>
+                        students.map((s, idx) => {
+                            const records = Object.entries(attendanceMap[s.id] || {})
+                                .filter(([date]) => group.dates.includes(date)) // chỉ lấy ngày trong tab
+                                .flatMap(([_, recs]) => recs)
+                                .filter((r: any) =>
+                                    group.key === "theory" ? r.type === "theory" : r.practice_group_id === group.groupId
+                                );
 
-                                <TableCell className={`left-[48px] w-[48px] ${stickyCell}`}>
-                                    {(currentPage - 1) * pageSize + idx + 1}
-                                </TableCell>
+                            // Đếm số buổi absent
+                            const absentCount = records.filter((r: any) => r.status === "absent").length;
 
-                                <TableCell className={`left-[96px] w-[84px] ${stickyCell}`}>
-                                    {s.studentCode}
-                                </TableCell>
+                            // Highlight row nếu absent >= 3
+                            const rowClass = absentCount >= 3 ? "bg-red-100/40 dark:bg-red-900/20" : "";
+                            console.log(`Student ${s.id} absent count, rowClass: `, absentCount, rowClass);
 
-                                <TableCell
-                                    className={`left-[180px] w-[180px] ${stickyCell} whitespace-nowrap`}
-                                >
-                                    {s.fullName}
-                                </TableCell>
+                            return (
+                                <TableRow key={s.id}>
+                                    <TableCell className={`left-0 w-[48px] ${stickyCell} ${rowClass}`}>
+                                        <Checkbox
+                                            checked={selectedStudents.has(s.id)}
+                                            onCheckedChange={() => toggleSelectStudent(s.id)}
+                                            disabled={loading}
+                                        />
+                                    </TableCell>
 
-                                {group.dates.map((date) => {
-                                    const records = attendanceMap[s.id]?.[date] || [];
-                                    const record = records.find((r) =>
-                                        group.key === "theory"
-                                            ? r.type === "theory"
-                                            : r.practice_group_id === group.groupId
-                                    );
+                                    <TableCell className={`left-[48px] w-[48px] ${stickyCell} ${rowClass}`}>
+                                        {(currentPage - 1) * pageSize + idx + 1}
+                                    </TableCell>
 
-                                    const isEditing =
-                                        editingCell?.studentId === s.id &&
-                                        editingCell?.date === date;
+                                    <TableCell className={`left-[96px] w-[84px] ${stickyCell} ${rowClass}`}>
+                                        {s.studentCode}
+                                    </TableCell>
 
-                                    return (
-                                        <TableCell
-                                            key={date}
-                                            className="min-w-[120px] text-center cursor-pointer"
-                                            onClick={() => !isEditing && onStartEdit(s.id, date)}
-                                        >
-                                            {isEditing ? (
-                                                <div onClick={(e) => e.stopPropagation()}>
-                                                    <Select
-                                                        value={record?.status}
-                                                        onValueChange={(v) =>
-                                                            onSave(s.id, date, v as any)
-                                                        }
-                                                    >
-                                                        <SelectTrigger className="h-8 text-xs">
-                                                            {savingCell?.studentId === s.id &&
-                                                                savingCell?.date === date ? (
-                                                                <Loader2 className="w-4 h-4 animate-spin" />
-                                                            ) : (
-                                                                <span className="text-muted-foreground">
-                                                                    {record ? "" : "Chọn"}
-                                                                </span>
-                                                            )}
-                                                        </SelectTrigger>
+                                    <TableCell
+                                        className={`left-[180px] w-[180px] ${stickyCell} whitespace-nowrap ${rowClass}`}
+                                    >
+                                        {s.fullName}
+                                    </TableCell>
 
-                                                        <SelectContent>
-                                                            <SelectItem value="present">Có mặt</SelectItem>
-                                                            <SelectItem value="absent">Vắng</SelectItem>
-                                                            <SelectItem value="late">Trễ</SelectItem>
-                                                            <SelectItem value="excused">Có phép</SelectItem>
-                                                        </SelectContent>
-                                                    </Select>
-                                                </div>
-                                            ) : record ? (
-                                                getBadge(record.status)
-                                            ) : (
-                                                "-"
-                                            )}
-                                        </TableCell>
-                                    );
-                                })}
+                                    {group.dates.map((date) => {
+                                        const records = attendanceMap[s.id]?.[date] || [];
+                                        const record = records.find((r) =>
+                                            group.key === "theory"
+                                                ? r.type === "theory"
+                                                : r.practice_group_id === group.groupId
+                                        );
 
-                            </TableRow>
-                        ))
+                                        const isEditing =
+                                            editingCell?.studentId === s.id &&
+                                            editingCell?.date === date;
+
+                                        return (
+                                            <TableCell
+                                                key={date}
+                                                className={`min-w-[120px] text-center cursor-pointer ${rowClass}`}
+                                                onClick={() => !isEditing && onStartEdit(s.id, date)}
+                                            >
+                                                {isEditing ? (
+                                                    <div onClick={(e) => e.stopPropagation()}>
+                                                        <Select
+                                                            value={record?.status}
+                                                            onValueChange={(v) =>
+                                                                onSave(s.id, date, v as any)
+                                                            }
+                                                        >
+                                                            <SelectTrigger className="h-8 text-xs">
+                                                                {savingCell?.studentId === s.id &&
+                                                                    savingCell?.date === date ? (
+                                                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                                                ) : (
+                                                                    <span className="text-muted-foreground">
+                                                                        {record ? "" : "Chọn"}
+                                                                    </span>
+                                                                )}
+                                                            </SelectTrigger>
+
+                                                            <SelectContent>
+                                                                <SelectItem value="present">Có mặt</SelectItem>
+                                                                <SelectItem value="absent">Vắng</SelectItem>
+                                                                <SelectItem value="late">Trễ</SelectItem>
+                                                                <SelectItem value="excused">Có phép</SelectItem>
+                                                            </SelectContent>
+                                                        </Select>
+                                                    </div>
+                                                ) : record ? (
+                                                    <div className="flex items-center justify-center gap-1">
+                                                        {getBadge(record.status)}
+
+                                                        <Info
+                                                            className="w-4 h-4 text-muted-foreground hover:text-foreground cursor-pointer"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                onOpenNote({
+                                                                    studentId: s.id,
+                                                                    date,
+                                                                    record,
+                                                                });
+                                                            }}
+                                                        />
+                                                    </div>
+                                                ) : (
+                                                    "-"
+                                                )}
+                                            </TableCell>
+                                        );
+                                    })}
+                                </TableRow>
+                            );
+                        })
                     )}
                 </TableBody>
+
             </Table>
 
             {loading && (

@@ -196,6 +196,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    console.log(typeof body.practice_group_id, body.practice_group_id);
+
     const data = await usecase.upsertAttendanceByStudent(user.id, {
       offering_id: Number(body.offering_id),
       student_id: Number(body.student_id),
