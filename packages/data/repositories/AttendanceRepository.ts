@@ -1,7 +1,6 @@
 import { supabase } from "../supabaseClient";
 
 export class AttendanceRepository {
-    // Sinh viên xem lịch sử điểm danh
     async getStudentAttendance(
         studentId: number,
         startDate?: string,
@@ -34,7 +33,6 @@ export class AttendanceRepository {
       )
     `)
             .in("enrollment_id", enrollmentIds)
-            // .order("attendance_date", { ascending: true })
             .order("type", { ascending: true });
 
         if (startDate) query = query.gte("attendance_date", startDate);
@@ -45,7 +43,6 @@ export class AttendanceRepository {
         return data;
     }
 
-    // Giảng viên xem điểm danh của lớp
     async getOfferingAttendance(offeringId: number, date?: string) {
         const { data: enrollments, error: enrollErr } = await supabase
             .from("enrollment")
@@ -78,7 +75,6 @@ export class AttendanceRepository {
         return data;
     }
 
-    // Tạo bản ghi điểm danh
     async createAttendance(record: {
         enrollment_id: number;
         practice_group_id?: number | null;
@@ -96,7 +92,6 @@ export class AttendanceRepository {
         return data;
     }
 
-    // Cập nhật bản ghi điểm danh
     async updateAttendance(
         attendanceId: number,
         updates: Partial<{ status: string; note: string }>
@@ -111,10 +106,42 @@ export class AttendanceRepository {
         return data;
     }
 
-    // Xoá bản ghi điểm danh
     async deleteAttendance(attendanceId: number) {
         const { error } = await supabase.from("attendance").delete().eq("id", attendanceId);
         if (error) throw error;
         return true;
     }
+
+    async upsertAttendance(record: {
+        enrollment_id: number;
+        attendance_date: string;
+        type: string;
+        practice_group_id?: number | null;
+        status: string;
+        note?: string | null;
+    }) {
+        const conflictColumns =
+            record.practice_group_id === null
+                ? "enrollment_id,attendance_date,type"
+                : "enrollment_id,attendance_date,type,practice_group_id";
+
+        const { data, error } = await supabase
+            .from("attendance")
+            .upsert(record, {
+                onConflict: conflictColumns,
+            })
+            .select(`
+      *,
+      enrollment:enrollment_id (
+        id,
+        student_id,
+        offering_id
+      )
+    `)
+            .single();
+
+        if (error) throw error;
+        return data;
+    }
+
 }

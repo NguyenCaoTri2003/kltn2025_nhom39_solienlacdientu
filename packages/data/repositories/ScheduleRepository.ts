@@ -604,7 +604,6 @@ export class ScheduleRepository {
     offeringId: number,
     lecturerId: number
   ) {
-    // 1️⃣ Lấy offering để biết ai là GV lý thuyết
     const { data: offering, error: offeringError } = await supabase
       .from("course_offerings")
       .select("id, lecturer_id")
@@ -617,7 +616,6 @@ export class ScheduleRepository {
 
     const isTheoryLecturer = offering.lecturer_id === lecturerId;
 
-    // 2️⃣ Lý thuyết (chỉ GV lý thuyết mới có)
     let theory: any[] = [];
 
     if (isTheoryLecturer) {
@@ -642,11 +640,9 @@ export class ScheduleRepository {
       theory = data ?? [];
     }
 
-    // 3️⃣ Thực hành
     let practice: any[] = [];
 
     if (isTheoryLecturer) {
-      // 🔥 GV lý thuyết → xem TẤT CẢ nhóm
       const { data, error } = await supabase
         .from("actual_schedules")
         .select(`
@@ -667,7 +663,6 @@ export class ScheduleRepository {
 
       practice = data ?? [];
     } else {
-      // 🎯 GV thực hành → chỉ nhóm mình dạy
       const { data, error } = await supabase
         .from("actual_schedules")
         .select(`
@@ -694,7 +689,6 @@ export class ScheduleRepository {
       practice = data ?? [];
     }
 
-    // 4️⃣ Merge
     return [...theory, ...practice].sort(
       (a, b) =>
         new Date(a.schedule_date).getTime() -

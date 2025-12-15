@@ -253,7 +253,7 @@ export default function AttendanceSummary() {
       };
 
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/attendance/upsert`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/attendance`,
         {
           method: "POST",
           headers: {
@@ -402,7 +402,7 @@ export default function AttendanceSummary() {
                     </div>
                   </div>
 
-                  <AttendanceTable
+                  {/* <AttendanceTable
                     students={students}
                     attendanceMap={attendanceMap}
                     group={group}
@@ -414,6 +414,27 @@ export default function AttendanceSummary() {
                     onOpenNote={(note) =>
                       setNoteModal({ open: true, note })
                     }
+                  /> */}
+
+                  <AttendanceTable
+                    students={students}
+                    attendanceMap={attendanceMap}
+                    group={group}
+                    currentPage={currentPage}
+                    pageSize={pageSize}
+                    selectedStudents={new Set()}
+                    toggleSelectStudent={() => { }}
+                    toggleSelectAll={() => { }}
+                    loading={loading}
+                    editingCell={editingCell}
+                    savingCell={savingCell}
+                    onStartEdit={(studentId, date) =>
+                      setEditingCell({ studentId, date, groupKey: group.key })
+                    }
+                    onSave={(studentId, date, status) =>
+                      saveAttendance(studentId, date, status, group)
+                    }
+                    onOpenNote={(note) => setNoteModal({ open: true, note })}
                   />
 
                   <Pagination
