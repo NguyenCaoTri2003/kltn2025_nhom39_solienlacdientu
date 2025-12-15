@@ -269,6 +269,18 @@ const NotificationDetailScreen: React.FC<NotificationDetailScreenProps> = ({ nav
 
 
         <View style={styles.actionsSection}>
+          {/* Nút đi tới lịch hẹn (tab Appointments) dành cho vai trò có tab này */}
+          <TouchableOpacity
+            style={[styles.actionButtonSecondary, { marginBottom: 10 }]}
+            onPress={() => {
+              // Điều hướng ra bottom tab "Appointments"
+              navigation.navigate('Appointments');
+            }}
+          >
+            <Text style={styles.actionButtonSecondaryText}>Đến trang lịch hẹn</Text>
+          </TouchableOpacity>
+
+          {/* Nút xóa thông báo */}
           <TouchableOpacity 
             style={[styles.actionButton, isDeleting && styles.actionButtonDisabled]}
             onPress={() => {
@@ -456,6 +468,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     borderRadius: 8,
     alignItems: 'center',
+  },
+  actionButtonSecondary: {
+    backgroundColor: '#005BAC',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  actionButtonSecondaryText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
   },
   actionButtonDisabled: {
     backgroundColor: '#9CA3AF',

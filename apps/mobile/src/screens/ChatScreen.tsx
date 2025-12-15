@@ -24,7 +24,7 @@ import { useMessageContext } from "../context/MessageProvider";
 import { getRoleLabel } from "../utils/roleHelper";
 import { messageService } from "../services/messageService";
 
-export default function ChatScreen({ route }: any) {
+export default function ChatScreen({ route, navigation }: any) {
   const { conversationId, receiverId, receiverName, receiverRole } = route.params;
   const { token, user } = useAuth();
   const myId = user?.id;
@@ -292,12 +292,29 @@ export default function ChatScreen({ route }: any) {
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.headerRow}>
-        <Text style={styles.headerName}>{receiverName}</Text>
-        {receiverRole && (
-          <Text style={styles.headerRole}>
-            ({getRoleLabel(receiverRole)})
-          </Text>
-        )}
+        {/* Left: Back icon */}
+        <TouchableOpacity
+          style={styles.sideButton}
+          onPress={() => navigation.goBack()}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        >
+          <Ionicons name="arrow-back" size={22} color="#111827" />
+        </TouchableOpacity>
+
+        {/* Center: name + role */}
+        <View style={styles.headerCenter}>
+          <Text style={styles.headerName} numberOfLines={1}>{receiverName}</Text>
+          {receiverRole && (
+            <Text style={styles.headerRole}>
+              ({getRoleLabel(receiverRole)})
+            </Text>
+          )}
+        </View>
+
+        {/* Right: tạm thời icon trắng để cân layout */}
+        <View style={styles.sideButton}>
+          <Ionicons name="arrow-back" size={22} color="#FFFFFF" />
+        </View>
       </View>
 
       {/* Messages */}
@@ -440,8 +457,29 @@ const styles = StyleSheet.create({
   previewItem: { marginRight: 10, position: "relative" },
   previewImage: { width: 70, height: 70, borderRadius: 8 },
   removeBtn: { position: "absolute", top: -5, right: -5, backgroundColor: "#fff", borderRadius: 20 },
-  headerRow: { flexDirection: "row", justifyContent: "center", alignItems: "center", gap: 6, textAlign: "center", paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: "#eee" },
-  headerName: { fontSize: 18, fontWeight: "600" },
+  headerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#eee",
+  },
+  sideButton: {
+    width: 32,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  headerCenter: {
+    flex: 1,
+    alignItems: "center",
+  },
+  headerName: {
+    fontSize: 18,
+    fontWeight: "600",
+    textAlign: "center",
+  },
   headerRole: { fontSize: 14, color: "#777", fontStyle: "italic" },
   scrollToBottomBtn: { position: "absolute", bottom: 90, right: 20, zIndex: 100 },
   recalled: { fontSize: 14, color: "#999", fontStyle: "italic" },
