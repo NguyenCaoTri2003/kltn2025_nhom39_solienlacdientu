@@ -4,6 +4,15 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Loader2,
   Calendar,
@@ -25,6 +34,7 @@ import { toast } from "sonner";
 import { AppointmentEditModal } from "@/components/lecturer/appointment/appointment-edit-modal";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
+import { LabelRequired } from "@/components/ui/label-requied";
 
 interface AppointmentWithLecturer extends Appointment {
   lecturer: { id: number; users: { full_name: string } } | null;
@@ -41,6 +51,10 @@ export default function ParentAppointmentList() {
   const [hasSearched, setHasSearched] = useState(false);
   const [selected, setSelected] = useState<AppointmentWithLecturer | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
+  const [messageModalOpen, setMessageModalOpen] = useState(false);
+  const [messageContent, setMessageContent] = useState("");
+  const [messageReceiver, setMessageReceiver] = useState<{ id: number; name: string } | null>(null);
+  const [messageSending, setMessageSending] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -111,6 +125,55 @@ export default function ParentAppointmentList() {
     setFilterDate("");
     setFiltered(appointments);
     setHasSearched(false);
+  };
+
+  const handleOpenMessageModal = (appointment: AppointmentWithLecturer) => {
+    const receiverId = appointment.lecturer?.id;
+    if (!receiverId) {
+      toast.error("Không tìm thấy giảng viên để nhắn tin.");
+      return;
+    }
+    setMessageReceiver({
+      id: receiverId,
+      name: appointment.lecturer?.users?.full_name ?? "Giảng viên",
+    });
+    setMessageContent("");
+    setMessageModalOpen(true);
+  };
+
+  const handleSendMessage = async () => {
+    try {
+      if (!messageReceiver) return;
+      if (!messageContent.trim()) return;
+
+      const token = localStorage.getItem("token");
+      if (!token) {
+        toast.error("Bạn chưa đăng nhập.");
+        return;
+      }
+
+      setMessageSending(true);
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/messages`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ receiverId: messageReceiver.id, content: messageContent }),
+      });
+
+      if (!res.ok) throw new Error("Gửi tin nhắn thất bại");
+
+      toast.success("Gửi tin nhắn thành công!");
+      setMessageModalOpen(false);
+      setMessageContent("");
+      router.push("/portal/communications");
+    } catch (err) {
+      console.error(err);
+      toast.error("Lỗi khi gửi tin nhắn");
+    } finally {
+      setMessageSending(false);
+    }
   };
 
   const handleSave = async (updated: Appointment) => {
@@ -352,7 +415,7 @@ export default function ParentAppointmentList() {
                       }
                     }}
                     className={cn(
-                      "group rounded-3xl border border-border/60 bg-gradient-to-br from-card/95 via-card/90 to-background/60 p-5 shadow-[0_20px_60px_-40px_rgba(15,23,42,0.55)] ring-1 ring-transparent transition-all duration-300",
+                      "group rounded-3xl border border-border/60 bg-linear-to-br from-card/95 via-card/90 to-background/60 p-5 shadow-[0_20px_60px_-40px_rgba(15,23,42,0.55)] ring-1 ring-transparent transition-all duration-300",
                       a.from === "parent" && a.status === "pending"
                         ? "cursor-pointer hover:-translate-y-1 hover:border-primary/50 hover:shadow-[0_28px_90px_-50px_rgba(59,130,246,0.75)] hover:ring-primary/40"
                         : "opacity-80",
@@ -370,25 +433,40 @@ export default function ParentAppointmentList() {
                         <CardTitle className="text-lg font-semibold text-foreground line-clamp-2">
                           {a.title}
                         </CardTitle>
-                        <div
-                          className={cn(
-                            "flex-shrink-0 rounded-full px-3 py-1 text-xs font-medium",
-                            a.status === "pending"
-                              ? "bg-yellow-500/15 text-yellow-700"
+                        <div className="shrink-0 flex items-center gap-2">
+                          <Button
+                            variant="outline"
+                            className="rounded-full px-3 py-1 text-xs font-medium h-auto"
+                            disabled={!a.lecturer?.id}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleOpenMessageModal(a);
+                            }}
+                          >
+                            <MessageSquare className="w-4 h-4 mr-1" />
+                            Gửi tin nhắn
+                          </Button>
+
+                          <div
+                            className={cn(
+                              "rounded-full px-3 py-1 text-xs font-medium",
+                              a.status === "pending"
+                                ? "bg-yellow-500/15 text-yellow-700"
+                                : a.status === "confirmed"
+                                  ? "bg-green-500/15 text-green-700"
+                                  : a.status === "cancelled"
+                                    ? "bg-red-500/15 text-red-700"
+                                    : "bg-gray-500/15 text-gray-700"
+                            )}
+                          >
+                            {a.status === "pending"
+                              ? "Chờ xác nhận"
                               : a.status === "confirmed"
-                                ? "bg-green-500/15 text-green-700"
+                                ? "Đã xác nhận"
                                 : a.status === "cancelled"
-                                  ? "bg-red-500/15 text-red-700"
-                                  : "bg-gray-500/15 text-gray-700"
-                          )}
-                        >
-                          {a.status === "pending"
-                            ? "Chờ xác nhận"
-                            : a.status === "confirmed"
-                              ? "Đã xác nhận"
-                              : a.status === "cancelled"
-                                ? "Đã hủy"
-                                : "Hoàn tất"}
+                                  ? "Đã hủy"
+                                  : "Hoàn tất"}
+                          </div>
                         </div>
                       </div>
                     </CardHeader>
@@ -453,7 +531,7 @@ export default function ParentAppointmentList() {
                       {a.content && (
                         <div className="mt-3 rounded-2xl border border-dashed border-border/50 bg-muted/20 p-3">
                           <div className="flex items-start gap-2">
-                            <MessageSquare className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+                            <MessageSquare className="w-4 h-4 text-primary mt-0.5 shrink-0" />
                             <p className="text-sm text-muted-foreground leading-relaxed line-clamp-3">
                               {a.content}
                             </p>
@@ -504,6 +582,39 @@ export default function ParentAppointmentList() {
             onSave={handleSave}
           />
         )}
+
+        <Dialog open={messageModalOpen} onOpenChange={setMessageModalOpen}>
+          <DialogContent className="max-w-lg flex flex-col gap-4">
+            <DialogHeader className="border-b pb-2">
+              <DialogTitle>Nhắn tin giảng viên</DialogTitle>
+              <DialogDescription>
+                Tin nhắn sẽ được gửi đến: {messageReceiver?.name ?? "Giảng viên"}.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-4">
+              <div>
+                <LabelRequired required>Nội dung tin nhắn</LabelRequired>
+                <Textarea
+                  className="mt-2"
+                  placeholder="Nhập nội dung tin nhắn..."
+                  value={messageContent}
+                  onChange={(e) => setMessageContent(e.target.value)}
+                  rows={6}
+                />
+              </div>
+            </div>
+
+            <DialogFooter className="border-t pt-2">
+              <Button variant="outline" onClick={() => setMessageModalOpen(false)}>
+                Hủy
+              </Button>
+              <Button disabled={!messageContent.trim() || messageSending} onClick={handleSendMessage}>
+                {messageSending ? "Đang gửi..." : "Gửi tin nhắn"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );

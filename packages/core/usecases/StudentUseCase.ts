@@ -1,10 +1,13 @@
 import { StudentRepository } from "@packages/data/repositories/StudentRepository"
 import { GradeRepository } from "@packages/data/repositories/GradeRepository"
+import { Student } from "../entities/Student";
+import { ClassesRepository } from "@packages/data/repositories/ClassesRepository";
 
 export class StudentUseCase {
     constructor(
         private studentRepo: StudentRepository,
-        private gradeRepo: GradeRepository
+        private gradeRepo?: GradeRepository,
+        private classRepo?: ClassesRepository
     ) { }
 
     async getStudentDetailForLecturer(
@@ -123,5 +126,21 @@ export class StudentUseCase {
                 data: null,
             }
         }
+    }
+
+    async getStudentsWithParentsByClassForLecturer(classId: number, lecturerId: number): Promise<Student[]> {
+        const classInfo = await this.classRepo.getClassById(classId);
+        if (!classInfo) {
+            throw new Error("Class not found");
+        }
+
+        if (classInfo.homeroom_teacher_id !== lecturerId) {
+            const err: any = new Error("Bạn không có quyền xem lớp này");
+            err.status = 403;
+            throw err;
+        }
+
+        const students = await this.studentRepo.getStudentsWithParentsByClass(classId);
+        return students;
     }
 }

@@ -341,7 +341,13 @@ export class ScheduleRepository {
       course_offering:offering_id (
         id,
         name,
-        class_code
+        class_code,
+        class_id,
+        class:class_id (
+          id,
+          name,
+          class_code
+        )
       )
     `)
       .in("offering_id", allOfferingIds);
@@ -400,7 +406,13 @@ export class ScheduleRepository {
       course_offering:offering_id (
         id,
         name,
-        class_code
+        class_code,
+        class_id,
+        class:class_id (
+          id,
+          name,
+          class_code
+        )
       )
     `)
       .eq("offering_id", offeringId);
@@ -426,7 +438,13 @@ export class ScheduleRepository {
       course_offering:offering_id (
         id,
         name,
-        class_code
+        class_code,
+        class_id,
+        class:class_id (
+          id,
+          name,
+          class_code
+        )
       )
     `)
       .eq("offering_id", offeringId);
@@ -600,5 +618,100 @@ export class ScheduleRepository {
     return uniqueSchedules;
   }
 
+  async getOfferingScheduleToAttendance(
+    offeringId: number,
+    lecturerId: number
+  ) {
+    const { data: offering, error: offeringError } = await supabase
+      .from("course_offerings")
+      .select("id, lecturer_id")
+      .eq("id", offeringId)
+      .single();
+
+    if (offeringError || !offering) {
+      throw new Error("Không tìm thấy học phần");
+    }
+
+    const isTheoryLecturer = offering.lecturer_id === lecturerId;
+
+    let theory: any[] = [];
+
+    if (isTheoryLecturer) {
+      const { data, error } = await supabase
+        .from("actual_schedules")
+        .select(`
+        id,
+        offering_id,
+        practice_group_id,
+        schedule_date,
+        type,
+        status
+      `)
+        .eq("offering_id", offeringId)
+        .eq("type", "theory")
+        .order("schedule_date");
+
+      if (error) {
+        throw new Error("Không thể lấy lịch lý thuyết");
+      }
+
+      theory = data ?? [];
+    }
+
+    let practice: any[] = [];
+
+    if (isTheoryLecturer) {
+      const { data, error } = await supabase
+        .from("actual_schedules")
+        .select(`
+        id,
+        offering_id,
+        practice_group_id,
+        schedule_date,
+        type,
+        status
+      `)
+        .eq("offering_id", offeringId)
+        .eq("type", "practice")
+        .order("schedule_date");
+
+      if (error) {
+        throw new Error("Không thể lấy lịch thực hành");
+      }
+
+      practice = data ?? [];
+    } else {
+      const { data, error } = await supabase
+        .from("actual_schedules")
+        .select(`
+        id,
+        offering_id,
+        practice_group_id,
+        schedule_date,
+        type,
+        status,
+        practice_groups!inner (
+          id,
+          lecturer_id
+        )
+      `)
+        .eq("offering_id", offeringId)
+        .eq("type", "practice")
+        .eq("practice_groups.lecturer_id", lecturerId)
+        .order("schedule_date");
+
+      if (error) {
+        throw new Error("Không thể lấy lịch thực hành");
+      }
+
+      practice = data ?? [];
+    }
+
+    return [...theory, ...practice].sort(
+      (a, b) =>
+        new Date(a.schedule_date).getTime() -
+        new Date(b.schedule_date).getTime()
+    );
+  }
 
 }

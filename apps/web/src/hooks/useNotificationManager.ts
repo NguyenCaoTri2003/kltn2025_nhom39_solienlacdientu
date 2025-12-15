@@ -8,7 +8,7 @@ interface NotificationItem {
   user_id: number | null;
   title: string | null;
   content: string | null;
-  type: "university" | "lecturer" | "system" | null;
+  type: "university" | "lecturer" | "system" | "parent" | null;
   is_read?: boolean;
   created_at?: string;
 }

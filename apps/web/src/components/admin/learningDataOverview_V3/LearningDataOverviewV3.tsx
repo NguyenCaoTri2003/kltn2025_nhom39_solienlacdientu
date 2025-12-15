@@ -67,6 +67,7 @@ export default function LearningDataOverview_V3() {
   const [selectedAcademicYear, setSelectedAcademicYear] = useState<string>("");
   const [selectedSemesterId, setSelectedSemesterId] = useState<string>("");
   const [statusFilter, setStatusFilter] = useState<"all" | "proposed">("proposed"); // Mặc định là "proposed"
+  const [isWarnedFilter, setIsWarnedFilter] = useState<"all" | "warned" | "notWarned">("notWarned"); // Filter đã cảnh cáo
 
   const [rows, setRows] = useState<V3Row[]>([]);
   const [meta, setMeta] = useState<Meta>({ total: 0, page: 1, pageSize: 20 });
@@ -206,10 +207,16 @@ export default function LearningDataOverview_V3() {
       params.set("onlyProposed", "true");
     }
     
+    if (isWarnedFilter === "warned") {
+      params.set("isWarned", "true");
+    } else if (isWarnedFilter === "notWarned") {
+      params.set("isWarned", "false");
+    }
+    
     params.set("page", String(currentPage));
     params.set("pageSize", String(currentPageSize));
     return params;
-  }, [page, pageSize, searchText, classroom, selectedSemesterId, statusFilter]);
+  }, [page, pageSize, searchText, classroom, selectedSemesterId, statusFilter, isWarnedFilter]);
 
   const fetchData = async (overrides?: { p?: number; ps?: number; search?: string; semId?: string }) => {
     setLoading(true);
@@ -240,6 +247,7 @@ export default function LearningDataOverview_V3() {
     setSelectedMajorId("");
     setSearchText("");
     setClassesData([]);
+    setIsWarnedFilter("notWarned");
     setPage(1);
     setPageSize(20);
     if (currentAcademicYear) {
@@ -316,7 +324,7 @@ export default function LearningDataOverview_V3() {
           </Button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mb-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {/* Năm học */}
           <Select value={selectedAcademicYear} onValueChange={(value) => {
             setSelectedAcademicYear(value);
@@ -377,23 +385,7 @@ export default function LearningDataOverview_V3() {
             </SelectContent>
           </Select>
 
-          {/* Trạng thái */}
-          <Select value={statusFilter} onValueChange={(value: "all" | "proposed") => {
-            setStatusFilter(value);
-            setPage(1);
-          }}>
-            <SelectTrigger>
-              <SelectValue placeholder="Chọn trạng thái" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="proposed">Có đề xuất cảnh cáo - thôi học</SelectItem>
-              <SelectItem value="all">Tất cả</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {/* Ngành (chỉ để filter danh sách lớp) */}
+          {/* Ngành */}
           <Select 
             value={selectedMajorId} 
             onValueChange={async (value) => {
@@ -457,8 +449,37 @@ export default function LearningDataOverview_V3() {
             </SelectContent>
           </Select>
 
-          {/* Tên hoặc MSSV */}
-          <div className="flex items-center gap-2">
+          {/* Trạng thái */}
+          <Select value={statusFilter} onValueChange={(value: "all" | "proposed") => {
+            setStatusFilter(value);
+            setPage(1);
+          }}>
+            <SelectTrigger>
+              <SelectValue placeholder="Chọn trạng thái" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="proposed">Có đề xuất cảnh cáo - thôi học</SelectItem>
+              <SelectItem value="all">Tất cả</SelectItem>
+            </SelectContent>
+          </Select>
+
+          {/* Đã cảnh cáo */}
+          <Select value={isWarnedFilter} onValueChange={(value: "all" | "warned" | "notWarned") => {
+            setIsWarnedFilter(value);
+            setPage(1);
+          }}>
+            <SelectTrigger>
+              <SelectValue placeholder="Chọn trạng thái cảnh cáo" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tất cả</SelectItem>
+              <SelectItem value="warned">Đã cảnh cáo</SelectItem>
+              <SelectItem value="notWarned">Chưa cảnh cáo</SelectItem>
+            </SelectContent>
+          </Select>
+
+          {/* Tìm kiếm */}
+          <div className="flex items-center gap-2 sm:col-span-2 lg:col-span-1">
             <Input 
               placeholder="Tìm theo tên hoặc MSSV..." 
               value={searchText} 
@@ -469,6 +490,7 @@ export default function LearningDataOverview_V3() {
                   fetchData({ p: 1 });
                 }
               }}
+              className="flex-1"
             />
             {searchText && (
               <Button variant="ghost" size="icon" onClick={() => {
@@ -523,26 +545,27 @@ export default function LearningDataOverview_V3() {
             "Nguy cơ buộc thôi học",
             "Lý do vi phạm",
             "Lý do buộc thôi học",
+            "Đã cảnh cáo",
             "Thao tác",
           ]}
         >
           {error && (
             <tr>
-              <td className="px-4 py-6 text-red-600" colSpan={24}>
+              <td className="px-4 py-6 text-red-600" colSpan={25}>
                 {error}
               </td>
             </tr>
           )}
           {!error && rows.length === 0 && !loading && (
             <tr>
-              <td className="px-4 py-8 text-muted-foreground" colSpan={24}>
+              <td className="px-4 py-8 text-muted-foreground" colSpan={25}>
                 <p>Không có dữ liệu cảnh cáo cho học kỳ hiện tại.</p>
               </td>
             </tr>
           )}
           {!error && loading && (
             <tr>
-              <td className="px-4 py-8 text-muted-foreground" colSpan={24}>
+              <td className="px-4 py-8 text-muted-foreground" colSpan={25}>
                 Đang tải dữ liệu...
               </td>
             </tr>
@@ -574,6 +597,17 @@ export default function LearningDataOverview_V3() {
                   <td className="px-4 py-3 border-b">{r.expulsion_candidate ? "Có" : "Không"}</td>
                   <td className="px-4 py-3 border-b whitespace-pre-wrap text-sm">{Array.isArray(r.violation_reasons) && r.violation_reasons.length > 0 ? r.violation_reasons.join("\n") : "-"}</td>
                   <td className="px-4 py-3 border-b whitespace-pre-wrap text-sm text-red-600">{Array.isArray(r.expulsion_reasons) && r.expulsion_reasons.length > 0 ? r.expulsion_reasons.join("\n") : "-"}</td>
+                  <td className="px-4 py-3 border-b text-center">
+                    {r.is_warned ? (
+                      <span className="inline-flex items-center px-2 py-1 text-sm  text-green-800 dark:bg-green-900 dark:text-green-200">
+                        Đã cảnh cáo cho học kỳ này
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center px-2 py-1 text-sm  text-red-600">
+                        Chưa cảnh cáo cho học kỳ này
+                      </span>
+                    )}
+                  </td>
                   <td className="px-4 py-3 border-b">
                     <RowActionsLearningDataOverview
                       studentId={String(r.user_id ?? r.student_id ?? "")}

@@ -27,7 +27,15 @@ export class AuthUseCase {
     const valid = await bcrypt.compare(password, user.password_hash);
     if (!valid) throw new Error("Thông tin đăng nhập không hợp lệ");
 
-    const token = jwt.sign({ id: user.id, role: user.role }, JWT_SECRET, { expiresIn: "1d" });
+    const token = jwt.sign(
+      { 
+        id: user.id, 
+        role: user.role,
+        admin_type: user.role === "admin" ? (user.admin_type || null) : null
+      }, 
+      JWT_SECRET, 
+      { expiresIn: "1d" }
+    );
     await this.userRepo.updateUser(user.id, { last_login: new Date().toISOString() });
 
     return { user, token };

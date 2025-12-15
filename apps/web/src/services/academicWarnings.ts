@@ -72,12 +72,6 @@ export function createAcademicWarningsApi(baseUrl: string) {
       }
       return [];
     },
-    async fetchV2List(params: URLSearchParams, signal?: AbortSignal) {
-      const url = `${baseUrl}/api/academic-warnings/v2?${params.toString()}`;
-      const headers: HeadersInit = { ...authHeaders() };
-      const json = await getJson(url, { method: "GET", headers, signal });
-      return json;
-    },
     async fetchV3List(params: URLSearchParams, signal?: AbortSignal) {
       const url = `${baseUrl}/api/academic-warnings/v3?${params.toString()}`;
       const headers: HeadersInit = { ...authHeaders() };

@@ -55,13 +55,20 @@ export function RowActionsLearningDataOverview({
           </DropdownMenuItem>
         ) : (
           <DropdownMenuItem
-            className="text-popover-foreground hover:bg-accent"
-            onClick={() => onMarkAsWarned?.(studentId, studentName)}
+            className="text-popover-foreground hover:bg-accent cursor-not-allowed opacity-50"
+            disabled
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
           >
-            <CheckCircle className="w-4 h-4 mr-2 text-green-500" />
-            Đã cảnh cáo - Đánh dấu chưa cảnh cáo
+            <FileWarning className="w-4 h-4 mr-2 text-gray-400" />
+            {proposedLevel && proposedLevel > 0
+              ? `Tạo cảnh cáo (Đề xuất: ${proposedLabel || `Cảnh cáo ${proposedLevel}`})`
+              : "Tạo cảnh cáo"}
           </DropdownMenuItem>
         )}
+        
 
         {/* <DropdownMenuItem
           className="text-popover-foreground hover:bg-accent"

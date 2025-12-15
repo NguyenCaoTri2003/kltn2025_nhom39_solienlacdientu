@@ -88,19 +88,34 @@ export interface StudentDetailData {
     homeroom_teacher_id?: number | null;
   };
   semester: {
-    id: number; 
+    id: number;
     name: string;
     academic_year: string;
     start_date?: string;
     end_date?: string;
-  };  
-   notification: {
-    id: number; 
-    user_id: number | null; 
-    content: string | null; 
-    type: "system" | "academic_warning" | "violation" | string; 
-    created_at?: string; 
+  };
+  notification: {
+    id: number;
+    user_id: number | null;
+    content: string | null;
+    type: "system" | "academic_warning" | "violation" | string;
+    created_at?: string;
   }
-  
-  
+}
+
+export interface StudentAttendance {
+  id: number;
+  student_code: string;
+  class_id: number;
+  academic_status: string;
+  date_of_birth?: string;
+  place_of_birth?: string;
+  contact_address?: string;
+  type_of_training: string;
+  training_level: string;
+  academic_year: string;
+  student_parent?: StudentParent[];
+  users?: User;
+  studentCode: string;
+  fullName: string;
 }

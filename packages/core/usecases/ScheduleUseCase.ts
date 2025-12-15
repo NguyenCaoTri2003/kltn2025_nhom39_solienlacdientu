@@ -71,4 +71,43 @@ export class ScheduleUseCase {
     return await this.repo.getLecturerSchedulesToday(lecturerId);
   }
 
+  async getOfferingScheduleToAttendance(offeringId: number, lecturerId: number, user: any) {
+
+    if (!(await AuthorizationService.canViewOfferingGrades(user, offeringId))) {
+      throw new Error("Giảng viên không có quyền xem lịch môn học này");
+    }
+
+    const schedules = await this.repo.getOfferingScheduleToAttendance(
+      offeringId,
+      lecturerId
+    );
+
+    const theoryDates = new Set<string>();
+    const practiceDatesByGroup: Record<number, Set<string>> = {};
+
+    for (const s of schedules) {
+      const date = s.schedule_date.split("T")[0];
+
+      if (s.type === "theory") {
+        theoryDates.add(date);
+      }
+
+      if (s.type === "practice" && s.practice_group_id) {
+        if (!practiceDatesByGroup[s.practice_group_id]) {
+          practiceDatesByGroup[s.practice_group_id] = new Set();
+        }
+        practiceDatesByGroup[s.practice_group_id].add(date);
+      }
+    }
+
+    return {
+      theoryDates: Array.from(theoryDates),
+      practiceDatesByGroup: Object.fromEntries(
+        Object.entries(practiceDatesByGroup).map(([gid, dates]) => [
+          gid,
+          Array.from(dates),
+        ])
+      ),
+    };
+  }
 }
