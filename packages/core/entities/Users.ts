@@ -1,4 +1,5 @@
 export type Role = "student" | "parent" | "lecturer" | "admin";
+export type AdminType = "super_admin" | "admin_account" | "admin_academic" | "admin_finance";
 
 export interface User {
   id: number;
@@ -11,6 +12,7 @@ export interface User {
   citizen_id_card?: string;
   address?: string;
   ethnic?: string;
+  admin_type?: AdminType | null;
   created_at?: string;
   last_login?: string;
 }

@@ -142,6 +142,8 @@ export function translateSenderType(sender?: string): string {
       return "Giảng viên";
     case "system":
       return "Hệ thống";
+    case "parent":
+      return "Phụ huynh";
     default:
       return sender || "";
   }

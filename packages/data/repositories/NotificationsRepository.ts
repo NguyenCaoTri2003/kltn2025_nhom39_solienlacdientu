@@ -1,7 +1,7 @@
 import { supabase } from "@packages/data/supabaseClient";
 import { NotificationCategory } from "@packages/core/entities/Notifications";
 
-export type NotificationType = "university" | "lecturer" | "system";
+export type NotificationType = "university" | "lecturer" | "system" | "parent";
 export type NotificationStatus = "sent" | "deleted";
 
 export interface NotificationRow {

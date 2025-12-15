@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Bell, BellOff, Trash2, AlertCircle, MessageSquare, University, CheckCircle, Trash, Clock, MoreVertical } from 'lucide-react';
+import { Bell, BellOff, Trash2, AlertCircle, MessageSquare, University, CheckCircle, Trash, Clock, MoreVertical, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -23,7 +23,7 @@ interface Notification {
   user_id: number | null;
   title: string | null;
   content: string | null;
-  type: 'university' | 'lecturer' | 'system' | null;
+  type: 'university' | 'lecturer' | 'system' | 'parent' | null;
   category?: string | null;
   target_student_id?: number | null;
   is_read?: boolean;
@@ -205,6 +205,8 @@ export default function NotificationList() {
         return <University className="w-5 h-5 text-blue-600" />;
       case 'lecturer':
         return <MessageSquare className="w-5 h-5 text-green-600" />;
+      case 'parent':
+        return <User className="w-5 h-5 text-purple-600" />;
       case 'system':
       default:
         return <Bell className="w-5 h-5 text-gray-600" />;
@@ -217,6 +219,8 @@ export default function NotificationList() {
         return 'Trường đại học';
       case 'lecturer':
         return 'Giảng viên';
+      case 'parent':
+        return 'Phụ huynh';
       case 'system':
       default:
         return 'Hệ thống';
@@ -330,7 +334,7 @@ export default function NotificationList() {
             >
               <CardContent className="p-4">
                 <div className="flex items-start gap-3">
-                  <div className="flex-shrink-0 mt-1">
+                  <div className="shrink-0 mt-1">
                     {getNotificationIcon(notification.type)}
                   </div>
                   
@@ -339,7 +343,7 @@ export default function NotificationList() {
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-2">
                           <Badge variant="secondary" className="text-xs">
-                            {getNotificationTypeLabel(notification.type)}
+                          Thông báo từ {getNotificationTypeLabel(notification.type)}
                           </Badge>
                         </div>
                         

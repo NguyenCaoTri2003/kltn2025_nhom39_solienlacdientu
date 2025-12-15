@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { authenticate } from "@packages/utils/auth";
+import { canManageAcademic, isAdmin } from "@packages/utils/adminPermissions";
 import { academicWarningV3UseCase } from "@packages/core/usecases/AcademicWarningV3UseCase";
 
 export async function GET(req: NextRequest) {
@@ -9,7 +10,17 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ returnCode: -1, message: "No token", data: null }, { status: 401 });
     }
     const user = await authenticate(req);
-    if (user.role !== "admin" && user.role !== "lecturer") {
+    
+    // Lecturer có thể xem, nhưng admin phải có quyền quản lý học vụ
+    if (isAdmin(user) && !canManageAcademic(user)) {
+      return NextResponse.json({ 
+        returnCode: -1, 
+        message: "You do not have permission to manage academic affairs!", 
+        data: null 
+      }, { status: 403 });
+    }
+    
+    if (!isAdmin(user) && user.role !== "lecturer") {
       return NextResponse.json({ returnCode: -1, message: "Forbidden", data: null }, { status: 403 });
     }
 
@@ -19,6 +30,7 @@ export async function GET(req: NextRequest) {
     const classCode = searchParams.get("classCode") || searchParams.get("classroom") || undefined;
     const academicYear = searchParams.get("academicYear") || undefined;
     const onlyProposed = searchParams.get("onlyProposed") || undefined;
+    const isWarned = searchParams.get("isWarned") || undefined;
     const page = searchParams.get("page") || undefined;
     const pageSize = searchParams.get("pageSize") || searchParams.get("limit") || undefined;
 
@@ -28,6 +40,7 @@ export async function GET(req: NextRequest) {
       classCode, 
       academicYear,
       onlyProposed,
+      isWarned,
       page, 
       pageSize 
     });

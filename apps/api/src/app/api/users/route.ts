@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { authenticate } from "@packages/utils/auth";
+import { canManageAccounts } from "@packages/utils/adminPermissions";
 import { UserRepository } from "@packages/data/repositories/UserRepository";
 
 // GET /api/users?page=1&limit=10&search=nguyet
@@ -15,9 +16,9 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    if (user.role !== "admin") {
+    if (!canManageAccounts(user)) {
       return NextResponse.json(
-        { returnCode: -1, message: "You do not have access!", data: null },
+        { returnCode: -1, message: "You do not have permission to manage accounts!", data: null },
         { status: 403 }
       );
     }

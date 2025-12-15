@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { authenticate } from "@packages/utils/auth";
-import { AcademicWarningUseCase } from "@packages/core/usecases/AcademicWarningUseCase";
+import { canManageAcademic } from "@packages/utils/adminPermissions";
+import { academicWarningV3UseCase } from "@packages/core/usecases/AcademicWarningV3UseCase";
 import { notificationsUseCase } from "@packages/core/usecases/NotificationsUseCase";
 import { translateWarningLevel } from "@packages/utils/translations";
 import { StudentRepository } from "@packages/data/repositories/StudentRepository";
@@ -15,8 +16,6 @@ interface CachedStudentInfo {
 const studentInfoCache = new Map<number, CachedStudentInfo>();
 const CACHE_TTL = 5 * 60 * 1000; // 5 phút
 
-const uc = new AcademicWarningUseCase();
-
 export async function POST(req: NextRequest) {
   try {
     const user = await authenticate(req);
@@ -27,9 +26,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (user.role !== "admin") {
+    if (!canManageAcademic(user)) {
       return NextResponse.json(
-        { returnCode: -1, message: "Forbidden", data: null },
+        { returnCode: -1, message: "You do not have permission to manage academic affairs!", data: null },
         { status: 403 }
       );
     }
@@ -75,22 +74,21 @@ export async function POST(req: NextRequest) {
     console.log("Bắt đầu tạo cảnh cáo học vụ...");
     console.log("Student ID:", studentId, "Semester ID:", semesterId, "Level:", levelStr);
 
-    // Bước 0: Kiểm tra duplicate warning (TẠM THỜI TẮT)
-    // console.log("Kiểm tra duplicate warning...");
-    // const existingWarnings = await uc.getStudentWarnings(Number(studentId), Number(semesterId));
-    // const hasSameLevel = existingWarnings.warnings.some(w => w.level === levelStr);
+    // Bước 0: Kiểm tra duplicate warning - nếu đã có cảnh cáo cho student + semester này thì không cho tạo
+    console.log("Kiểm tra duplicate warning...");
+    const isAlreadyWarned = await academicWarningV3UseCase.isStudentWarned(Number(studentId), Number(semesterId));
     
-    // if (hasSameLevel) {
-    //   console.warn(`Student ${studentId} đã có cảnh cáo ${levelStr} trong semester ${semesterId}`);
-    //   return NextResponse.json(
-    //     { returnCode: -1, message: `Sinh viên đã có ${levelStr} trong học kỳ này`, data: null },
-    //     { status: 409 }
-    //   );
-    // }
+    if (isAlreadyWarned) {
+      console.warn(`Student ${studentId} đã có cảnh cáo trong semester ${semesterId}`);
+      return NextResponse.json(
+        { returnCode: -1, message: `Sinh viên đã được cảnh cáo trong học kỳ này. Mỗi học kỳ chỉ được cảnh cáo 1 lần.`, data: null },
+        { status: 400 }
+      );
+    }
 
     // Bước 1: Tạo dòng trong academic_warnings (với transaction)
     console.log("Tạo dòng trong academic_warnings...");
-    const warning = await uc.createWarning({
+    const warning = await academicWarningV3UseCase.createWarning({
       studentId: Number(studentId),
       semesterId: Number(semesterId),
       level: levelStr,

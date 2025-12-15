@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { authenticate } from "@packages/utils/auth";
-import { AcademicWarningUseCase } from "@packages/core/usecases/AcademicWarningUseCase";
+import { canManageAcademic, isAdmin } from "@packages/utils/adminPermissions";
+import { academicWarningV3UseCase } from "@packages/core/usecases/AcademicWarningV3UseCase";
 import { UserRepository } from "@packages/data/repositories/UserRepository";
-
-const uc = new AcademicWarningUseCase();
 
 
 export async function GET(
@@ -24,8 +23,25 @@ export async function GET(
     const { id } = await ctx.params;
     const studentId = Number(id);
 
-
-    if (user.role !== "admin" && user.role !== "lecturer" && user.id !== studentId) {
+    // Student có thể xem cảnh cáo của chính mình
+    if (user.id === studentId) {
+      // Cho phép
+    }
+    // Lecturer có thể xem
+    else if (user.role === "lecturer") {
+      // Cho phép
+    }
+    // Admin phải có quyền quản lý học vụ
+    else if (isAdmin(user)) {
+      if (!canManageAcademic(user)) {
+        return NextResponse.json(
+          { returnCode: -1, message: "You do not have permission to manage academic affairs!", data: null },
+          { status: 403 }
+        );
+      }
+    }
+    // Các role khác không được phép
+    else {
       return NextResponse.json(
         { returnCode: -1, message: "Unauthorized access", data: null },
         { status: 403 }
@@ -41,7 +57,7 @@ export async function GET(
   const fromFilter = searchParams.get("from");
   const toFilter = searchParams.get("to");
 
-  const result = await uc.getStudentWarnings(studentId, semesterId);
+  const result = await academicWarningV3UseCase.getStudentWarnings(studentId, semesterId);
 
     // Apply optional filters on the warnings list
     let warnings = result.warnings || [];

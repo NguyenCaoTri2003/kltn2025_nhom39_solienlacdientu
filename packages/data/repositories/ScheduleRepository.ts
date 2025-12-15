@@ -341,7 +341,13 @@ export class ScheduleRepository {
       course_offering:offering_id (
         id,
         name,
-        class_code
+        class_code,
+        class_id,
+        class:class_id (
+          id,
+          name,
+          class_code
+        )
       )
     `)
       .in("offering_id", allOfferingIds);
@@ -400,7 +406,13 @@ export class ScheduleRepository {
       course_offering:offering_id (
         id,
         name,
-        class_code
+        class_code,
+        class_id,
+        class:class_id (
+          id,
+          name,
+          class_code
+        )
       )
     `)
       .eq("offering_id", offeringId);
@@ -426,7 +438,13 @@ export class ScheduleRepository {
       course_offering:offering_id (
         id,
         name,
-        class_code
+        class_code,
+        class_id,
+        class:class_id (
+          id,
+          name,
+          class_code
+        )
       )
     `)
       .eq("offering_id", offeringId);

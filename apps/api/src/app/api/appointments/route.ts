@@ -87,6 +87,38 @@ export async function POST(req: NextRequest) {
         location
       );
 
+      // Gửi thông báo cho giảng viên khi phụ huynh đặt lịch hẹn
+      try {
+        const [{ data: parentUser }, { data: studentUser }] = await Promise.all([
+          supabase
+            .from("users")
+            .select("full_name")
+            .eq("id", user.id)
+            .maybeSingle(),
+          supabase
+            .from("users")
+            .select("full_name")
+            .eq("id", studentId)
+            .maybeSingle(),
+        ]);
+
+        const parentName = parentUser?.full_name || "Phụ huynh";
+        const studentName = studentUser?.full_name || "sinh viên";
+        const whenText = new Date(start_time).toLocaleString("vi-VN");
+
+        await notificationsUseCase.create({
+          user_id: lecturerId,
+          title: "Lịch hẹn mới từ phụ huynh",
+          content: `${parentName} đã đặt lịch hẹn cho ${studentName}: "${title}" vào lúc ${whenText}.`,
+          type: "parent",
+          category: "APPOINTMENT" as any,
+          target_student_id: studentId,
+        });
+      } catch (e) {
+        // không chặn việc tạo lịch hẹn nếu gửi thông báo lỗi
+        console.error("Failed to create appointment notification (parent -> lecturer):", e);
+      }
+
       return NextResponse.json(result, { status: 201 });
     }
 

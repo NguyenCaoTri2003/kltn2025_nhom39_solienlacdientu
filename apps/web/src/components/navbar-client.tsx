@@ -19,6 +19,7 @@ import {
   KeyRound,
   Book,
   BellIcon,
+  Shield,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -36,9 +37,10 @@ interface NavbarProps {
   userName: string;
   avatarUrl?: string | null;
   userId?: number | null;
+  adminType?: string | null;
 }
 
-export default function NavbarClient({ userRole, userName, avatarUrl, userId }: NavbarProps) {
+export default function NavbarClient({ userRole, userName, avatarUrl, userId, adminType }: NavbarProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
@@ -58,20 +60,42 @@ export default function NavbarClient({ userRole, userName, avatarUrl, userId }: 
     setTimeout(() => window.location.reload(), 200);
   };
 
-  const adminNavItems = [
-    { icon: Home, label: "Trang chủ", href: "/admin" },
-    { icon: Users, label: "Quản lý tài khoản", href: "/admin/accounts/account-management" },
-    { icon: BarChart3, label: "Tạo cảnh cáo", href: "/admin/statistics" },
-    { icon: BellIcon, label: "Tạo thông báo", href: "/admin/notifications-management" },
+  // Tất cả menu items cho admin
+  const allAdminNavItems = [
+    { icon: Home, label: "Trang chủ", href: "/admin", requiredPermission: null as string | null }, // Luôn hiển thị
+    { icon: Users, label: "Quản lý tài khoản", href: "/admin/accounts/account-management", requiredPermission: "admin_account" },
+    { icon: Shield, label: "Phân quyền quản trị", href: "/admin/permissions", requiredPermission: "super_admin" }, // Chỉ super_admin
+    { icon: BarChart3, label: "Tạo cảnh cáo", href: "/admin/statistics", requiredPermission: "admin_academic" },
+    { icon: BellIcon, label: "Tạo thông báo", href: "/admin/notifications-management", requiredPermission: null }, // Có thể cho tất cả admin
   ];
+
+  // Filter menu items dựa trên admin_type
+  const adminNavItems = useMemo(() => {
+    if (userRole !== "admin") return [];
+    
+    // Super admin thấy tất cả
+    if (adminType === "super_admin") {
+      return allAdminNavItems;
+    }
+    
+    // Filter theo quyền
+    return allAdminNavItems.filter(item => {
+      // Menu không yêu cầu quyền cụ thể thì luôn hiển thị
+      if (item.requiredPermission === null) return true;
+      // Menu yêu cầu quyền cụ thể thì chỉ hiển thị nếu admin có quyền đó
+      return item.requiredPermission === adminType;
+    });
+  }, [userRole, adminType]);
 
   const teacherNavItems = [
     { icon: Home, label: "Trang chủ", href: "/lecturer" },
     { icon: Users, label: "Lớp học", href: "/lecturer/classes" },
     { icon: Book, label: "Lớp chủ nhiệm", href: "/lecturer/homeroom-classes" },
+    { icon: Calendar, label: "Lịch dạy", href: "/lecturer/schedule" },
     { icon: Calendar, label: "Lịch hẹn", href: "/lecturer/appointments" },
     { icon: MessageSquare, label: "Nhắn tin", href: "/lecturer/communications" },
   ];
+    
 
   const studentNavItems = [
     { icon: Home, label: "Trang chủ", href: "/portal" },
