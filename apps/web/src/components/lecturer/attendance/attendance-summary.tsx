@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
@@ -53,6 +52,11 @@ export default function AttendanceSummary() {
   const [isLoading, setIsLoading] = useState(false);
   const [editAttendanceOpen, setEditAttendanceOpen] = useState(false);
 
+  const [scheduleDates, setScheduleDates] = useState<{
+    theoryDates: string[];
+    practiceDatesByGroup: Record<number, string[]>;
+  }>({ theoryDates: [], practiceDatesByGroup: {} });
+
   const params = useParams();
   const { id } = params;
   const currentUser =
@@ -89,9 +93,44 @@ export default function AttendanceSummary() {
     }
   }, [id, currentLecturerId]);
 
+  const fetchSchedules = useCallback(async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/attendance/offering-schedule?offering_id=${id}&lecturer_id=${currentLecturerId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const json = await res.json();
+
+      if (!res.ok || json.returnCode !== 0) {
+        throw new Error(json.message || "Không thể lấy lịch học");
+      }
+
+      setScheduleDates(json.data);
+    } catch (err: any) {
+      console.error("Fetch schedule error:", err);
+    }
+  }, [id, currentLecturerId]);
+
+  const fetchAll = useCallback(async () => {
+    setLoading(true);
+    try {
+      await Promise.all([fetchData(), fetchSchedules()]);
+    } finally {
+      setLoading(false);
+    }
+  }, [fetchData, fetchSchedules]);
+
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    fetchAll();
+  }, [fetchAll]);
+
+  console.log("scheduleDates:", scheduleDates);
 
   useEffect(() => {
     if (!offering) return;
@@ -180,10 +219,33 @@ export default function AttendanceSummary() {
     (g: any) => g.lecturers?.id === currentLecturerId || isTheoryLecturer
   );
 
+  // const groupTabs = [
+  //   ...(isTheoryLecturer
+  //     ? [{ key: "theory", label: "Lý thuyết", students: allStudents, dates: theoryDates }]
+  //     : []),
+  //   ...(availablePracticeGroups ?? []).map((g: any) => {
+  //     const studentIds = g.students.map((pgs: any) => pgs.enrollment.student_id);
+  //     const groupStudents = allStudents.filter((s: any) => studentIds.includes(s.id));
+  //     return {
+  //       key: `practice-${g.id}`,
+  //       label: `Nhóm thực hành ${g.group_number}`,
+  //       students: groupStudents,
+  //       groupId: g.id,
+  //       dates: groupPracticeDatesMap[g.id] || [],
+  //     };
+  //   }),
+  // ];
+
   const groupTabs = [
     ...(isTheoryLecturer
-      ? [{ key: "theory", label: "Lý thuyết", students: allStudents, dates: theoryDates }]
+      ? [{
+        key: "theory",
+        label: "Lý thuyết",
+        students: allStudents,
+        dates: scheduleDates.theoryDates,
+      }]
       : []),
+
     ...(availablePracticeGroups ?? []).map((g: any) => {
       const studentIds = g.students.map((pgs: any) => pgs.enrollment.student_id);
       const groupStudents = allStudents.filter((s: any) => studentIds.includes(s.id));
@@ -192,9 +254,9 @@ export default function AttendanceSummary() {
         label: `Nhóm thực hành ${g.group_number}`,
         students: groupStudents,
         groupId: g.id,
-        dates: groupPracticeDatesMap[g.id] || [],
+        dates: scheduleDates.practiceDatesByGroup[g.id] || [],
       };
-    }),
+    })
   ];
 
   const sortByLastName = (students: any[]) => {

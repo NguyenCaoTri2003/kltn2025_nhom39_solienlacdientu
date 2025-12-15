@@ -115,62 +115,6 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// export async function POST(req: NextRequest) {
-//   try {
-//     const user = await authenticate(req);
-//     if (user.role !== "lecturer") {
-//       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-//     }
-
-//     const body = await req.json();
-
-//     const offeringId =
-//       body.offeringId ?? body.offering_id ? Number(body.offeringId ?? body.offering_id) : null;
-//     const enrollment_id =
-//       body.enrollmentId ?? body.enrollment_id ? Number(body.enrollmentId ?? body.enrollment_id) : null;
-//     const practice_group_id =
-//       body.practiceGroupId ?? body.practice_group_id
-//         ? Number(body.practiceGroupId ?? body.practice_group_id)
-//         : null;
-//     const attendance_date = body.attendanceDate ?? body.attendance_date ?? null;
-//     const type = body.type ?? null;
-//     const status = body.status ?? null;
-//     const note = body.note ?? null;
-
-//     if (!offeringId || !attendance_date || !type || !status) {
-//       return NextResponse.json(
-//         { error: "Missing required fields" },
-//         { status: 400 }
-//       );
-//     }
-
-//     const payload = {
-//       enrollment_id,
-//       practice_group_id,
-//       attendance_date,
-//       type,
-//       status,
-//       note,
-//     };
-
-//     console.log("Final sanitized payload to createAttendance:", payload);
-
-//     try {
-//       const result = await usecase.createAttendance(user.id, offeringId, payload);
-//       return NextResponse.json(result, { status: 201 });
-//     } catch (err: any) {
-//       console.error("Error in createAttendance:", err);
-//       return NextResponse.json({ error: err.message }, { status: 500 });
-//     }
-//   } catch (e: any) {
-//     console.error("Unexpected error in POST /api/attendance:", e);
-//     return NextResponse.json(
-//       { error: e.message },
-//       { status: e.message === "Forbidden" ? 403 : 500 }
-//     );
-//   }
-// }
-
 export async function POST(req: NextRequest) {
   try {
     const user = await authenticate(req);
