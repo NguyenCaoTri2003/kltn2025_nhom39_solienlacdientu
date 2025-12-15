@@ -68,9 +68,9 @@ export default function NavbarClient({ userRole, userName, avatarUrl, userId }: 
   const teacherNavItems = [
     { icon: Home, label: "Trang chủ", href: "/lecturer" },
     { icon: Users, label: "Lớp học", href: "/lecturer/classes" },
+    { icon: Book, label: "Lớp chủ nhiệm", href: "/lecturer/homeroom-classes" },
     { icon: Calendar, label: "Lịch hẹn", href: "/lecturer/appointments" },
     { icon: MessageSquare, label: "Nhắn tin", href: "/lecturer/communications" },
-    // { icon: BellIcon, label: "Thông báo", href: "/lecturer/notifications" },
   ];
 
   const studentNavItems = [

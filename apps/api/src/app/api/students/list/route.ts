@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { StudentRepository } from "@packages/data/repositories/StudentRepository";
 
-// GET: /api/students/list
-// Lấy danh sách sinh viên: id, student_code, full_name, class_name, faculty_name, academic_status
 export async function GET(req: NextRequest) {
   try {
     console.log("API called: /api/students/list");

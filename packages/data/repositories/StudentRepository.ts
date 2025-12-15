@@ -1,3 +1,4 @@
+import { Student } from "@packages/core/entities/Student";
 import { supabase } from "../supabaseClient"
 
 export class StudentRepository {
@@ -83,7 +84,6 @@ export class StudentRepository {
     return data;
   }
 
-  //Lấy danh sách sinh viên (id, student_code, full_name, class_name, faculty_name, academic_status)
   async getListStudent() {
     const { data, error } = await supabase
       .from("students")
@@ -187,8 +187,6 @@ export class StudentRepository {
     };
   }
 
-
-
   async getStudentParents(studentId: number): Promise<Array<{ parent_id: number; full_name: string; email: string }>> {
     const { data, error } = await supabase
       .from("student_parent")
@@ -217,6 +215,46 @@ export class StudentRepository {
         email: row?.parents?.users?.email ?? "",
       }))
       .filter((x) => Number.isFinite(x.parent_id)) as Array<{ parent_id: number; full_name: string; email: string }>;
+  }
+
+  async getStudentsWithParentsByClass(classId: number): Promise<Student[]> {
+    const { data, error } = await supabase
+      .from('students')
+      .select(`
+        id,
+        student_code,
+        academic_status,
+        date_of_birth,
+        place_of_birth,
+        contact_address,
+        type_of_tranning,
+        training_level,
+        academic_year,
+        class_id,
+        users!students_id_fkey(full_name),
+        student_parent (
+          relationship,
+          parents (
+            id,
+            users!parents_id_fkey(full_name),
+            occupation
+          )
+        )
+      `)
+      .eq('class_id', classId);
+
+    if (error) throw error;
+
+    return (data || []).map((s: any) => ({
+      ...s,
+      full_name: s.users.full_name,
+      parents: (s.student_parent || []).map((sp: any) => ({
+        id: sp.parents.id,
+        full_name: sp.parents.users.full_name,
+        occupation: sp.parents.occupation,
+        relationship: sp.relationship,
+      })),
+    })) as Student[];
   }
 
 }

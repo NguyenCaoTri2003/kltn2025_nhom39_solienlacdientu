@@ -136,17 +136,6 @@ export class AttendanceUseCase {
             note,
         } = input;
 
-        const { data: offering, error: offeringError } = await supabase
-            .from("course_offerings")
-            .select("id, lecturer_id")
-            .eq("id", offering_id)
-            .maybeSingle();
-
-        if (offeringError) throw offeringError;
-        if (!offering || offering.lecturer_id !== lecturerId) {
-            throw new Error("Forbidden");
-        }
-
         const { data: enrollment, error: enrollError } = await supabase
             .from("enrollment")
             .select("id")

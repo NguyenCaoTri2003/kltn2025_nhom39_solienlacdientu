@@ -82,6 +82,10 @@ export default function AttendanceSummary() {
   const [selectedStudents, setSelectedStudents] = useState<Set<number>>(new Set());
   const [multiEditModal, setMultiEditModal] = useState<{ open: boolean; group?: any; date?: string }>({ open: false });
 
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<"present" | "absent" | "late" | "excused" | "all">("all");
+  const [absent3Plus, setAbsent3Plus] = useState(false);
+
   const toggleSelectStudent = (id: number) => {
     setSelectedStudents(prev => {
       const next = new Set(prev);
@@ -90,6 +94,8 @@ export default function AttendanceSummary() {
       return next;
     });
   };
+
+  console.log("offering:", offering);
 
   const toggleSelectAll = (students: StudentAttendance[]) => {
     setSelectedStudents(prev => {
@@ -145,6 +151,10 @@ export default function AttendanceSummary() {
       if (pg) setActiveTab(`practice-${pg.id}`);
     }
   }, [offering, currentLecturerId]);
+
+  useEffect(() => {
+    setSelectedStudents(new Set());
+  }, [activeTab]);
 
   if (loading) {
     return (
@@ -281,8 +291,6 @@ export default function AttendanceSummary() {
         note: note ?? existingAttendance?.note ?? "",
       };
 
-      console.log("Saving attendance with payload:", payload);
-
       const res = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/api/attendance`,
         {
@@ -398,58 +406,61 @@ export default function AttendanceSummary() {
             return (
               <TabsContent key={group.key} value={group.key} className="space-y-6">
                 <div className="rounded-3xl border border-border/60 bg-card/60 p-4 sm:p-6 shadow-[0_24px_80px_-50px_rgba(15,23,42,0.45)] backdrop-blur">
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <div className="relative w-full sm:w-60">
-                        <Input
-                          placeholder="Tìm theo tên hoặc MSSV"
-                          value={searchText}
-                          onChange={(e) => setSearchText(e.target.value)}
-                          className="h-10 rounded-full border border-border/50 bg-background/70 pr-10 shadow-[0_12px_32px_-24px_rgba(15,23,42,0.6)]"
-                        />
-                        {searchText && (
-                          <button
-                            type="button"
-                            onClick={() => setSearchText("")}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  <div className="space-y-4">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <div className="relative w-full sm:w-60">
+                          <Input
+                            placeholder="Tìm theo tên hoặc MSSV"
+                            value={searchText}
+                            onChange={(e) => setSearchText(e.target.value)}
+                            className="h-10 rounded-full border border-border/50 bg-background/70 pr-10 shadow-[0_12px_32px_-24px_rgba(15,23,42,0.6)]"
+                          />
+                          {searchText && (
+                            <button
+                              type="button"
+                              onClick={() => setSearchText("")}
+                              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          )}
+                        </div>
+
+                        <Button
+                          onClick={() => handleSearch(group.students)}
+                          className="rounded-full"
+                        >
+                          <Search className="w-4 h-4 mr-2" /> Tìm kiếm
+                        </Button>
+
+                        {hasSearched && (
+                          <Button
+                            variant="destructive"
+                            onClick={handleResetSearch}
+                            className="rounded-full"
                           >
-                            <X className="w-4 h-4" />
-                          </button>
+                            Xóa tìm kiếm
+                          </Button>
                         )}
                       </div>
 
-                      <Button
-                        onClick={() => handleSearch(group.students)}
-                        className="rounded-full"
-                      >
-                        <Search className="w-4 h-4 mr-2" /> Tìm kiếm
-                      </Button>
-
-                      {hasSearched && (
-                        <Button
-                          variant="destructive"
-                          onClick={handleResetSearch}
-                          className="rounded-full"
-                        >
-                          Xóa tìm kiếm
-                        </Button>
-                      )}
-                    </div>
-                    <div>
-                      {selectedStudents.size > 0 && (
-                        <Button
-                          className="rounded-full"
-                          onClick={() =>
-                            setMultiEditModal({
-                              open: true,
-                              group: group,
-                              date: group.dates[0]
-                            })
-                          }
-                        >
-                          Chỉnh sửa nhiều ({selectedStudents.size})
-                        </Button>
-                      )}
+                      <div>
+                        {selectedStudents.size > 0 && (
+                          <Button
+                            className="rounded-full"
+                            onClick={() =>
+                              setMultiEditModal({
+                                open: true,
+                                group: group,
+                                date: group.dates[0]
+                              })
+                            }
+                          >
+                            Chỉnh sửa nhiều ({selectedStudents.size})
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   </div>
 
@@ -577,7 +588,6 @@ export default function AttendanceSummary() {
                 { key: activeTab, groupId: r.practice_group_id }
               );
             }
-            // Clear selected
             setSelectedStudents(new Set());
           }}
         />
