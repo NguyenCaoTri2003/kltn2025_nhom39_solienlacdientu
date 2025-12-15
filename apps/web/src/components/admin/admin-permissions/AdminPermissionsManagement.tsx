@@ -5,6 +5,11 @@ import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Shield } from "lucide-react";
 import { getAllAdminPermissions, type AdminUser, type AdminType } from "@/services/adminPermissionService";
+import {
+  updateUserStatus,
+  getToken,
+  type AccountStatus,
+} from "@/services/accountManagementService";
 import { CreateAdminModal } from "./CreateAdminModal";
 import { AssignPermissionModal } from "./AssignPermissionModal";
 import { AdminPermissionsFilters } from "./AdminPermissionsFilters";
@@ -13,7 +18,15 @@ import { AccountPagination } from "@/components/admin/modals_UI/AccountPaginatio
 
 type AdminTypeOption = "all" | AdminType;
 
-export function AdminPermissionsManagement() {
+interface AdminPermissionsManagementProps {
+  currentAdminId?: number | null;
+  currentAdminType?: AdminType | null;
+}
+
+export function AdminPermissionsManagement({
+  currentAdminId,
+  currentAdminType,
+}: AdminPermissionsManagementProps) {
   const [loading, setLoading] = useState(false);
   const [admins, setAdmins] = useState<AdminUser[]>([]);
   const [createModalOpen, setCreateModalOpen] = useState(false);
@@ -76,6 +89,45 @@ export function AdminPermissionsManagement() {
     setAssignModalOpen(true);
   };
 
+  const handleToggleStatus = async (admin: AdminUser) => {
+    // Không cho phép super_admin tự khóa tài khoản của chính mình
+    if (currentAdminType === "super_admin" && currentAdminId === admin.id) {
+      toast.error("Bạn không thể tự khóa tài khoản của chính mình.");
+      return;
+    }
+    try {
+      const token = getToken();
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || window.location.origin;
+
+      const nextStatus: AccountStatus =
+        admin.status === "inactive" ? "active" : "inactive";
+
+      const result = await updateUserStatus(
+        String(admin.id),
+        nextStatus,
+        token,
+        apiBase
+      );
+
+      if (!result.ok) {
+        toast.error(result.message || "Không thể cập nhật trạng thái tài khoản");
+        return;
+      }
+
+      toast.success(
+        nextStatus === "inactive"
+          ? "Đã khóa tài khoản admin này."
+          : "Đã mở khóa tài khoản admin này."
+      );
+      // Reload danh sách để cập nhật trạng thái
+      loadAdmins();
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Không thể cập nhật trạng thái tài khoản";
+      toast.error(message);
+    }
+  };
+
   const changePage = async (newPage: number) => {
     setPage(newPage);
   };
@@ -127,6 +179,7 @@ export function AdminPermissionsManagement() {
             admins={admins}
             loading={loading}
             onAssignPermission={handleAssignPermission}
+            onToggleStatus={handleToggleStatus}
             hasSearched={hasSearched}
           />
 

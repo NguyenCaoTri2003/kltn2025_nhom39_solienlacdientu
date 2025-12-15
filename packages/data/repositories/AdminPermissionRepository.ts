@@ -55,7 +55,7 @@ export class AdminPermissionRepository {
     page?: number;
     pageSize?: number;
   }): Promise<{
-    items: Array<{ id: number; full_name: string; email: string; admin_type: AdminType | null }>;
+    items: Array<{ id: number; full_name: string; email: string; admin_type: AdminType | null; status: string }>;
     total: number;
     page: number;
     pageSize: number;
@@ -68,7 +68,7 @@ export class AdminPermissionRepository {
 
     let query = supabase
       .from("users")
-      .select("id, full_name, email, admin_type", { count: "exact" })
+      .select("id, full_name, email, admin_type, status", { count: "exact" })
       .eq("role", "admin");
 
     // Search theo email hoặc full_name
@@ -94,6 +94,7 @@ export class AdminPermissionRepository {
       full_name: user.full_name,
       email: user.email,
       admin_type: user.admin_type as AdminType | null,
+      status: user.status as string,
     }));
 
     const total = count || 0;

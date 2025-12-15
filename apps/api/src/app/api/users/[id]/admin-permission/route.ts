@@ -89,13 +89,16 @@ export async function PATCH(
       "admin_account",
       "admin_academic",
       "admin_finance",
+      "admin",
     ];
 
     if (admin_type !== null && admin_type !== undefined && !validTypes.includes(admin_type)) {
       return NextResponse.json(
         {
           returnCode: -1,
-          message: `Invalid admin_type. Must be one of: ${validTypes.filter(t => t !== null).join(", ")}, or null`,
+          message: `Invalid admin_type. Must be one of: ${validTypes
+            .filter(t => t !== null)
+            .join(", ")}, or null`,
           data: null,
         },
         { status: 400 }

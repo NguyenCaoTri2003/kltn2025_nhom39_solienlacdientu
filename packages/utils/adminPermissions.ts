@@ -22,7 +22,15 @@ export function canManageAccounts(user: JwtPayload): boolean {
 export function canManageAcademic(user: JwtPayload): boolean {
   if (!isAdmin(user)) return false;
   if (isSuperAdmin(user)) return true;
-  return user.admin_type === "admin_academic" || user.admin_type === "super_admin";
+  // admin_academic và super_admin chắc chắn có quyền
+  if (user.admin_type === "admin_academic" || user.admin_type === "super_admin") {
+    return true;
+  }
+  // admin thường (admin_type = "admin") cũng được phép quản lý học vụ (cảnh cáo, v.v.)
+  if (user.admin_type === "admin") {
+    return true;
+  }
+  return false;
 }
 
 // Kiểm tra user có quyền quản lý tài chính không
