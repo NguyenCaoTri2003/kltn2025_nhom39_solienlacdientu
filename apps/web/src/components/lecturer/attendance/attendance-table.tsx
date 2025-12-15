@@ -67,40 +67,23 @@ export default function AttendanceTable({
   const getBadge = (status: AttendanceRecord["status"]) => {
     switch (status) {
       case "present":
-        return (
-          <Badge className="bg-green-100 text-green-700 border border-green-200">
-            Có mặt
-          </Badge>
-        );
+        return <Badge className="bg-green-100 text-green-700 border border-green-200">Có mặt</Badge>;
       case "absent":
-        return (
-          <Badge className="bg-red-100 text-red-700 border border-red-200">
-            Vắng
-          </Badge>
-        );
+        return <Badge className="bg-red-100 text-red-700 border border-red-200">Vắng</Badge>;
       case "late":
-        return (
-          <Badge className="bg-yellow-100 text-yellow-700 border border-yellow-200">
-            Trễ
-          </Badge>
-        );
+        return <Badge className="bg-yellow-100 text-yellow-700 border border-yellow-200">Trễ</Badge>;
       case "excused":
-        return (
-          <Badge className="bg-blue-100 text-blue-700 border border-blue-200">
-            Có phép
-          </Badge>
-        );
+        return <Badge className="bg-blue-100 text-blue-700 border border-blue-200">Có phép</Badge>;
       default:
-        return (
-          <Badge className="bg-gray-100 text-gray-700 border border-gray-200">
-            -
-          </Badge>
-        );
+        return <Badge className="bg-gray-100 text-gray-700 border border-gray-200">-</Badge>;
     }
   };
 
   const allSelected =
     students.length > 0 && students.every((s) => selectedStudents.has(s.id));
+
+  const stickyCell =
+    "sticky bg-background z-20 shadow-[1px_0_0_0_#e5e7eb] dark:shadow-[1px_0_0_0_#334155]";
 
   return (
     <div className="relative overflow-x-auto">
@@ -109,10 +92,9 @@ export default function AttendanceTable({
           loading ? "opacity-50 pointer-events-none" : "opacity-100"
         }`}
       >
-        
         <TableHeader>
           <TableRow>
-            <TableHead className="sticky left-0 z-30 w-[48px] bg-white">
+            <TableHead className={`left-0 w-[48px] ${stickyCell}`}>
               <Checkbox
                 checked={allSelected}
                 onCheckedChange={() => toggleSelectAll(students)}
@@ -120,20 +102,23 @@ export default function AttendanceTable({
               />
             </TableHead>
 
-            <TableHead className="sticky left-[48px] z-30 w-[48px] bg-white">
+            <TableHead className={`left-[48px] w-[48px] ${stickyCell}`}>
               STT
             </TableHead>
 
-            <TableHead className="sticky left-[96px] z-30 w-[84px] bg-white">
+            <TableHead className={`left-[96px] w-[84px] ${stickyCell}`}>
               MSSV
             </TableHead>
 
-            <TableHead className="sticky left-[180px] z-30 w-[180px] bg-white">
+            <TableHead className={`left-[180px] w-[180px] ${stickyCell}`}>
               Họ và tên
             </TableHead>
 
             {group.dates.map((d) => (
-              <TableHead key={d} className="min-w-[120px] text-center">
+              <TableHead
+                key={d}
+                className="min-w-[120px] text-center border-b"
+              >
                 {formatVNDate(d)}
               </TableHead>
             ))}
@@ -145,7 +130,7 @@ export default function AttendanceTable({
             <TableRow>
               <TableCell
                 colSpan={4 + group.dates.length}
-                className="text-center"
+                className="text-center text-muted-foreground"
               >
                 Không có sinh viên nào
               </TableCell>
@@ -153,7 +138,7 @@ export default function AttendanceTable({
           ) : (
             students.map((s, idx) => (
               <TableRow key={s.id}>
-                <TableCell className="sticky left-0 z-20 w-[48px] bg-white">
+                <TableCell className={`left-0 w-[48px] ${stickyCell}`}>
                   <Checkbox
                     checked={selectedStudents.has(s.id)}
                     onCheckedChange={() => toggleSelectStudent(s.id)}
@@ -161,15 +146,17 @@ export default function AttendanceTable({
                   />
                 </TableCell>
 
-                <TableCell className="sticky left-[48px] w-[48px] bg-white">
+                <TableCell className={`left-[48px] w-[48px] ${stickyCell}`}>
                   {(currentPage - 1) * pageSize + idx + 1}
                 </TableCell>
 
-                <TableCell className="sticky left-[96px] w-[84px] bg-white">
+                <TableCell className={`left-[96px] w-[84px] ${stickyCell}`}>
                   {s.studentCode}
                 </TableCell>
 
-                <TableCell className="sticky left-[180px] w-[180px] bg-white whitespace-nowrap">
+                <TableCell
+                  className={`left-[180px] w-[180px] ${stickyCell} whitespace-nowrap`}
+                >
                   {s.fullName}
                 </TableCell>
 
@@ -192,7 +179,7 @@ export default function AttendanceTable({
                           {getBadge(record.status)}
                           {record.note && (
                             <Info
-                              className="w-4 h-4 text-gray-500 cursor-pointer"
+                              className="w-4 h-4 text-muted-foreground cursor-pointer"
                               onClick={() =>
                                 !loading && onOpenNote(record.note)
                               }
@@ -212,9 +199,9 @@ export default function AttendanceTable({
       </Table>
 
       {loading && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/70 backdrop-blur-sm z-40 rounded-md">
-          <Loader2 className="w-6 h-6 animate-spin text-gray-600 mb-2" />
-          <p className="text-sm text-gray-600">Đang tải dữ liệu...</p>
+        <div className="absolute inset-0 z-40 flex flex-col items-center justify-center bg-background/70 backdrop-blur-sm rounded-md">
+          <Loader2 className="w-6 h-6 animate-spin text-muted-foreground mb-2" />
+          <p className="text-sm text-muted-foreground">Đang tải dữ liệu...</p>
         </div>
       )}
     </div>

@@ -4,7 +4,6 @@ import { useCallback, useEffect, useState } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { BookOpen, BookText, Loader2, Search, X } from "lucide-react";
-import { toast } from "sonner";
 import { useParams } from "next/navigation";
 import { Offering } from "@packages/core/entities/CourseOffering";
 import Pagination from "@/components/pagination";
@@ -12,9 +11,6 @@ import { PageBreadcrumb } from "@/components/page-breadcrumb";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import AttendanceTable from "./attendance-table";
-import AttendanceModal from "./attendance-modal";
-import { Student } from "@packages/core/entities/Student";
-import AttendanceEditModal from "./attendance-edit-modal";
 import { normalize } from "@/utils/normalize";
 import EmptyState from "@/components/empty-state";
 import { AttendanceSummaryStats } from "./attendance-summary-stats";
@@ -31,125 +27,101 @@ interface Attendance {
 }
 
 export default function AttendanceSummary() {
+  const params = useParams();
+  const { id } = params;
+
+  const currentUser =
+    typeof window !== "undefined"
+      ? JSON.parse(localStorage.getItem("user") || "null")
+      : null;
+
+  const currentLecturerId = currentUser?.id;
+
   const [offering, setOffering] = useState<Offering | null>(null);
   const [attendances, setAttendances] = useState<Attendance[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<string>("");
-  const [noteModal, setNoteModal] = useState<{ open: boolean; note?: string }>({ open: false });
+  const [activeTab, setActiveTab] = useState("");
 
   const [currentPage, setCurrentPage] = useState(1);
-  const pageSize = 20;
+  const pageSize = 10;
 
   const [searchText, setSearchText] = useState("");
   const [hasSearched, setHasSearched] = useState(false);
   const [filteredStudents, setFilteredStudents] = useState<any[]>([]);
-  const [selectedStudents, setSelectedStudents] = useState<Set<number>>(new Set<number>());
 
-  const [attendanceOpen, setAttendanceOpen] = useState(false);
-  const [attendanceToday, setAttendanceToday] = useState<Record<number, any>>({});
-  const [attendanceLoading, setAttendanceLoading] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [editAttendanceOpen, setEditAttendanceOpen] = useState(false);
+  const [noteModal, setNoteModal] = useState<{ open: boolean; note?: string }>({
+    open: false,
+  });
 
   const [scheduleDates, setScheduleDates] = useState<{
     theoryDates: string[];
     practiceDatesByGroup: Record<number, string[]>;
-  }>({ theoryDates: [], practiceDatesByGroup: {} });
+  }>({
+    theoryDates: [],
+    practiceDatesByGroup: {},
+  });
 
-  const params = useParams();
-  const { id } = params;
-  const currentUser =
-    typeof window !== "undefined" ? JSON.parse(localStorage.getItem("user") || "null") : null;
-  const currentLecturerId = currentUser?.id;
+  // cell đang edit
+  const [editingCell, setEditingCell] = useState<{
+    studentId: number;
+    date: string;
+    groupKey: string;
+  } | null>(null);
+
+  // cell đang save
+  const [savingCell, setSavingCell] = useState<{
+    studentId: number;
+    date: string;
+  } | null>(null);
+
 
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
       const token = localStorage.getItem("token");
+
       const [offeringRes, attendanceRes] = await Promise.all([
         fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/course-offerings/${id}`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
         fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/attendance?lecturer_id=${currentLecturerId}&offering_id=${id}`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
+          `${process.env.NEXT_PUBLIC_API_URL}/api/attendance?offering_id=${id}&lecturer_id=${currentLecturerId}`,
+          { headers: { Authorization: `Bearer ${token}` } }
         ),
       ]);
 
-      if (!offeringRes.ok || !attendanceRes.ok) throw new Error("Lỗi tải dữ liệu");
-
-      const offeringData = (await offeringRes.json()).data;
-      const attendanceData = (await attendanceRes.json()).data;
-
-      setOffering(offeringData);
-      setAttendances(attendanceData);
-    } catch (err) {
-      console.error("Lỗi tải dữ liệu:", err);
+      setOffering((await offeringRes.json()).data);
+      setAttendances((await attendanceRes.json()).data);
     } finally {
       setLoading(false);
     }
   }, [id, currentLecturerId]);
 
   const fetchSchedules = useCallback(async () => {
-    try {
-      const token = localStorage.getItem("token");
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/attendance/offering-schedule?offering_id=${id}&lecturer_id=${currentLecturerId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      const json = await res.json();
-
-      if (!res.ok || json.returnCode !== 0) {
-        throw new Error(json.message || "Không thể lấy lịch học");
-      }
-
-      setScheduleDates(json.data);
-    } catch (err: any) {
-      console.error("Fetch schedule error:", err);
-    }
+    const token = localStorage.getItem("token");
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/api/attendance/offering-schedule?offering_id=${id}&lecturer_id=${currentLecturerId}`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    setScheduleDates((await res.json()).data);
   }, [id, currentLecturerId]);
 
-  const fetchAll = useCallback(async () => {
-    setLoading(true);
-    try {
-      await Promise.all([fetchData(), fetchSchedules()]);
-    } finally {
-      setLoading(false);
-    }
+  useEffect(() => {
+    fetchData();
+    fetchSchedules();
   }, [fetchData, fetchSchedules]);
 
   useEffect(() => {
-    fetchAll();
-  }, [fetchAll]);
-
-  console.log("scheduleDates:", scheduleDates);
-
-  useEffect(() => {
     if (!offering) return;
-    const isTheoryLecturer = offering.lecturers?.id === currentLecturerId;
-    if (isTheoryLecturer) setActiveTab("theory");
-    else {
-      const myPracticeGroup = offering.practice_groups?.find(
+    if (offering.lecturers?.id === currentLecturerId) {
+      setActiveTab("theory");
+    } else {
+      const pg = offering.practice_groups?.find(
         (g: any) => g.lecturers?.id === currentLecturerId
       );
-      if (myPracticeGroup) setActiveTab(`practice-${myPracticeGroup.id}`);
+      if (pg) setActiveTab(`practice-${pg.id}`);
     }
   }, [offering, currentLecturerId]);
-
-  useEffect(() => {
-    setCurrentPage(1);
-    setSearchText("");
-    setFilteredStudents([]);
-    setSelectedStudents(new Set());
-  }, [activeTab]);
 
   if (loading) {
     return (
@@ -186,77 +158,42 @@ export default function AttendanceSummary() {
     fullName: s.students.users.full_name,
   }));
 
-  const theoryDates = Array.from(
-    new Set(attendances.filter((a) => a.type === "theory").map((a) => a.attendance_date.split("T")[0]))
-  ).sort();
-
-  const practiceGroups = offering.practice_groups || [];
-
-  const groupPracticeDatesMap: Record<number, string[]> = {};
-  practiceGroups.forEach((pg) => {
-    const groupDates = Array.from(
-      new Set(
-        attendances
-          .filter((a) => a.type === "practice" && a.practice_group_id === pg.id)
-          .map((a) => a.attendance_date.split("T")[0])
-      )
-    ).sort();
-    groupPracticeDatesMap[pg.id] = groupDates;
-  });
-
   const attendanceMap: Record<number, Record<string, Attendance[]>> = {};
   attendances.forEach((a) => {
-    const studentId = a.enrollment?.student_id;
-    if (!studentId) return;
-    const dateKey = a.attendance_date.split("T")[0];
-    if (!attendanceMap[studentId]) attendanceMap[studentId] = {};
-    if (!attendanceMap[studentId][dateKey]) attendanceMap[studentId][dateKey] = [];
-    attendanceMap[studentId][dateKey].push(a);
+    const sid = a.enrollment.student_id;
+    const date = a.attendance_date.split("T")[0];
+    attendanceMap[sid] ??= {};
+    attendanceMap[sid][date] ??= [];
+    attendanceMap[sid][date].push(a);
   });
 
   const isTheoryLecturer = offering.lecturers?.id === currentLecturerId;
-  const availablePracticeGroups = offering.practice_groups?.filter(
-    (g: any) => g.lecturers?.id === currentLecturerId || isTheoryLecturer
-  );
-
-  // const groupTabs = [
-  //   ...(isTheoryLecturer
-  //     ? [{ key: "theory", label: "Lý thuyết", students: allStudents, dates: theoryDates }]
-  //     : []),
-  //   ...(availablePracticeGroups ?? []).map((g: any) => {
-  //     const studentIds = g.students.map((pgs: any) => pgs.enrollment.student_id);
-  //     const groupStudents = allStudents.filter((s: any) => studentIds.includes(s.id));
-  //     return {
-  //       key: `practice-${g.id}`,
-  //       label: `Nhóm thực hành ${g.group_number}`,
-  //       students: groupStudents,
-  //       groupId: g.id,
-  //       dates: groupPracticeDatesMap[g.id] || [],
-  //     };
-  //   }),
-  // ];
 
   const groupTabs = [
     ...(isTheoryLecturer
-      ? [{
-        key: "theory",
-        label: "Lý thuyết",
-        students: allStudents,
-        dates: scheduleDates.theoryDates,
-      }]
+      ? [
+        {
+          key: "theory",
+          label: "Lý thuyết",
+          students: allStudents,
+          dates: scheduleDates.theoryDates,
+        },
+      ]
       : []),
-
-    ...(availablePracticeGroups ?? []).map((g: any) => {
-      const studentIds = g.students.map((pgs: any) => pgs.enrollment.student_id);
-      const groupStudents = allStudents.filter((s: any) => studentIds.includes(s.id));
-      return {
+    ...(offering.practice_groups ?? [])
+      .filter(
+        (g: any) =>
+          g.lecturers?.id === currentLecturerId || isTheoryLecturer
+      )
+      .map((g: any) => ({
         key: `practice-${g.id}`,
-        label: `Nhóm thực hành ${g.group_number}`,
-        students: groupStudents,
+        label: `Nhóm TH ${g.group_number}`,
         groupId: g.id,
+        students: allStudents.filter((s) =>
+          g.students.some((pgs: any) => pgs.enrollment.student_id === s.id)
+        ),
         dates: scheduleDates.practiceDatesByGroup[g.id] || [],
-      };
-    })
+      })),
   ];
 
   const sortByLastName = (students: any[]) => {
@@ -272,226 +209,83 @@ export default function AttendanceSummary() {
     return students.slice(startIdx, startIdx + pageSize);
   };
 
+
   const handleSearch = (students: any[]) => {
-    setIsLoading(true);
-    setTimeout(() => {
-      const normalizedQuery = normalize(searchText);
-      const filtered = students.filter(
+    const q = normalize(searchText);
+    setFilteredStudents(
+      students.filter(
         (s) =>
-          normalize(s.fullName).includes(normalizedQuery) ||
-          normalize(s.studentCode).includes(normalizedQuery)
-      );
-      setFilteredStudents(filtered);
-      setCurrentPage(1);
-      setHasSearched(true);
-      setIsLoading(false);
-    }, 300);
+          normalize(s.fullName).includes(q) ||
+          normalize(s.studentCode).includes(q)
+      )
+    );
+    setHasSearched(true);
+    setCurrentPage(1);
   };
 
   const handleResetSearch = () => {
     setSearchText("");
     setFilteredStudents([]);
-    setCurrentPage(1);
     setHasSearched(false);
-    setSelectedStudents(new Set());
   };
 
-  const toggleSelectStudent = (id: number) => {
-    const newSet = new Set(selectedStudents);
-    if (newSet.has(id)) newSet.delete(id);
-    else newSet.add(id);
-    setSelectedStudents(newSet);
-  };
-
-  const toggleSelectAll = (students: any[]) => {
-    const allIds = students.map((s) => s.id);
-    const allSelected = allIds.every((sid) => selectedStudents.has(sid));
-    const newSet = new Set(selectedStudents);
-    if (allSelected) allIds.forEach((sid) => newSet.delete(sid));
-    else allIds.forEach((sid) => newSet.add(sid));
-    setSelectedStudents(newSet);
-  };
-
-  const fetchTodayAttendance = async (type: "theory" | "practice", groupId?: number) => {
+  const saveAttendance = async (
+    studentId: number,
+    date: string,
+    status: "present" | "absent" | "late" | "excused",
+    group: any
+  ) => {
     try {
-      setAttendanceLoading(true);
+      setSavingCell({ studentId, date });
+
       const token = localStorage.getItem("token");
-      const currentUser =
-        typeof window !== "undefined" ? JSON.parse(localStorage.getItem("user") || "null") : null;
-      const lecturerId = currentUser?.id;
+
+      const payload = {
+        offering_id: Number(id),
+        student_id: studentId,
+        attendance_date: date,
+        status,
+        type: group.key === "theory" ? "theory" : "practice",
+        practice_group_id:
+          group.key.startsWith("practice-")
+            ? Number(group.key.split("-")[1])
+            : null,
+      };
 
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/attendance?lecturer_id=${lecturerId}&offering_id=${id}`,
-        { headers: { Authorization: `Bearer ${token}` } }
+        `${process.env.NEXT_PUBLIC_API_URL}/api/attendance/upsert`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(payload),
+        }
       );
 
-      if (!res.ok) throw new Error("Không thể tải dữ liệu điểm danh.");
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.message);
 
-      const resData = await res.json();
-      const data = resData.data || [];
-      const today = new Date().toISOString().split("T")[0];
-
-      const todayMap: Record<number, any> = {};
-      data.forEach((record: any) => {
-        const recordDate = record.attendance_date?.split("T")[0];
-        const isToday = recordDate === today;
-        const isSameType = record.type === type;
-        const isSameGroup = type === "practice" ? record.practice_group_id === groupId : true;
-        if (isToday && isSameType && isSameGroup) todayMap[record.enrollment.student_id] = record;
+      setAttendances((prev) => {
+        const filtered = prev.filter(
+          (a) =>
+            !(
+              a.enrollment.student_id === studentId &&
+              a.attendance_date.startsWith(date) &&
+              a.type === payload.type &&
+              a.practice_group_id === payload.practice_group_id
+            )
+        );
+        return [...filtered, json.data];
       });
-
-      setAttendanceToday(todayMap);
-    } catch (err) {
-      console.error("Lỗi tải danh sách điểm danh:", err);
+    } catch (e) {
+      console.error(e);
     } finally {
-      setAttendanceLoading(false);
+      setSavingCell(null);
+      setEditingCell(null);
     }
   };
-
-  const openAttendance = async (type: "theory" | "practice", groupId?: number) => {
-    await fetchTodayAttendance(type, groupId);
-    setAttendanceOpen(true);
-  };
-
-  const enrollments = offering.students
-    .filter((e) => e.students !== undefined)
-    .map((e) => ({ id: e.id, students: e.students as Student }));
-
-  const enrollmentToStudentMap: Record<number, number> = {};
-  enrollments.forEach((e: any) => {
-    enrollmentToStudentMap[e.id] = e.students.id;
-  });
-
-  const enrollmentMap = enrollments.reduce((map, e) => {
-    map[e.students.id] = e.id;
-    return map;
-  }, {} as Record<number, number>);
-
-  const practiceGroupMap: Record<number, number> = {};
-  practiceGroups.forEach((pg) => {
-    pg.students.forEach((pe) => {
-      practiceGroupMap[pe.enrollment.student_id] = pg.id;
-    });
-  });
-
-  const handleAttendanceSubmit = async (records: any[]) => {
-    try {
-      setIsSubmitting(true);
-      const token = localStorage.getItem("token");
-
-      const responses = await Promise.all(
-        records.map(async (r) => {
-          const studentId = enrollmentToStudentMap[r.enrollment_id];
-          const existing = attendanceToday?.[studentId];
-
-          const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/attendance`, {
-            method: existing ? "PATCH" : "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-            credentials: "include",
-            body: JSON.stringify({ offeringId: id, ...(existing ? { id: existing.id } : {}), ...r }),
-          });
-          if (!res.ok) throw new Error(`Lỗi ${res.status}`);
-          return res.json();
-        })
-      );
-
-      toast.success("Điểm danh thành công", {
-        description: `Đã điểm danh ${responses.length} sinh viên.`,
-      });
-
-      setAttendanceOpen(false);
-      await fetchData();
-      setSelectedStudents(new Set());
-      setFilteredStudents([]);
-      setSearchText("");
-      setCurrentPage(1);
-      setAttendanceToday({});
-    } catch (err: any) {
-      console.error(err);
-      toast.error("Không thể điểm danh", {
-        description: err.message || "Vui lòng thử lại sau.",
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleAttendanceUpdate = async (records: any[]) => {
-    try {
-      setIsSubmitting(true);
-      const token = localStorage.getItem("token");
-
-      await Promise.all(
-        records.map(async (r) => {
-          if (r.id) {
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/attendance`, {
-              method: "PATCH",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`,
-              },
-              credentials: "include",
-              body: JSON.stringify({
-                offeringId: id,
-                id: r.id,
-                status: r.status,
-                note: r.note ?? null,
-                attendance_date: r.attendance_date,
-                type: r.type,
-                practice_group_id: r.practice_group_id ?? null,
-              }),
-            });
-            if (!res.ok) throw new Error(`Lỗi ${res.status}`);
-            return res.json();
-          }
-
-          const enrollmentId = enrollmentMap[r.student_id] ?? enrollmentMap[r.students?.id] ?? null;
-          const payload: any = {
-            offeringId: id,
-            enrollment_id: enrollmentId,
-            status: r.status,
-            note: r.note ?? null,
-            attendance_date: r.attendance_date,
-            type: r.type,
-            practice_group_id: r.practice_group_id ?? null,
-          };
-
-          const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/attendance`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-            credentials: "include",
-            body: JSON.stringify(payload),
-          });
-          if (!res.ok) throw new Error(`Lỗi ${res.status}`);
-          return res.json();
-        })
-      );
-
-      toast.success("Cập nhật điểm danh thành công!");
-      setEditAttendanceOpen(false);
-      await fetchData();
-      setSelectedStudents(new Set());
-      setFilteredStudents([]);
-      setSearchText("");
-      setCurrentPage(1);
-      setAttendanceToday({});
-    } catch {
-      toast.error("Có lỗi xảy ra khi lưu điểm danh");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const currentGroup = groupTabs.find((g) => g.key === activeTab);
-  const modalStudents = selectedStudents.size > 0
-    ? currentGroup?.students.filter((s: any) => selectedStudents.has(s.id)) || []
-    : currentGroup?.students || [];
 
   return (
     <div className="relative">
@@ -548,23 +342,23 @@ export default function AttendanceSummary() {
           </div>
         </Card>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="rounded-full border border-border/60 bg-background/70 shadow-inner backdrop-blur">
             {groupTabs.map((g) => (
-              <TabsTrigger
-                key={g.key}
-                value={g.key}
-                className="rounded-full data-[state=active]:bg-primary/15 data-[state=active]:text-primary"
-              >
+              <TabsTrigger key={g.key} value={g.key} className="rounded-full data-[state=active]:bg-primary/15 data-[state=active]:text-primary">
                 {g.label}
               </TabsTrigger>
             ))}
           </TabsList>
 
           {groupTabs.map((group) => {
-            const baseStudents = filteredStudents.length > 0 ? filteredStudents : group.students;
+            const baseStudents = hasSearched
+              ? filteredStudents
+              : group.students;
+
             const sortedStudents = sortByLastName(baseStudents);
-            const paginatedStudents = getPaginatedStudents(sortedStudents, currentPage, pageSize);
+
+            const students = getPaginatedStudents(sortedStudents, currentPage, pageSize);
 
             return (
               <TabsContent key={group.key} value={group.key} className="space-y-6">
@@ -606,103 +400,53 @@ export default function AttendanceSummary() {
                         </Button>
                       )}
                     </div>
-
-                    <div className="flex items-center gap-2">
-                      <Button
-                        onClick={() =>
-                          openAttendance(
-                            group.key === "theory" ? "theory" : "practice",
-                            "groupId" in group ? (group as { groupId: number }).groupId : undefined
-                          )
-                        }
-                        className="rounded-full"
-                      >
-                        Điểm danh hôm nay
-                      </Button>
-                      <Button
-                        variant="secondary"
-                        onClick={() => setEditAttendanceOpen(true)}
-                        className="rounded-full"
-                      >
-                        Chỉnh sửa điểm danh
-                      </Button>
-                    </div>
                   </div>
 
-                  <div className="mt-6 space-y-4">
-                    <AttendanceTable
-                      students={hasSearched ? filteredStudents : paginatedStudents}
-                      attendanceMap={attendanceMap}
-                      group={group}
-                      currentPage={currentPage}
-                      pageSize={pageSize}
-                      selectedStudents={selectedStudents}
-                      toggleSelectStudent={toggleSelectStudent}
-                      toggleSelectAll={toggleSelectAll}
-                      onOpenNote={(note) => setNoteModal({ open: true, note })}
-                      loading={isSubmitting || isLoading || attendanceLoading}
-                    />
-                    <Pagination
-                      totalItems={hasSearched ? filteredStudents.length : baseStudents.length}
-                      pageSize={pageSize}
-                      currentPage={currentPage}
-                      onChange={setCurrentPage}
-                      item="sinh viên"
-                    />
-                  </div>
+                  <AttendanceTable
+                    students={students}
+                    attendanceMap={attendanceMap}
+                    group={group}
+                    currentPage={currentPage}
+                    pageSize={pageSize}
+                    selectedStudents={new Set()}
+                    toggleSelectStudent={() => { }}
+                    toggleSelectAll={() => { }}
+                    onOpenNote={(note) =>
+                      setNoteModal({ open: true, note })
+                    }
+                  />
+
+                  <Pagination
+                    totalItems={baseStudents.length}
+                    pageSize={pageSize}
+                    currentPage={currentPage}
+                    onChange={setCurrentPage}
+                    item="sinh viên"
+                  />
+
+                  <AttendanceSummaryStats
+                    students={group.students}
+                    attendanceMap={attendanceMap}
+                    group={group}
+                  />
                 </div>
-
-                <AttendanceSummaryStats
-                  students={group.students}
-                  attendanceMap={attendanceMap}
-                  group={group}
-                />
               </TabsContent>
             );
           })}
         </Tabs>
 
-        {/* Modal ghi chú */}
-        <Dialog open={noteModal.open} onOpenChange={(open: any) => setNoteModal({ open })}>
-          <DialogContent className="max-w-3xl">
+        {/* Note modal */}
+        <Dialog
+          open={noteModal.open}
+          onOpenChange={(open) => setNoteModal({ open })}
+        >
+          <DialogContent>
             <DialogHeader>
               <DialogTitle>Ghi chú điểm danh</DialogTitle>
             </DialogHeader>
-            <p className="mt-2">{noteModal.note || "Không có ghi chú"}</p>
+            <p>{noteModal.note || "Không có ghi chú"}</p>
           </DialogContent>
         </Dialog>
-
-        {/* Modal điểm danh */}
-        <AttendanceModal
-          open={attendanceOpen}
-          onClose={() => setAttendanceOpen(false)}
-          students={modalStudents}
-          type={activeTab === "theory" ? "theory" : "practice"}
-          enrollmentMap={enrollments.reduce((map, e) => {
-            map[e.students.id] = e.id;
-            return map;
-          }, {} as Record<number, number>)}
-          practiceGroupMap={practiceGroupMap}
-          attendanceToday={attendanceToday}
-          loadingAttendance={attendanceLoading}
-          onSubmit={handleAttendanceSubmit}
-        />
-
-        {/* Modal chỉnh sửa điểm danh */}
-        <AttendanceEditModal
-          open={editAttendanceOpen}
-          onClose={() => setEditAttendanceOpen(false)}
-          offeringId={Number(id)}
-          lecturerId={currentLecturerId}
-          type={activeTab === "theory" ? "theory" : "practice"}
-          groupId={currentGroup && "groupId" in currentGroup ? (currentGroup as { groupId: any }).groupId : undefined}
-          students={modalStudents}
-          enrollmentMap={enrollments.reduce((map, e) => {
-            map[e.students.id] = e.id;
-            return map;
-          }, {} as Record<number, number>)}
-          onSubmit={handleAttendanceUpdate}
-        />
       </div>
     </div>
   );
