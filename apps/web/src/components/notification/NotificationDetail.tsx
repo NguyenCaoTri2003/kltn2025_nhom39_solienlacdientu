@@ -23,7 +23,7 @@ interface Notification {
   user_id: number | null;
   title: string | null;
   content: string | null;
-  type: 'university' | 'lecturer' | 'system' | null;
+  type: 'university' | 'lecturer' | 'system' | 'parent' | null;
   category?: string | null;
   target_student_id?: number | null;
   is_read?: boolean;
@@ -52,6 +52,13 @@ export default function NotificationDetail({ notificationId }: NotificationDetai
     if (currentPath.startsWith("/lecturer")) return "/lecturer/notifications";
     if (currentPath.startsWith("/admin")) return "/admin/notifications";
     return "/portal/notifications"; 
+  };
+
+  const getAppointmentsPath = () => {
+    const currentPath = pathname || (typeof window !== 'undefined' ? window.location.pathname : '');
+    if (currentPath.startsWith("/lecturer")) return "/lecturer/appointments";
+    // hiện tại chỉ có portal & lecturer có trang lịch hẹn
+    return "/portal/appointments";
   };
 
   useEffect(() => {
@@ -113,6 +120,8 @@ export default function NotificationDetail({ notificationId }: NotificationDetai
         return <University className="w-6 h-6 text-blue-600" />;
       case 'lecturer':
         return <MessageSquare className="w-6 h-6 text-green-600" />;
+      case 'parent':
+        return <User className="w-6 h-6 text-purple-600" />;
       case 'system':
       default:
         return <Bell className="w-6 h-6 text-gray-600" />;
@@ -125,6 +134,8 @@ export default function NotificationDetail({ notificationId }: NotificationDetai
         return 'Trường Đại học';
       case 'lecturer':
         return 'Giảng viên';
+      case 'parent':
+        return 'Phụ huynh';
       case 'system':
       default:
         return 'Hệ thống';
@@ -133,6 +144,8 @@ export default function NotificationDetail({ notificationId }: NotificationDetai
 
   const getCategoryLabel = (category: string | null | undefined) => {
     switch (category) {
+      case 'APPOINTMENT':
+        return 'Lịch hẹn';
       case 'ACADEMIC':
         return 'Học vụ';
       case 'WARNING':
@@ -239,7 +252,7 @@ export default function NotificationDetail({ notificationId }: NotificationDetai
       <Card className="mb-6">
         <CardContent className="p-6">
           <div className="flex items-start gap-4">
-            <div className="flex-shrink-0">
+            <div className="shrink-0">
               <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
                 {getNotificationIcon(notification.type)}
               </div>
@@ -247,7 +260,7 @@ export default function NotificationDetail({ notificationId }: NotificationDetai
             
             <div className="flex-1">
               <h2 className="text-lg font-semibold text-gray-900 mb-2">
-                {getNotificationTypeLabel(notification.type)}
+                Thông báo từ {getNotificationTypeLabel(notification.type)}
               </h2>
               
               <div className="flex items-center gap-4 text-sm text-gray-600 mb-4">
@@ -329,6 +342,14 @@ export default function NotificationDetail({ notificationId }: NotificationDetai
                 }}
                 unoptimized
               />
+            </div>
+          )}
+
+          {notification.category === "APPOINTMENT" && (
+            <div className="mt-6 flex justify-end">
+              <Button onClick={() => router.push(getAppointmentsPath())}>
+                Đi tới trang lịch hẹn
+              </Button>
             </div>
           )}
         </CardContent>

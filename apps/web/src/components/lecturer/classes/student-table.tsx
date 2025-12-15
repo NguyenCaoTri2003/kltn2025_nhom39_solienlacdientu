@@ -240,11 +240,17 @@ export function StudentTable({
 
       await Promise.all(
         receivers.map(async (receiverId) => {
-          await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/messages`, {
+          const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/messages`, {
             method: "POST",
-            headers: { Authorization: `Bearer ${token}` },
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
             body: JSON.stringify({ receiverId, content: messageContent }),
           });
+          if (!res.ok) {
+            throw new Error("Gửi tin nhắn thất bại");
+          }
         })
       );
 

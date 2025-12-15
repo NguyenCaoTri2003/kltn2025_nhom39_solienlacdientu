@@ -226,7 +226,10 @@ export default function NotificationDropdown({ userRole }: NotificationDropdownP
                   onClick={() => setOpen(false)}
                 >
                   <div className="flex items-center justify-between">
-                    <div className="text-xs uppercase text-primary font-medium">{translateSenderType(item.type || "") || "system"}</div>
+                    <div className="flex items-center gap-1">
+                       <div className="text-xs uppercase text-primary font-medium">Thông báo từ {translateSenderType(item.type || "") || "system"}</div>
+                    </div>
+                   
                     <div className="text-xs text-muted-foreground">{formatTime(item.created_at)}</div>
                   </div>
                   <div className="text-sm text-foreground truncate">

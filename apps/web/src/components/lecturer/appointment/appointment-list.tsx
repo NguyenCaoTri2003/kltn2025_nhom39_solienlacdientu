@@ -4,6 +4,15 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Loader2,
   Calendar,
@@ -25,10 +34,15 @@ import { Appointment } from "@packages/core/entities/Appointment";
 import { toast } from "sonner";
 import { AppointmentEditModal } from "./appointment-edit-modal";
 import { motion } from "framer-motion";
+import { LabelRequired } from "@/components/ui/label-requied";
+
+type AppointmentWithParents = Appointment & {
+  parents: { id: number; name: string }[];
+};
 
 export default function AppointmentList() {
-  const [appointments, setAppointments] = useState<Appointment[]>([]);
-  const [filtered, setFiltered] = useState<Appointment[]>([]);
+  const [appointments, setAppointments] = useState<AppointmentWithParents[]>([]);
+  const [filtered, setFiltered] = useState<AppointmentWithParents[]>([]);
   const [loading, setLoading] = useState(true);
   const [isSearching, setIsSearching] = useState(false);
   const [search, setSearch] = useState("");
@@ -37,6 +51,12 @@ export default function AppointmentList() {
   const router = useRouter();
   const [selected, setSelected] = useState<Appointment | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
+  const [messageModalOpen, setMessageModalOpen] = useState(false);
+  const [messageContent, setMessageContent] = useState("");
+  const [messageReceivers, setMessageReceivers] = useState<
+    { id: number; name: string }[]
+  >([]);
+  const [messageSending, setMessageSending] = useState(false);
 
   useEffect(() => {
     const fetchAppointments = async () => {
@@ -51,8 +71,10 @@ export default function AppointmentList() {
         );
         const data = await res.json();
 
-        const merged = mergeAppointments(data)
-         .sort((a: Appointment, b: Appointment) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
+        const merged = mergeAppointments(data).sort(
+          (a: AppointmentWithParents, b: AppointmentWithParents) =>
+            new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+        );
         setAppointments(merged);
         setFiltered(merged);
       } catch (err) {
@@ -66,17 +88,23 @@ export default function AppointmentList() {
   }, []);
 
   const mergeAppointments = (data: Appointment[]) => {
-    const map = new Map<string, Appointment & { parents: string[] }>();
+    const map = new Map<string, AppointmentWithParents>();
 
     data.forEach((a) => {
       const key = `${a.title}-${a.content}-${a.start_time}-${a.end_time}-${a.student?.users?.full_name}`;
-      const parentName = a.parent?.users?.full_name ?? "Không rõ";
+      const parentId = (a as any)?.parent?.id as number | undefined;
+      const parentName = (a as any)?.parent?.users?.full_name ?? "Không rõ";
 
       if (!map.has(key)) {
-        map.set(key, { ...a, parents: [parentName] });
+        map.set(key, {
+          ...(a as any),
+          parents: parentId ? [{ id: parentId, name: parentName }] : [],
+        });
       } else {
         const exist = map.get(key)!;
-        if (!exist.parents.includes(parentName)) exist.parents.push(parentName);
+        if (parentId && !exist.parents.some((p) => p.id === parentId)) {
+          exist.parents.push({ id: parentId, name: parentName });
+        }
       }
     });
 
@@ -96,7 +124,7 @@ export default function AppointmentList() {
         normalize(a.title).includes(lower) ||
         normalize(a.content).includes(lower) ||
         normalize(a.student?.users?.full_name ?? "").includes(lower) ||
-        (a as any).parents.some((p: string) => normalize(p).includes(lower));
+        a.parents.some((p) => normalize(p.name).includes(lower));
 
       const matchDate = filterDate ? dateStr === filterDate : true;
       return matchKeyword && matchDate;
@@ -111,6 +139,64 @@ export default function AppointmentList() {
     setFilterDate("");
     setFiltered(appointments);
     setHasSearched(false);
+  };
+
+  const handleOpenMessageModal = (appointment: AppointmentWithParents) => {
+    const receivers = appointment.parents?.length
+      ? appointment.parents
+      : (appointment as any)?.parent?.id
+        ? [
+          {
+            id: (appointment as any).parent.id as number,
+            name:
+              (appointment as any).parent?.users?.full_name ?? "Phụ huynh",
+          },
+        ]
+        : [];
+
+    if (receivers.length === 0) {
+      toast.error("Không tìm thấy phụ huynh để nhắn tin.");
+      return;
+    }
+
+    setMessageReceivers(receivers);
+    setMessageContent("");
+    setMessageModalOpen(true);
+  };
+
+  const handleSendMessage = async () => {
+    try {
+      if (!messageContent.trim()) return;
+      const token = localStorage.getItem("token");
+      if (!token) {
+        toast.error("Bạn chưa đăng nhập.");
+        return;
+      }
+
+      setMessageSending(true);
+      await Promise.all(
+        messageReceivers.map(async (r) => {
+          await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/messages`, {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ receiverId: r.id, content: messageContent }),
+          });
+        })
+      );
+
+      toast.success("Gửi tin nhắn thành công!");
+      setMessageModalOpen(false);
+      setMessageContent("");
+      router.push("/lecturer/communications");
+    } catch (err) {
+      console.error(err);
+      toast.error("Lỗi khi gửi tin nhắn");
+    } finally {
+      setMessageSending(false);
+    }
   };
 
   const handleSave = async (updated: Appointment) => {
@@ -142,10 +228,14 @@ export default function AppointmentList() {
 
       // Cập nhật lại state
       setAppointments((prev) =>
-        prev.map((a) => (a.id === updated.id ? { ...a, ...payload } : a))
+        prev.map((a) =>
+          a.id === updated.id ? { ...a, ...payload, parents: a.parents } : a
+        )
       );
       setFiltered((prev) =>
-        prev.map((a) => (a.id === updated.id ? { ...a, ...payload } : a))
+        prev.map((a) =>
+          a.id === updated.id ? { ...a, ...payload, parents: a.parents } : a
+        )
       );
       setSelected(null);
     } catch (e: any) {
@@ -153,7 +243,7 @@ export default function AppointmentList() {
     }
   };
 
-  const handleAccept = async (appointment: Appointment) => {
+  const handleAccept = async (appointment: AppointmentWithParents) => {
     try {
       setActionLoading(true);
       const token = localStorage.getItem("token");
@@ -178,9 +268,16 @@ export default function AppointmentList() {
 
       toast.success("Đã chấp nhận lịch hẹn");
 
-      const updated = { ...appointment, status: "confirmed" } as Appointment;
-      setAppointments((prev) => prev.map((a) => (a.id === appointment.id ? updated : a)));
-      setFiltered((prev) => prev.map((a) => (a.id === appointment.id ? updated : a)));
+      setAppointments((prev) =>
+        prev.map((a) =>
+          a.id === appointment.id ? { ...a, status: "confirmed" } : a
+        )
+      );
+      setFiltered((prev) =>
+        prev.map((a) =>
+          a.id === appointment.id ? { ...a, status: "confirmed" } : a
+        )
+      );
       setSelected(null);
     } catch (e: any) {
       toast.error(e.message || "Lỗi chấp nhận");
@@ -189,7 +286,7 @@ export default function AppointmentList() {
     }
   };
 
-  const handleReject = async (appointment: Appointment) => {
+  const handleReject = async (appointment: AppointmentWithParents) => {
     try {
       setActionLoading(true);
       const token = localStorage.getItem("token");
@@ -214,9 +311,16 @@ export default function AppointmentList() {
 
       toast.success("Đã từ chối lịch hẹn");
 
-      const updated = { ...appointment, status: "cancelled" } as Appointment;
-      setAppointments((prev) => prev.map((a) => (a.id === appointment.id ? updated : a)));
-      setFiltered((prev) => prev.map((a) => (a.id === appointment.id ? updated : a)));
+      setAppointments((prev) =>
+        prev.map((a) =>
+          a.id === appointment.id ? { ...a, status: "cancelled" } : a
+        )
+      );
+      setFiltered((prev) =>
+        prev.map((a) =>
+          a.id === appointment.id ? { ...a, status: "cancelled" } : a
+        )
+      );
       setSelected(null);
     } catch (e: any) {
       toast.error(e.message || "Lỗi từ chối");
@@ -331,7 +435,7 @@ export default function AppointmentList() {
                       }
                     }}
                   className={cn(
-                      "group rounded-3xl border border-border/60 bg-gradient-to-br from-card/95 via-card/90 to-background/60 p-5 shadow-[0_20px_60px_-40px_rgba(15,23,42,0.55)] ring-1 ring-transparent transition-all duration-300",
+                      "group rounded-3xl border border-border/60 bg-linear-to-br from-card/95 via-card/90 to-background/60 p-5 shadow-[0_20px_60px_-40px_rgba(15,23,42,0.55)] ring-1 ring-transparent transition-all duration-300",
                       a.from === "lecturer" && a.status === "pending"
                         ? "cursor-pointer hover:-translate-y-1 hover:border-primary/50 hover:shadow-[0_28px_90px_-50px_rgba(59,130,246,0.75)] hover:ring-primary/40"
                         : "opacity-80",
@@ -349,25 +453,40 @@ export default function AppointmentList() {
                       <CardTitle className="text-lg font-semibold text-foreground line-clamp-2">
                         {a.title}
                       </CardTitle>
-                      <div
-                        className={cn(
-                          "flex-shrink-0 rounded-full px-3 py-1 text-xs font-medium",
-                          a.status === "pending"
-                            ? "bg-yellow-500/15 text-yellow-700"
+                      <div className="shrink-0 flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          className="rounded-full px-3 py-1 text-xs font-medium h-auto"
+                          disabled={!a.parents || a.parents.length === 0}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleOpenMessageModal(a);
+                          }}
+                        >
+                          <MessageSquare className="w-4 h-4 mr-1" />
+                          Gửi tin nhắn
+                        </Button>
+
+                        <div
+                          className={cn(
+                            "rounded-full px-3 py-1 text-xs font-medium",
+                            a.status === "pending"
+                              ? "bg-yellow-500/15 text-yellow-700"
+                              : a.status === "confirmed"
+                                ? "bg-green-500/15 text-green-700"
+                                : a.status === "cancelled"
+                                  ? "bg-red-500/15 text-red-700"
+                                  : "bg-gray-500/15 text-gray-700"
+                          )}
+                        >
+                          {a.status === "pending"
+                            ? "Chờ xác nhận"
                             : a.status === "confirmed"
-                              ? "bg-green-500/15 text-green-700"
+                              ? "Đã xác nhận"
                               : a.status === "cancelled"
-                                ? "bg-red-500/15 text-red-700"
-                                : "bg-gray-500/15 text-gray-700"
-                        )}
-                      >
-                        {a.status === "pending"
-                          ? "Chờ xác nhận"
-                          : a.status === "confirmed"
-                            ? "Đã xác nhận"
-                            : a.status === "cancelled"
-                              ? "Đã hủy"
-                              : "Hoàn tất"}
+                                ? "Đã hủy"
+                                : "Hoàn tất"}
+                        </div>
                       </div>
                     </div>
                   </CardHeader>
@@ -381,7 +500,7 @@ export default function AppointmentList() {
                         <p className="truncate">
                           <span className="font-medium text-foreground">Phụ huynh:</span>{" "}
                           <span className="text-muted-foreground">
-                            {(a as any).parents.join(", ")}
+                            {a.parents.map((p) => p.name).join(", ")}
                           </span>
                         </p>
                       </div>
@@ -432,7 +551,7 @@ export default function AppointmentList() {
                     {a.content && (
                       <div className="mt-3 rounded-2xl border border-dashed border-border/50 bg-muted/20 p-3">
                         <div className="flex items-start gap-2">
-                          <MessageSquare className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+                          <MessageSquare className="w-4 h-4 text-primary mt-0.5 shrink-0" />
                           <p className="text-sm text-muted-foreground leading-relaxed line-clamp-3">
                             {a.content}
                           </p>
@@ -482,6 +601,46 @@ export default function AppointmentList() {
             onSave={handleSave}
           />
         )}
+
+        <Dialog open={messageModalOpen} onOpenChange={setMessageModalOpen}>
+          <DialogContent className="max-w-lg flex flex-col gap-4">
+            <DialogHeader className="border-b pb-2">
+              <DialogTitle>Nhắn tin phụ huynh</DialogTitle>
+              <DialogDescription>
+                Tin nhắn sẽ được gửi đến:{" "}
+                {messageReceivers.map((r) => r.name).join(", ")}.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-4">
+              <div>
+                <LabelRequired required>Nội dung tin nhắn</LabelRequired>
+                <Textarea
+                  className="mt-2"
+                  placeholder="Nhập nội dung tin nhắn..."
+                  value={messageContent}
+                  onChange={(e) => setMessageContent(e.target.value)}
+                  rows={6}
+                />
+              </div>
+            </div>
+
+            <DialogFooter className="border-t pt-2">
+              <Button
+                variant="outline"
+                onClick={() => setMessageModalOpen(false)}
+              >
+                Hủy
+              </Button>
+              <Button
+                disabled={!messageContent.trim() || messageSending}
+                onClick={handleSendMessage}
+              >
+                {messageSending ? "Đang gửi..." : "Gửi tin nhắn"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );

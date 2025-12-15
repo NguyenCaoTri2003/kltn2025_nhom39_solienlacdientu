@@ -1,5 +1,5 @@
 
-export type NotificationType = "university" | "lecturer" | "system";
+export type NotificationType = "university" | "lecturer" | "system" | "parent";
 
 
 export type NotificationCategory = "ACADEMIC" | "SYSTEM" | "FINANCE" | "GENERAL";
