@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAllClasses } from "@packages/core/usecases/ClassesUseCase";
+import { ClassesUseCase } from "@packages/core/usecases/ClassesUseCase";
 import { authenticate } from "@packages/utils/auth";
+
+const usecase = new ClassesUseCase();
 
 // GET /api/classes
 export async function GET(req: NextRequest) {
   try {
     const user = await authenticate(req);
-    const data = await getAllClasses(user);
+    const data = await usecase.getAllClasses(user);
 
     if (!data || data.length === 0) {
       return NextResponse.json(
