@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { StudentUseCase } from "@packages/core/usecases/StudentUseCase";
-import { StudentRepository } from "@packages/data/repositories/StudentRepository";
-import { ClassesRepository } from "@packages/data/repositories/ClassesRepository";
 import { authenticate } from "@packages/utils/auth";
+import { StudentRepository } from "@packages/data/repositories/StudentRepository"
+import { GradeRepository } from "@packages/data/repositories/GradeRepository"
+import { StudentUseCase } from "@packages/core/usecases/StudentUseCase"
+import { ClassesRepository } from "@packages/data/repositories/ClassesRepository";
 
-const studentRepo = new StudentRepository();
+const studentRepo = new StudentRepository()
+const gradeRepo = new GradeRepository()
 const classRepo = new ClassesRepository();
-const usecase = new StudentUseCase(studentRepo, undefined, classRepo);
+const usecase = new StudentUseCase(studentRepo, gradeRepo, classRepo)
 
 export async function GET(req: NextRequest) {
   try {

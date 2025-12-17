@@ -6,8 +6,8 @@ import { ClassesRepository } from "@packages/data/repositories/ClassesRepository
 export class StudentUseCase {
     constructor(
         private studentRepo: StudentRepository,
-        private gradeRepo?: GradeRepository,
-        private classRepo?: ClassesRepository
+        private gradeRepo: GradeRepository,
+        private classRepo: ClassesRepository
     ) { }
 
     async getStudentDetailForLecturer(
