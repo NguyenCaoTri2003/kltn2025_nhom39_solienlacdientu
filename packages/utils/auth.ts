@@ -36,6 +36,7 @@ const JWT_SECRET = process.env.JWT_SECRET!;
 export interface JwtPayload {
   id: number;
   role: string;
+  admin_type?: string | null;
 }
 
 export async function authenticate(req: Request): Promise<JwtPayload> {

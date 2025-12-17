@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { UserRepository } from "@packages/data/repositories/UserRepository";
 import { authenticate } from "@packages/utils/auth";
+import { canManageAccounts } from "@packages/utils/adminPermissions";
 import { logUserChange } from "@packages/core/usecases/UserAuditLogUseCase";
 import { sendEmailViaSendGrid } from "../../../../email/resendMailer";
 import { renderTemplate } from "../../../../email/templates";
@@ -32,9 +33,9 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
 
     const targetId = Number(id);
 
-    if (userPayload.role !== "admin" && userPayload.id !== null) {
+    if (!canManageAccounts(userPayload)) {
       return NextResponse.json(
-        { returnCode: -1, message: "Permission denied: Admin only", data: null },
+        { returnCode: -1, message: "You do not have permission to manage accounts!", data: null },
         { status: 403 }
       );
     }

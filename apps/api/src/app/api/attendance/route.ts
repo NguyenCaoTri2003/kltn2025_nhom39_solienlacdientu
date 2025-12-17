@@ -125,19 +125,24 @@ export async function GET(req: NextRequest) {
 //     const body = await req.json();
 
 //     const offeringId =
-//       body.offeringId ?? body.offering_id ? Number(body.offeringId ?? body.offering_id) : null;
+//       body.offeringId ?? body.offering_id
+//         ? Number(body.offeringId ?? body.offering_id)
+//         : null;
 //     const enrollment_id =
-//       body.enrollmentId ?? body.enrollment_id ? Number(body.enrollmentId ?? body.enrollment_id) : null;
+//       body.enrollmentId ?? body.enrollment_id
+//         ? Number(body.enrollmentId ?? body.enrollment_id)
+//         : null;
 //     const practice_group_id =
 //       body.practiceGroupId ?? body.practice_group_id
 //         ? Number(body.practiceGroupId ?? body.practice_group_id)
 //         : null;
-//     const attendance_date = body.attendanceDate ?? body.attendance_date ?? null;
-//     const type = body.type ?? null;
-//     const status = body.status ?? null;
+//     const attendance_date = body.attendanceDate ?? body.attendance_date;
+//     const type = body.type;
+//     const status = body.status;
 //     const note = body.note ?? null;
 
-//     if (!offeringId || !attendance_date || !type || !status) {
+//     // ✅ Validate required fields before building payload
+//     if (!offeringId || !enrollment_id || !attendance_date || !type || !status) {
 //       return NextResponse.json(
 //         { error: "Missing required fields" },
 //         { status: 400 }
@@ -145,81 +150,67 @@ export async function GET(req: NextRequest) {
 //     }
 
 //     const payload = {
-//       enrollment_id,
-//       practice_group_id,
-//       attendance_date,
-//       type,
-//       status,
-//       note,
+//       enrollment_id,          // guaranteed number
+//       practice_group_id,      // can be null
+//       attendance_date,        // string
+//       type,                   // string
+//       status,                 // string
+//       note,                   // optional
 //     };
 
-//     console.log("Final sanitized payload to createAttendance:", payload);
+//     console.log("Final sanitized payload:", payload);
 
-//     try {
-//       const result = await usecase.createAttendance(user.id, offeringId, payload);
-//       return NextResponse.json(result, { status: 201 });
-//     } catch (err: any) {
-//       console.error("Error in createAttendance:", err);
-//       return NextResponse.json({ error: err.message }, { status: 500 });
-//     }
+//     const result = await usecase.createAttendance(user.id, offeringId, payload);
+//     return NextResponse.json(result, { status: 201 });
 //   } catch (e: any) {
-//     console.error("Unexpected error in POST /api/attendance:", e);
-//     return NextResponse.json(
-//       { error: e.message },
-//       { status: e.message === "Forbidden" ? 403 : 500 }
-//     );
+//     console.error("POST /api/attendance error:", e);
+//     return NextResponse.json({ error: e.message }, { status: 500 });
 //   }
 // }
 
 export async function POST(req: NextRequest) {
   try {
     const user = await authenticate(req);
+
     if (user.role !== "lecturer") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     const body = await req.json();
 
-    const offeringId =
-      body.offeringId ?? body.offering_id
-        ? Number(body.offeringId ?? body.offering_id)
-        : null;
-    const enrollment_id =
-      body.enrollmentId ?? body.enrollment_id
-        ? Number(body.enrollmentId ?? body.enrollment_id)
-        : null;
-    const practice_group_id =
-      body.practiceGroupId ?? body.practice_group_id
-        ? Number(body.practiceGroupId ?? body.practice_group_id)
-        : null;
-    const attendance_date = body.attendanceDate ?? body.attendance_date;
+    const offering_id = Number(body.offering_id);
+    const student_id = Number(body.student_id);
+    const attendance_date = body.attendance_date;
     const type = body.type;
     const status = body.status;
+    const practice_group_id =
+      body.practice_group_id !== undefined
+        ? Number(body.practice_group_id)
+        : null;
     const note = body.note ?? null;
 
-    // ✅ Validate required fields before building payload
-    if (!offeringId || !enrollment_id || !attendance_date || !type || !status) {
+    if (!offering_id || !student_id || !attendance_date || !type || !status) {
       return NextResponse.json(
         { error: "Missing required fields" },
         { status: 400 }
       );
     }
 
-    const payload = {
-      enrollment_id,          // guaranteed number
-      practice_group_id,      // can be null
-      attendance_date,        // string
-      type,                   // string
-      status,                 // string
-      note,                   // optional
-    };
+    console.log(typeof body.practice_group_id, body.practice_group_id);
 
-    console.log("Final sanitized payload:", payload);
+    const data = await usecase.upsertAttendanceByStudent(user.id, {
+      offering_id: Number(body.offering_id),
+      student_id: Number(body.student_id),
+      attendance_date: body.attendance_date,
+      type: body.type,
+      practice_group_id: body.practice_group_id ?? null,
+      status: body.status,
+      note: body.note ?? null,
+    });
 
-    const result = await usecase.createAttendance(user.id, offeringId, payload);
-    return NextResponse.json(result, { status: 201 });
+    return NextResponse.json({ returnCode: 0, data });
   } catch (e: any) {
-    console.error("POST /api/attendance error:", e);
+    console.error("POST /api/attendance/upsert error:", e);
     return NextResponse.json({ error: e.message }, { status: 500 });
   }
 }

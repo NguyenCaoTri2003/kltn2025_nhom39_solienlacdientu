@@ -7,7 +7,7 @@ export interface Notification {
   user_id: number | null;
   title: string | null;
   content: string | null;
-  type: 'university' | 'lecturer' | 'system' | null;
+  type: 'university' | 'lecturer' | 'system' | 'parent' | null;
   category?: string | null;
   target_student_id?: number | null;
   is_read?: boolean;

@@ -1,3 +1,4 @@
+import { Student } from "@packages/core/entities/Student";
 import { supabase } from "../supabaseClient"
 
 export class StudentRepository {
@@ -83,7 +84,6 @@ export class StudentRepository {
     return data;
   }
 
-  //Lấy danh sách sinh viên (id, student_code, full_name, class_name, faculty_name, academic_status)
   async getListStudent() {
     const { data, error } = await supabase
       .from("students")
@@ -187,8 +187,6 @@ export class StudentRepository {
     };
   }
 
-
-
   async getStudentParents(studentId: number): Promise<Array<{ parent_id: number; full_name: string; email: string }>> {
     const { data, error } = await supabase
       .from("student_parent")
@@ -217,6 +215,120 @@ export class StudentRepository {
         email: row?.parents?.users?.email ?? "",
       }))
       .filter((x) => Number.isFinite(x.parent_id)) as Array<{ parent_id: number; full_name: string; email: string }>;
+  }
+
+  async getStudentsWithParentsByClass(classId: number): Promise<Student[]> {
+    const { data, error } = await supabase
+      .from('students')
+      .select(`
+        id,
+        student_code,
+        academic_status,
+        date_of_birth,
+        place_of_birth,
+        contact_address,
+        type_of_tranning,
+        training_level,
+        academic_year,
+        class_id,
+        users!students_id_fkey(full_name, email),
+        student_parent (
+          relationship,
+          parents (
+            id,
+            users!parents_id_fkey(full_name, phone),
+            occupation
+          )
+        )
+      `)
+      .eq('class_id', classId);
+
+    if (error) throw error;
+
+    return (data || []).map((s: any) => ({
+      ...s,
+      full_name: s.users.full_name,
+      parents: (s.student_parent || []).map((sp: any) => ({
+        id: sp.parents.id,
+        full_name: sp.parents.users.full_name,
+        occupation: sp.parents.occupation,
+        relationship: sp.relationship,
+      })),
+    })) as Student[];
+  }
+
+  async getHomeroomStudentDetail(params: {
+    studentId: number;
+    classId: number;
+  }) {
+    const { studentId, classId } = params;
+
+    const { data, error } = await supabase
+      .from("students")
+      .select(`
+        id,
+        student_code,
+        academic_status,
+        academic_year,
+        date_of_birth,
+        place_of_birth,
+        contact_address,
+        type_of_tranning,
+        training_level,
+        class_id,
+        classes:class_id (
+          id,
+          name
+        ),
+        users:users (
+          id,
+          full_name,
+          phone,
+          email,
+          avatar_url,
+          address
+        ),
+
+        student_parent (
+          relationship,
+          parents:parents (
+            id,
+            occupation,
+            users:users (
+              id,
+              full_name,
+              phone,
+              email
+            )
+          )
+        )
+      `)
+      .eq("id", studentId)
+      .eq("class_id", classId)
+      .single();
+
+    if (error) throw error;
+    return data;
+  }
+
+  async getTheoryAbsentByStudent(studentId: number) {
+    const { data, error } = await supabase.rpc(
+      "get_theory_absent_violations",
+      { student_id: studentId }
+    );
+
+    if (error) throw error;
+    return data ?? [];
+  }
+
+  async getPracticeAbsentByStudent(studentId: number) {
+    const { data, error } = await supabase.rpc(
+      "get_practice_absent_violations",
+      { student_id: studentId }
+    );
+
+    if (error) throw error;
+    return data ?? [];
   }
 
 }

@@ -197,15 +197,6 @@ export default function StudentDetail() {
 
                             <div className="space-y-2 text-sm font-medium text-muted-foreground">
                                 <div className="flex items-center gap-2">
-                                    <CalendarDays className="h-4 w-4 text-primary" />
-                                    <span>
-                                        Học kỳ:{" "}
-                                        <span className="text-foreground">
-                                            {semester?.name ?? "Chưa cập nhật"}
-                                        </span>
-                                    </span>
-                                </div>
-                                <div className="flex items-center gap-2">
                                     <BookOpen className="h-4 w-4 text-primary" />
                                     <span>
                                         Học phần:{" "}
@@ -260,7 +251,7 @@ export default function StudentDetail() {
                             </div>
                             <div className="rounded-2xl border border-border/50 bg-muted/20 p-5 shadow-inner shadow-black/5">
                                 <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                                    Năm học hiện tại
+                                    Khóa học
                                 </p>
                                 <div className="mt-3 flex items-center gap-2 text-foreground">
                                     <CalendarClock className="h-5 w-5 text-primary" />
@@ -328,9 +319,9 @@ export default function StudentDetail() {
                                 </Badge>
                             </div>
                         </div>
-                </CardHeader>
+                    </CardHeader>
                     <CardContent className="mt-6 space-y-4">
-                    {parents.length === 0 ? (
+                        {parents.length === 0 ? (
                             <EmptyState
                                 icon={<Info className="h-10 w-10" />}
                                 text="Chưa có thông tin phụ huynh."
@@ -338,9 +329,9 @@ export default function StudentDetail() {
                             />
                         ) : (
                             <div className="overflow-hidden rounded-2xl border border-border/40 bg-background/80 shadow-inner shadow-black/5">
-                        <Table>
+                                <Table>
                                     <TableHeader className="bg-muted/40">
-                                <TableRow>
+                                        <TableRow>
                                             <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                                                 Quan hệ
                                             </TableHead>
@@ -356,33 +347,33 @@ export default function StudentDetail() {
                                             <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                                                 Nghề nghiệp
                                             </TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {parents.map((p, i) => (
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {parents.map((p, i) => (
                                             <TableRow
                                                 key={`${p.relation}-${i}`}
                                                 className="transition-colors hover:bg-muted/30"
                                             >
                                                 <TableCell className="font-medium text-foreground">
                                                     {p.relation === "father"
-                                            ? "Cha"
-                                            : p.relation === "mother"
-                                                ? "Mẹ"
-                                                : "Phụ huynh"}
-                                        </TableCell>
+                                                        ? "Cha"
+                                                        : p.relation === "mother"
+                                                            ? "Mẹ"
+                                                            : "Phụ huynh"}
+                                                </TableCell>
                                                 <TableCell>{p.name || "Chưa cập nhật"}</TableCell>
                                                 <TableCell>{p.phone || "Chưa cập nhật"}</TableCell>
                                                 <TableCell>{p.email || "Chưa cập nhật"}</TableCell>
                                                 <TableCell>{p.occupation || "Chưa cập nhật"}</TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
                             </div>
-                    )}
-                </CardContent>
-            </Card>
+                        )}
+                    </CardContent>
+                </Card>
 
                 <Card className="rounded-3xl border border-border/60 bg-background/70 shadow-[0_24px_80px_-50px_rgba(15,23,42,0.55)] backdrop-blur">
                     <CardHeader className="gap-3 pb-0">
@@ -399,7 +390,7 @@ export default function StudentDetail() {
                                 </p>
                             </div>
                         </div>
-                </CardHeader>
+                    </CardHeader>
                     <CardContent className="mt-6 space-y-6">
                         {grades?.summary && (
                             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -488,33 +479,33 @@ export default function StudentDetail() {
                                         <TableHead rowSpan={2} className="text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                                             Ghi chú
                                         </TableHead>
-                                </TableRow>
+                                    </TableRow>
                                     <TableRow className="bg-muted/30">
-                                    {Array.from({ length: 9 }, (_, i) => (
+                                        {Array.from({ length: 9 }, (_, i) => (
                                             <TableHead key={`ts-${i}`} className="text-center text-xs font-semibold text-muted-foreground">
                                                 {i + 1}
                                             </TableHead>
-                                    ))}
-                                    {Array.from({ length: 5 }, (_, i) => (
+                                        ))}
+                                        {Array.from({ length: 5 }, (_, i) => (
                                             <TableHead key={`th-${i}`} className="text-center text-xs font-semibold text-muted-foreground">
                                                 {i + 1}
                                             </TableHead>
-                                    ))}
-                                </TableRow>
-                            </TableHeader>
+                                        ))}
+                                    </TableRow>
+                                </TableHeader>
 
                                 <TableBody>
                                     <TableRow className="text-sm transition-colors hover:bg-muted/30">
-                                    {Array.from({ length: 9 }, (_, i) => (
+                                        {Array.from({ length: 9 }, (_, i) => (
                                             <TableCell key={`regular-${i}`} className="text-center font-medium text-foreground">
                                                 {regularScores[i]?.score ?? "-"}
-                                        </TableCell>
-                                    ))}
-                                    {Array.from({ length: 5 }, (_, i) => (
+                                            </TableCell>
+                                        ))}
+                                        {Array.from({ length: 5 }, (_, i) => (
                                             <TableCell key={`practice-${i}`} className="text-center font-medium text-foreground">
-                                            {grades?.practiceScores?.[i]?.score ?? "-"}
-                                        </TableCell>
-                                    ))}
+                                                {grades?.practiceScores?.[i]?.score ?? "-"}
+                                            </TableCell>
+                                        ))}
                                         <TableCell className="text-center font-medium text-foreground">
                                             {grades?.theoryScores?.find((g) => g.type === "midterm")?.score ?? "-"}
                                         </TableCell>
@@ -529,28 +520,28 @@ export default function StudentDetail() {
                                         </TableCell>
                                         <TableCell className="text-center font-medium text-foreground">
                                             {grades?.summary?.letter_grade ?? "-"}
-                                    </TableCell>
+                                        </TableCell>
                                         <TableCell className="text-center font-medium text-foreground">
                                             {grades?.summary?.classification ?? "-"}
-                                    </TableCell>
+                                        </TableCell>
                                         <TableCell className="text-center font-medium">
-                                        {grades?.summary?.passed === true ? (
+                                            {grades?.summary?.passed === true ? (
                                                 <CircleCheck className="mx-auto h-4 w-4 text-emerald-500" />
-                                        ) : grades?.summary?.passed === false ? (
-                                            <CircleX className="mx-auto h-4 w-4 text-red-500" />
-                                        ) : (
-                                            "-"
-                                        )}
-                                    </TableCell>
+                                            ) : grades?.summary?.passed === false ? (
+                                                <CircleX className="mx-auto h-4 w-4 text-red-500" />
+                                            ) : (
+                                                "-"
+                                            )}
+                                        </TableCell>
                                         <TableCell className="text-center font-medium text-foreground">
                                             {grades?.summary?.note ?? "-"}
                                         </TableCell>
-                                </TableRow>
-                            </TableBody>
-                        </Table>
-                    </div>
-                </CardContent>
-            </Card>
+                                    </TableRow>
+                                </TableBody>
+                            </Table>
+                        </div>
+                    </CardContent>
+                </Card>
             </div>
         )
     }

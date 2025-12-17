@@ -1,10 +1,13 @@
 import { StudentRepository } from "@packages/data/repositories/StudentRepository"
 import { GradeRepository } from "@packages/data/repositories/GradeRepository"
+import { Student } from "../entities/Student";
+import { ClassesRepository } from "@packages/data/repositories/ClassesRepository";
 
 export class StudentUseCase {
     constructor(
         private studentRepo: StudentRepository,
-        private gradeRepo: GradeRepository
+        private gradeRepo?: GradeRepository,
+        private classRepo?: ClassesRepository
     ) { }
 
     async getStudentDetailForLecturer(
@@ -123,5 +126,93 @@ export class StudentUseCase {
                 data: null,
             }
         }
+    }
+
+    async getStudentsWithParentsByClassForLecturer(classId: number, lecturerId: number): Promise<Student[]> {
+        const classInfo = await this.classRepo.getClassById(classId);
+        if (!classInfo) {
+            throw new Error("Class not found");
+        }
+
+        if (classInfo.homeroom_teacher_id !== lecturerId) {
+            const err: any = new Error("Bạn không có quyền xem lớp này");
+            err.status = 403;
+            throw err;
+        }
+
+        const students = await this.studentRepo.getStudentsWithParentsByClass(classId);
+        return students;
+    }
+
+    async getStudentDetailForClass(studentId: number, classId: number) {
+        const student = await this.studentRepo.getHomeroomStudentDetail({ studentId, classId });
+
+        if (!student) {
+            throw new Error("Không tìm thấy sinh viên");
+        }
+
+        return {
+            id: student.id,
+            student_code: student.student_code,
+            academic_status: student.academic_status,
+            academic_year: student.academic_year,
+            date_of_birth: student.date_of_birth,
+            place_of_birth: student.place_of_birth,
+            contact_address: student.contact_address,
+            type_of_tranning: student.type_of_tranning,
+            training_level: student.training_level,
+            class: student.classes
+                ? Array.isArray(student.classes)
+                    ? (student.classes[0] as any)?.name
+                    : (student.classes as any)?.name
+                : null,
+
+            user: student.users,
+
+            parents: (student.student_parent || []).map((sp: any) => ({
+                id: sp.parents.id,
+                relationship: sp.relationship,
+                occupation: sp.parents.occupation,
+                user: sp.parents.users,
+            })),
+        };
+    }
+
+    async getAttendanceViolations(studentId: number) {
+        if (!this.studentRepo) {
+            throw new Error("StudentRepository not provided");
+        }
+
+        const [theory, practice] = await Promise.all([
+            this.studentRepo.getTheoryAbsentByStudent(studentId),
+            this.studentRepo.getPracticeAbsentByStudent(studentId),
+        ]);
+
+        return {
+            student_id: studentId,
+            hasViolation: theory.length > 0 || practice.length > 0,
+
+            theoryViolations: theory.map((t: any) => ({
+                offeringId: t.offering_id,
+                offeringName: t.offering_name,
+                classCode: t.class_code,
+                lecturerName: t.lecturer_name,
+                absentDays: t.absent_days,
+                type: "theory",
+                reason: `Vắng ${t.absent_days} buổi lý thuyết`,
+            })),
+
+            practiceViolations: practice.map((p: any) => ({
+                offeringId: p.offering_id,
+                offeringName: p.offering_name,
+                classCode: p.class_code,
+                lecturerName: p.lecturer_name,
+                practiceGroupId: p.practice_group_id,
+                groupNumber: p.group_number,
+                absentDays: p.absent_days,
+                type: "practice",
+                reason: `Vắng ${p.absent_days} buổi thực hành (Nhóm ${p.group_number})`,
+            })),
+        };
     }
 }

@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { authenticate } from "@packages/utils/auth";
-import { AcademicWarningUseCase } from "@packages/core/usecases/AcademicWarningUseCase";
-
-const academicWarningUseCase = new AcademicWarningUseCase();
+import { canManageAcademic } from "@packages/utils/adminPermissions";
+import { academicWarningV3UseCase } from "@packages/core/usecases/AcademicWarningV3UseCase";
 
 export async function GET(req: NextRequest) {
   try {
@@ -14,14 +13,14 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    if (user.role !== "admin") {
+    if (!canManageAcademic(user)) {
       return NextResponse.json(
-        { returnCode: -1, message: "Permission denied: Admin only", data: null },
+        { returnCode: -1, message: "You do not have permission to manage academic affairs!", data: null },
         { status: 403 }
       );
     }
 
-    const count = await academicWarningUseCase.getTotalCount();
+    const count = await academicWarningV3UseCase.getTotalCount();
 
     return NextResponse.json({
       returnCode: 0,

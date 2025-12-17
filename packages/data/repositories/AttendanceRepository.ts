@@ -1,7 +1,6 @@
 import { supabase } from "../supabaseClient";
 
 export class AttendanceRepository {
-    // Sinh viên xem lịch sử điểm danh
     async getStudentAttendance(
         studentId: number,
         startDate?: string,
@@ -34,7 +33,6 @@ export class AttendanceRepository {
       )
     `)
             .in("enrollment_id", enrollmentIds)
-            // .order("attendance_date", { ascending: true })
             .order("type", { ascending: true });
 
         if (startDate) query = query.gte("attendance_date", startDate);
@@ -45,7 +43,6 @@ export class AttendanceRepository {
         return data;
     }
 
-    // Giảng viên xem điểm danh của lớp
     async getOfferingAttendance(offeringId: number, date?: string) {
         const { data: enrollments, error: enrollErr } = await supabase
             .from("enrollment")
@@ -78,7 +75,6 @@ export class AttendanceRepository {
         return data;
     }
 
-    // Tạo bản ghi điểm danh
     async createAttendance(record: {
         enrollment_id: number;
         practice_group_id?: number | null;
@@ -96,7 +92,6 @@ export class AttendanceRepository {
         return data;
     }
 
-    // Cập nhật bản ghi điểm danh
     async updateAttendance(
         attendanceId: number,
         updates: Partial<{ status: string; note: string }>
@@ -111,10 +106,93 @@ export class AttendanceRepository {
         return data;
     }
 
-    // Xoá bản ghi điểm danh
     async deleteAttendance(attendanceId: number) {
         const { error } = await supabase.from("attendance").delete().eq("id", attendanceId);
         if (error) throw error;
         return true;
     }
+
+    async upsertAttendance(record: {
+        enrollment_id: number;
+        attendance_date: string;
+        type: "theory" | "practice";
+        practice_group_id?: number | null;
+        status: string;
+        note?: string | null;
+    }) {
+        console.log("Upsert attendance record:", record);
+
+        const pgId =
+            record.type === "practice" && record.practice_group_id !== undefined && record.practice_group_id !== null
+                ? Number(record.practice_group_id)
+                : null;
+
+        if (pgId !== null && isNaN(pgId)) {
+            throw new Error("practice_group_id must be a number or null");
+        }
+
+        const matchObj: Record<string, any> = {
+            enrollment_id: record.enrollment_id,
+            attendance_date: record.attendance_date,
+            type: record.type,
+        };
+
+        if (record.type === "practice") {
+            matchObj.practice_group_id = pgId;
+        }
+
+        const { data: existing, error: selectError } = await supabase
+            .from("attendance")
+            .select("*")
+            .match(matchObj)
+            .single();
+
+        if (selectError && selectError.code !== "PGRST116") {
+            throw selectError;
+        }
+
+        if (existing) {
+            const { data, error } = await supabase
+                .from("attendance")
+                .update({
+                    status: record.status,
+                    note: record.note ?? existing.note,
+                })
+                .eq("id", existing.id)
+                .select(`
+                *,
+                enrollment:enrollment_id (
+                    id,
+                    student_id,
+                    offering_id
+                )
+            `)
+                .single();
+
+            if (error) throw error;
+            return data;
+        } else {
+            const insertObj: Record<string, any> = {
+                ...record,
+            };
+            if (record.type === "practice") insertObj.practice_group_id = pgId;
+
+            const { data, error } = await supabase
+                .from("attendance")
+                .insert(insertObj)
+                .select(`
+                *,
+                enrollment:enrollment_id (
+                    id,
+                    student_id,
+                    offering_id
+                )
+            `)
+                .single();
+
+            if (error) throw error;
+            return data;
+        }
+    }
+
 }

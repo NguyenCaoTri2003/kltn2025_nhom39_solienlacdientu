@@ -40,10 +40,6 @@ export class AttendanceUseCase {
             .eq("id", offeringId)
             .maybeSingle();
 
-        // if (!offering || offering.lecturer_id !== lecturerId) {
-        //     throw new Error("Forbidden");
-        // }
-
         return this.repo.getOfferingAttendance(offeringId, date);
     }
 
@@ -59,7 +55,6 @@ export class AttendanceUseCase {
             note?: string | null;
         }
     ) {
-        // Check offering có thuộc giảng viên không
         const { data: offering, error: offeringError } = await supabase
             .from("course_offerings")
             .select("id, lecturer_id")
@@ -67,11 +62,7 @@ export class AttendanceUseCase {
             .maybeSingle();
 
         if (offeringError) throw offeringError;
-        // if (!offering || offering.lecturer_id !== lecturerId) {
-        //     throw new Error("Forbidden");
-        // }
 
-        // Check enrollment thuộc offering này không
         const { data: enrollment, error: enrollError } = await supabase
             .from("enrollment")
             .select("id, offering_id")
@@ -121,5 +112,49 @@ export class AttendanceUseCase {
         }
 
         return this.repo.deleteAttendance(attendanceId);
+    }
+
+    async upsertAttendanceByStudent(
+        lecturerId: number,
+        input: {
+            offering_id: number;
+            student_id: number;
+            attendance_date: string;
+            type: "theory" | "practice";
+            practice_group_id?: number | null;
+            status: string;
+            note?: string | null;
+        }
+    ) {
+        const {
+            offering_id,
+            student_id,
+            attendance_date,
+            type,
+            practice_group_id,
+            status,
+            note,
+        } = input;
+
+        const { data: enrollment, error: enrollError } = await supabase
+            .from("enrollment")
+            .select("id")
+            .eq("student_id", student_id)
+            .eq("offering_id", offering_id)
+            .maybeSingle();
+
+        if (enrollError) throw enrollError;
+        if (!enrollment) {
+            throw new Error("Student not enrolled in this offering");
+        }
+
+        return this.repo.upsertAttendance({
+            enrollment_id: enrollment.id,
+            attendance_date,
+            type,
+            practice_group_id: practice_group_id ?? null,
+            status,
+            note: note ?? null,
+        });
     }
 }

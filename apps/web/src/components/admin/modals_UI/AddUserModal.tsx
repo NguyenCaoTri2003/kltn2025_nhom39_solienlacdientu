@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/select";
 import { AddSingleUserForm, type SingleFormData } from "./AddSingleUserForm";
 
-type RoleType = "student" | "lecturer" | "parent" | "admin";
+type RoleType = "student" | "lecturer" | "parent";
 
 interface AddUserModalProps {
   open: boolean;
@@ -171,7 +171,6 @@ export function AddUserModal({ open, onClose, onSuccess }: AddUserModalProps) {
       student: "Student_Account_Import_Template.xlsx",
       lecturer: "Lecturer_Account_Import_Template.xlsx",
       parent: "Parent_Account_Import_Template.xlsx",
-      admin: "Admin_Account_Import_Template.xlsx",
     };
 
     const fileName = roleToFile[role];
@@ -241,7 +240,6 @@ export function AddUserModal({ open, onClose, onSuccess }: AddUserModalProps) {
                 <SelectItem value="student">Sinh viên</SelectItem>
                 <SelectItem value="lecturer">Giảng viên</SelectItem>
                 <SelectItem value="parent">Phụ huynh</SelectItem>
-                <SelectItem value="admin">Quản trị viên</SelectItem>
               </SelectContent>
             </Select>
           </div>
