@@ -22,17 +22,38 @@ export class ClassesRepository {
     return data ?? [];
   }
 
-  async getHomeroomClassesByLecturer(lecturerId: number, semesterId?: number) {
+  async getHomeroomClassesByLecturer(
+    lecturerId: number,
+    semesterId?: number
+  ) {
     let query = supabase
-      .from('classes')
-      .select('id, name, class_code, academic_year, class_type, semester_id')
-      .eq('homeroom_teacher_id', lecturerId);
+      .from("classes")
+      .select(`
+      id,
+      name,
+      class_code,
+      academic_year,
+      class_type,
+      semester_id,
+      major:majors (
+        id,
+        name,
+        major_code,
+        faculty:faculties (
+          id,
+          name,
+          faculty_code
+        )
+      )
+    `)
+      .eq("homeroom_teacher_id", lecturerId);
 
     if (semesterId) {
-      query = query.eq('semester_id', semesterId);
+      query = query.eq("semester_id", semesterId);
     }
 
     const { data, error } = await query;
+
     if (error) throw error;
     return data || [];
   }
@@ -40,7 +61,24 @@ export class ClassesRepository {
   async getClassById(classId: number) {
     const { data, error } = await supabase
       .from("classes")
-      .select("id, name, homeroom_teacher_id")
+      .select(`
+      id,
+      name,
+      class_code,
+      academic_year,
+      class_type,
+      homeroom_teacher_id,
+      major:majors (
+        id,
+        name,
+        major_code,
+        faculty:faculties (
+          id,
+          name,
+          faculty_code
+        )
+      )
+    `)
       .eq("id", classId)
       .single();
 

@@ -9,6 +9,10 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { getStatusAppointmentLabel } from "../utils/getStatusLabel";
+import { useNavigation } from "@react-navigation/native";
+import { useAuth } from "../context/AuthContext";
+import { conversationService } from "../services/conversationService";
+import { useMessageContext } from "../context/MessageProvider";
 
 interface Props {
   visible: boolean;
@@ -29,8 +33,50 @@ export default function AppointmentDetailModal({
   onEdit,
   loading,
 }: Props) {
+  const navigation = useNavigation<any>();
+  const { token } = useAuth();
+  const { refresh } = useMessageContext();
+
   if (!data) return null;
   const { label, color } = getStatusAppointmentLabel(data.status);
+
+  // Đối với parent: ưu tiên nhắn cho giảng viên trong lịch hẹn
+  const lecturerUser = data.lecturer?.users;
+  const lecturerId = data.lecturer?.id;
+
+  const handleOpenChat = async () => {
+    try {
+      if (!token) {
+        alert("Bạn cần đăng nhập để nhắn tin.");
+        return;
+      }
+      if (!lecturerId) {
+        alert("Không tìm được thông tin giảng viên.");
+        return;
+      }
+
+      const conv = await conversationService.getOrCreateConversation(
+        token,
+        lecturerId
+      );
+      const conversationId = conv.conversation_id || conv.id;
+
+      refresh?.();
+
+      navigation.navigate("Messages" as never, {
+        screen: "Chat",
+        params: {
+          conversationId,
+          receiverId: lecturerId,
+          receiverName: lecturerUser?.full_name || "Giảng viên",
+          receiverRole: "lecturer",
+        },
+      } as never);
+    } catch (error) {
+      console.error("Open chat from appointment detail error:", error);
+      alert("Không thể mở khung chat. Vui lòng thử lại.");
+    }
+  };
 
   return (
     <Modal visible={visible} animationType="fade" transparent>
@@ -103,6 +149,17 @@ export default function AppointmentDetailModal({
                 <Text style={styles.btnText}>Chỉnh sửa</Text>
               </TouchableOpacity>
             )}
+
+            {/* Nút nhắn tin trong chi tiết lịch hẹn (parent -> giảng viên) */}
+            {lecturerId && (
+              <TouchableOpacity
+                style={styles.chatBtn}
+                onPress={handleOpenChat}
+              >
+                <Ionicons name="chatbubbles-outline" size={16} color="#fff" />
+                <Text style={styles.btnText}>Nhắn tin</Text>
+              </TouchableOpacity>
+            )}
           </View>
         </TouchableOpacity>
       </TouchableOpacity>
@@ -152,6 +209,14 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#2563EB",
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    borderRadius: 6,
+  },
+  chatBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#005BAC",
     paddingVertical: 8,
     paddingHorizontal: 10,
     borderRadius: 6,

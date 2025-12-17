@@ -112,39 +112,6 @@ export class AttendanceRepository {
         return true;
     }
 
-    // async upsertAttendance(record: {
-    //     enrollment_id: number;
-    //     attendance_date: string;
-    //     type: string;
-    //     practice_group_id?: number | null;
-    //     status: string;
-    //     note?: string | null;
-    // }) {
-    //     console.log("Upsert attendance record:", record);
-    //     const conflictColumns =
-    //         record.practice_group_id === null
-    //             ? "enrollment_id,attendance_date,type"
-    //             : "enrollment_id,attendance_date,type,practice_group_id";
-
-    //     const { data, error } = await supabase
-    //         .from("attendance")
-    //         .upsert(record, {
-    //             onConflict: conflictColumns,
-    //         })
-    //         .select(`
-    //   *,
-    //   enrollment:enrollment_id (
-    //     id,
-    //     student_id,
-    //     offering_id
-    //   )
-    // `)
-    //         .single();
-
-    //     if (error) throw error;
-    //     return data;
-    // }
-
     async upsertAttendance(record: {
         enrollment_id: number;
         attendance_date: string;
@@ -159,8 +126,6 @@ export class AttendanceRepository {
             record.type === "practice" && record.practice_group_id !== undefined && record.practice_group_id !== null
                 ? Number(record.practice_group_id)
                 : null;
-
-        console.log("Sanitized practice_group_id:", pgId);
 
         if (pgId !== null && isNaN(pgId)) {
             throw new Error("practice_group_id must be a number or null");

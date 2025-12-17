@@ -26,6 +26,7 @@ export class AdminPermissionUseCase {
       "admin_account",
       "admin_academic",
       "admin_finance",
+      "admin",
     ];
 
     if (!validTypes.includes(adminType)) {

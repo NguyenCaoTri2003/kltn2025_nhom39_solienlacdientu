@@ -160,16 +160,13 @@ export default function AttendanceTable({
                     ) : (
                         students.map((s, idx) => {
                             const records = Object.entries(attendanceMap[s.id] || {})
-                                .filter(([date]) => group.dates.includes(date)) // chỉ lấy ngày trong tab
+                                .filter(([date]) => group.dates.includes(date)) 
                                 .flatMap(([_, recs]) => recs)
                                 .filter((r: any) =>
                                     group.key === "theory" ? r.type === "theory" : r.practice_group_id === group.groupId
                                 );
 
-                            // Đếm số buổi absent
                             const absentCount = records.filter((r: any) => r.status === "absent").length;
-
-                            // Highlight row nếu absent >= 3
                             const rowClass = absentCount >= 3 ? "bg-red-100/40 dark:bg-red-900/20" : "";
                             console.log(`Student ${s.id} absent count, rowClass: `, absentCount, rowClass);
 

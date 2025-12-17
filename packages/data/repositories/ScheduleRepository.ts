@@ -365,10 +365,21 @@ export class ScheduleRepository {
     if (startDate) query = query.gte("schedule_date", startDate);
     if (endDate) query = query.lte("schedule_date", endDate);
 
-    const { data: schedules, error } = await query;
+    const { data: schedules, error } = await query.returns<ActualSchedule[]>();
     if (error) throw error;
 
-    return schedules;
+    const filtered = (schedules ?? []).filter((s) => {
+      if (s.type !== "exam") return true;
+
+      if ((s as any).offering_id && theoryOfferingIds.includes((s as any).offering_id)) {
+        return true;
+      }
+
+      if (!Array.isArray(s.exam_lecturer_ids)) return false;
+      return s.exam_lecturer_ids.includes(lecturerId);
+    });
+
+    return filtered;
   }
 
   async getLecturerSchedulesOfferingByDate(
@@ -377,7 +388,6 @@ export class ScheduleRepository {
     startDate?: string,
     endDate?: string
   ) {
-    // Check nếu giảng viên dạy LT
     const { data: offering } = await supabase
       .from("course_offerings")
       .select("id")
@@ -385,7 +395,6 @@ export class ScheduleRepository {
       .eq("lecturer_id", lecturerId)
       .maybeSingle();
 
-    // Check các nhóm thực hành mà giảng viên phụ trách
     const { data: practiceGroups } = await supabase
       .from("practice_groups")
       .select("id")
@@ -398,7 +407,6 @@ export class ScheduleRepository {
 
     const practiceGroupIds = practiceGroups?.map(pg => pg.id) ?? [];
 
-    // Weekly schedules
     let weeklyQuery = supabase
       .from("weekly_schedules")
       .select(`

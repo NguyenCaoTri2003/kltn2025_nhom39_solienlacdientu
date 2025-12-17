@@ -2,13 +2,20 @@ declare const process: { env: Record<string, string | undefined> };
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
 
-export type AdminType = "super_admin" | "admin_account" | "admin_academic" | "admin_finance" | null;
+export type AdminType =
+  | "super_admin"
+  | "admin_account"
+  | "admin_academic"
+  | "admin_finance"
+  | "admin"
+  | null;
 
 export interface AdminUser {
   id: number;
   full_name: string;
   email: string;
   admin_type: AdminType;
+  status?: "active" | "inactive" | "suspended" | string;
   created_at?: string | null;
 }
 

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { BookOpen, BookText, Loader2, Search, X } from "lucide-react";
+import { Bell, BookOpen, BookText, Loader2, Search, X } from "lucide-react";
 import { useParams } from "next/navigation";
 import { Offering } from "@packages/core/entities/CourseOffering";
 import Pagination from "@/components/pagination";
@@ -18,6 +18,9 @@ import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import AttendanceEditModal from "./attendance-edit-modal";
 import { StudentAttendance } from "@packages/core/entities/Student";
+import { CreateNotificationModal } from "../classes/CreateNotificationModal";
+import { toast } from "sonner";
+import { se } from "date-fns/locale";
 
 interface Attendance {
   id: number;
@@ -82,9 +85,9 @@ export default function AttendanceSummary() {
   const [selectedStudents, setSelectedStudents] = useState<Set<number>>(new Set());
   const [multiEditModal, setMultiEditModal] = useState<{ open: boolean; group?: any; date?: string }>({ open: false });
 
-  const [selectedDate, setSelectedDate] = useState<string | null>(null);
-  const [statusFilter, setStatusFilter] = useState<"present" | "absent" | "late" | "excused" | "all">("all");
-  const [absent3Plus, setAbsent3Plus] = useState(false);
+  const [notificationModalOpen, setNotificationModalOpen] = useState(false);
+  const hasSelection = selectedStudents.size > 0;
+  const [filterAbsentOver3, setFilterAbsentOver3] = useState(false);
 
   const toggleSelectStudent = (id: number) => {
     setSelectedStudents(prev => {
@@ -154,6 +157,7 @@ export default function AttendanceSummary() {
 
   useEffect(() => {
     setSelectedStudents(new Set());
+    setFilterAbsentOver3(false);
   }, [activeTab]);
 
   if (loading) {
@@ -330,6 +334,36 @@ export default function AttendanceSummary() {
     .filter((e) => e.students !== undefined)
     .map((e) => ({ id: e.id, students: e.students as StudentAttendance }));
 
+  const countAbsentByStudent = (
+    studentId: number,
+    group: any
+  ) => {
+    const recordsByDate = attendanceMap[studentId];
+    if (!recordsByDate) return 0;
+
+    let absentDays = 0;
+
+    group.dates.forEach((date: string) => {
+      const records = recordsByDate[date] || [];
+
+      const isAbsentThatDay = records.some((r) => {
+        if (group.key === "theory") {
+          return r.type === "theory" && r.status === "absent";
+        }
+
+        return (
+          r.type === "practice" &&
+          r.practice_group_id === group.groupId &&
+          r.status === "absent"
+        );
+      });
+
+      if (isAbsentThatDay) absentDays++;
+    });
+
+    return absentDays;
+  };
+
   return (
     <div className="relative">
       <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(120%_120%_at_50%_0%,rgba(59,130,246,0.12),rgba(59,130,246,0)_60%)] blur-[1px]" />
@@ -395,9 +429,15 @@ export default function AttendanceSummary() {
           </TabsList>
 
           {groupTabs.map((group) => {
-            const baseStudents = hasSearched
+            let baseStudents = hasSearched
               ? filteredStudents
               : group.students;
+
+            if (filterAbsentOver3) {
+              baseStudents = baseStudents.filter(
+                (s) => countAbsentByStudent(s.id, group) > 2
+              );
+            }
 
             const sortedStudents = sortByLastName(baseStudents);
 
@@ -443,12 +483,22 @@ export default function AttendanceSummary() {
                             Xóa tìm kiếm
                           </Button>
                         )}
+
+                        <Button
+                          variant={filterAbsentOver3 ? "default" : "outline"}
+                          className="rounded-full"
+                          onClick={() => {
+                            setFilterAbsentOver3(prev => !prev);
+                            setCurrentPage(1);
+                          }}
+                        >
+                          Vắng ≥ 3 buổi
+                        </Button>
                       </div>
 
-                      <div>
+                      <div className="flex flex-wrap items-center gap-2">
                         {selectedStudents.size > 0 && (
                           <Button
-                            className="rounded-full"
                             onClick={() =>
                               setMultiEditModal({
                                 open: true,
@@ -457,9 +507,21 @@ export default function AttendanceSummary() {
                               })
                             }
                           >
-                            Chỉnh sửa nhiều ({selectedStudents.size})
+                            Chỉnh sửa ({selectedStudents.size}) sinh viên
                           </Button>
                         )}
+                        <Button
+                          variant="outline"
+                          disabled={!hasSelection}
+                          className="gap-2"
+                          onClick={() => setNotificationModalOpen(true)}
+                        >
+                          <Bell className="w-4 h-4" />
+                          Gửi thông báo
+                          {selectedStudents.size > 0 && (
+                            <span className="ml-1">({selectedStudents.size})</span>
+                          )}
+                        </Button>
                       </div>
                     </div>
                   </div>
@@ -592,7 +654,22 @@ export default function AttendanceSummary() {
           }}
         />
 
-
+        <CreateNotificationModal
+          open={notificationModalOpen}
+          onClose={() => setNotificationModalOpen(false)}
+          onSuccess={() => {
+            setNotificationModalOpen(false);
+            setSelectedStudents(new Set());
+            toast.success("Thông báo đã được gửi thành công");
+          }}
+          selectedStudentIds={selectedStudents.size > 0 ? Array.from(selectedStudents) : []}
+          students={offering.students
+            .filter((e) => e.students !== undefined && selectedStudents.has(e.students.id))
+            .map((e) => e.students as StudentAttendance)}
+          lecturerName={offering.lecturers?.users?.full_name || ""}
+          className={offering.name}
+          defaultTitle="Thông báo về việc điểm danh sinh viên"
+        />
       </div>
     </div>
   );

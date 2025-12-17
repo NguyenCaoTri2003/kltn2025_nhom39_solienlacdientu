@@ -21,6 +21,7 @@ const ADMIN_TYPE_LABELS: Record<AdminTypeKey | "none", string> = {
   admin_account: "Quản trị Tài khoản",
   admin_academic: "Quản trị Học vụ",
   admin_finance: "Quản trị Tài chính",
+  admin: "Quản trị viên (admin)",
 };
 
 const ADMIN_TYPE_COLORS: Record<AdminTypeKey | "none", string> = {
@@ -29,12 +30,14 @@ const ADMIN_TYPE_COLORS: Record<AdminTypeKey | "none", string> = {
   admin_account: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
   admin_academic: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
   admin_finance: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
+  admin: "bg-sky-100 text-sky-800 dark:bg-sky-900 dark:text-sky-200",
 };
 
 interface AdminPermissionsTableProps {
   admins: AdminUser[];
   loading: boolean;
   onAssignPermission: (admin: AdminUser) => void;
+  onToggleStatus: (admin: AdminUser) => void;
   hasSearched: boolean;
 }
 
@@ -42,11 +45,12 @@ export function AdminPermissionsTable({
   admins,
   loading,
   onAssignPermission,
+  onToggleStatus,
   hasSearched,
 }: AdminPermissionsTableProps) {
   return (
     <DataTable
-      headers={["Họ tên", "Email", "Loại quyền", "Thao tác"]}
+      headers={["Họ tên", "Email", "Loại quyền", "Trạng thái", "Thao tác"]}
       maxHeight="auto"
       maxWidth="100%"
     >
@@ -89,18 +93,41 @@ export function AdminPermissionsTable({
                 </Badge>
               </td>
               <td className="px-4 py-2">
+                <Badge
+                  className={
+                    admin.status === "inactive"
+                      ? "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-100"
+                      : admin.status === "suspended"
+                      ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-100"
+                      : "bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-100"
+                  }
+                >
+                  {admin.status === "inactive"
+                    ? "Đã khóa"
+                    : admin.status === "suspended"
+                    ? "Chờ kích hoạt"
+                    : "Đang hoạt động"}
+                </Badge>
+              </td>
+              <td className="px-4 py-2">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" size="sm">
                       <MoreHorizontal className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="bg-popover border-border min-w-48">
+                  <DropdownMenuContent align="end" className="bg-popover border-border min-w-52">
                     <DropdownMenuItem
                       className="text-popover-foreground hover:bg-accent"
                       onClick={() => onAssignPermission(admin)}
                     >
                       Phân quyền
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      className="text-popover-foreground hover:bg-accent"
+                      onClick={() => onToggleStatus(admin)}
+                    >
+                      {admin.status === "inactive" ? "Mở khóa tài khoản" : "Khóa tài khoản"}
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>

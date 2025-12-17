@@ -1,3 +1,5 @@
+import { Major } from "./Majors";
+
 export interface Class {
     id: number; 
     name: string; 
@@ -6,6 +8,7 @@ export interface Class {
     class_type: string; 
     major_id?: number | null; 
     homeroom_teacher_id?: number | null;
+    major?: Major;
   }
 
 

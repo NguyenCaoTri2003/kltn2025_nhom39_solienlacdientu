@@ -44,24 +44,22 @@ import { CreateNotificationModal } from "./CreateNotificationModal";
 
 export function StudentTable({
   classId,
-  type: _type,
-  enrollments: _enrollments,
   practiceGroups,
   students,
   pageSize = 10,
   lecturerName,
   className,
   practiceGroupNumber,
+  mode,
 }: {
   classId: number;
-  type: string;
-  enrollments: { id: number; students: Student }[];
   practiceGroups: PracticeGroup[];
   students: Student[];
   pageSize?: number;
   lecturerName?: string;
   className?: string;
   practiceGroupNumber?: number;
+  mode?: "homeroom" | "offering";
 }) {
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
@@ -69,10 +67,6 @@ export function StudentTable({
   const [isLoading, setIsLoading] = useState(false);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const router = useRouter();
-
-  void _type;
-  void _enrollments;
-
 
   const [singleTargetId, setSingleTargetId] = useState<number | null>(null);
 
@@ -478,7 +472,9 @@ export function StudentTable({
                           <DropdownMenuItem
                             onClick={() =>
                               router.push(
-                                `/lecturer/classes/${classId}/student/${s.id}`
+                                mode === "homeroom"
+                                  ? `/lecturer/homeroom-classes/${classId}/student/${s.id}`
+                                  : `/lecturer/classes/${classId}/student/${s.id}`
                               )
                             }
                           >
@@ -552,8 +548,8 @@ export function StudentTable({
           </DialogContent>
         </Dialog>
 
-        <AppointmentModal 
-          appointmentModalOpen={appointmentModalOpen} 
+        <AppointmentModal
+          appointmentModalOpen={appointmentModalOpen}
           setAppointmentModalOpen={setAppointmentModalOpen}
           selectedIds={selectedIds}
           students={students}

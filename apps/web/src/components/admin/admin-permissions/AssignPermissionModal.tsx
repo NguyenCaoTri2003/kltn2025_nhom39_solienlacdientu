@@ -98,11 +98,12 @@ export function AssignPermissionModal({
                 <SelectValue placeholder="Chọn loại quyền" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="none">Không có quyền đặc biệt</SelectItem>
+                <SelectItem value="none">Chưa phân quyền</SelectItem>
                 <SelectItem value="super_admin">Toàn quyền Quản trị</SelectItem>
-                <SelectItem value="admin_account">Quản trị Tài khoản</SelectItem>
+                <SelectItem value="admin">Quản trị viên (admin)</SelectItem>
+                {/* <SelectItem value="admin_account">Quản trị Tài khoản</SelectItem>
                 <SelectItem value="admin_academic">Quản trị Học vụ</SelectItem>
-                <SelectItem value="admin_finance">Quản trị Tài chính</SelectItem>
+                <SelectItem value="admin_finance">Quản trị Tài chính</SelectItem> */}
               </SelectContent>
             </Select>
             <p className="text-xs text-muted-foreground">

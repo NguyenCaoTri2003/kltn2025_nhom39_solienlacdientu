@@ -231,12 +231,12 @@ export class StudentRepository {
         training_level,
         academic_year,
         class_id,
-        users!students_id_fkey(full_name),
+        users!students_id_fkey(full_name, email),
         student_parent (
           relationship,
           parents (
             id,
-            users!parents_id_fkey(full_name),
+            users!parents_id_fkey(full_name, phone),
             occupation
           )
         )
@@ -255,6 +255,80 @@ export class StudentRepository {
         relationship: sp.relationship,
       })),
     })) as Student[];
+  }
+
+  async getHomeroomStudentDetail(params: {
+    studentId: number;
+    classId: number;
+  }) {
+    const { studentId, classId } = params;
+
+    const { data, error } = await supabase
+      .from("students")
+      .select(`
+        id,
+        student_code,
+        academic_status,
+        academic_year,
+        date_of_birth,
+        place_of_birth,
+        contact_address,
+        type_of_tranning,
+        training_level,
+        class_id,
+        classes:class_id (
+          id,
+          name
+        ),
+        users:users (
+          id,
+          full_name,
+          phone,
+          email,
+          avatar_url,
+          address
+        ),
+
+        student_parent (
+          relationship,
+          parents:parents (
+            id,
+            occupation,
+            users:users (
+              id,
+              full_name,
+              phone,
+              email
+            )
+          )
+        )
+      `)
+      .eq("id", studentId)
+      .eq("class_id", classId)
+      .single();
+
+    if (error) throw error;
+    return data;
+  }
+
+  async getTheoryAbsentByStudent(studentId: number) {
+    const { data, error } = await supabase.rpc(
+      "get_theory_absent_violations",
+      { student_id: studentId }
+    );
+
+    if (error) throw error;
+    return data ?? [];
+  }
+
+  async getPracticeAbsentByStudent(studentId: number) {
+    const { data, error } = await supabase.rpc(
+      "get_practice_absent_violations",
+      { student_id: studentId }
+    );
+
+    if (error) throw error;
+    return data ?? [];
   }
 
 }
