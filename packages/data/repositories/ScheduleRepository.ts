@@ -377,7 +377,6 @@ export class ScheduleRepository {
     startDate?: string,
     endDate?: string
   ) {
-    // Check nếu giảng viên dạy LT
     const { data: offering } = await supabase
       .from("course_offerings")
       .select("id")
@@ -385,7 +384,6 @@ export class ScheduleRepository {
       .eq("lecturer_id", lecturerId)
       .maybeSingle();
 
-    // Check các nhóm thực hành mà giảng viên phụ trách
     const { data: practiceGroups } = await supabase
       .from("practice_groups")
       .select("id")
@@ -398,7 +396,6 @@ export class ScheduleRepository {
 
     const practiceGroupIds = practiceGroups?.map(pg => pg.id) ?? [];
 
-    // Weekly schedules
     let weeklyQuery = supabase
       .from("weekly_schedules")
       .select(`

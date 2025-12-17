@@ -40,6 +40,7 @@ interface CreateNotificationModalProps {
   lecturerName?: string;
   className?: string;
   practiceGroupNumber?: number;
+  defaultTitle?: string;
 }
 
 export function CreateNotificationModal({
@@ -51,6 +52,7 @@ export function CreateNotificationModal({
   lecturerName,
   className,
   practiceGroupNumber,
+  defaultTitle
 }: CreateNotificationModalProps) {
   const [loading, setLoading] = useState(false);
   const [title, setTitle] = useState("");
@@ -103,6 +105,12 @@ export function CreateNotificationModal({
     }
     setImagePreview(null);
   };
+
+  useEffect(() => {
+    if (open && defaultTitle && !title) {
+      setTitle(defaultTitle);
+    }
+  }, [open, defaultTitle]);
 
   useEffect(() => {
     if (!open) {

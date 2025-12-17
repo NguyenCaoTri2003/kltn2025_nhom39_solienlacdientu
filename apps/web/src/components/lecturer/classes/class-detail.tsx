@@ -41,7 +41,6 @@ export default function ClassDetail() {
   const [offering, setOffering] = useState<Offering | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("theory");
-  const [notificationModalOpen, setNotificationModalOpen] = useState(false);
 
   const router = useRouter();
   const [currentLecturerId, setCurrentLecturerId] = useState<number | undefined>(undefined);
@@ -355,10 +354,10 @@ export default function ClassDetail() {
                 <div className="rounded-3xl border border-border/60 bg-background/70 p-4 shadow-[0_24px_80px_-50px_rgba(15,23,42,0.45)] backdrop-blur">
                   <StudentTable
                     classId={offering.id}
-                    type="theory"
-                    enrollments={offering.students
-                      .filter((e) => e.students !== undefined)
-                      .map((e) => ({ id: e.id, students: e.students as Student }))}
+                    // type="theory"
+                    // enrollments={offering.students
+                    //   .filter((e) => e.students !== undefined)
+                    //   .map((e) => ({ id: e.id, students: e.students as Student }))}
                     practiceGroups={practiceGroups}
                     students={offering.students
                       .map((e) => e.students)
@@ -374,10 +373,10 @@ export default function ClassDetail() {
                   <div className="rounded-3xl border border-border/60 bg-background/70 p-4 shadow-[0_24px_80px_-50px_rgba(15,23,42,0.45)] backdrop-blur">
                     <StudentTable
                       classId={offering.id}
-                      type="practice"
-                      enrollments={offering.students
-                        .filter((e) => e.students !== undefined)
-                        .map((e) => ({ id: e.id, students: e.students as Student }))}
+                      // type="practice"
+                      // enrollments={offering.students
+                      //   .filter((e) => e.students !== undefined)
+                      //   .map((e) => ({ id: e.id, students: e.students as Student }))}
                       practiceGroups={practiceGroups}
                       students={mapGroupStudents(g, offering.students)}
                       lecturerName={offering.lecturers?.users?.full_name}
@@ -406,10 +405,10 @@ export default function ClassDetail() {
                 <div className="rounded-3xl border border-border/60 bg-background/70 p-4 shadow-[0_24px_80px_-50px_rgba(15,23,42,0.45)] backdrop-blur">
                   <StudentTable
                     classId={offering.id}
-                    type="practice"
-                    enrollments={offering.students
-                      .filter((e) => e.students !== undefined)
-                      .map((e) => ({ id: e.id, students: e.students as Student }))}
+                    // type="practice"
+                    // enrollments={offering.students
+                    //   .filter((e) => e.students !== undefined)
+                    //   .map((e) => ({ id: e.id, students: e.students as Student }))}
                     practiceGroups={practiceGroups}
                     students={mapGroupStudents(myPracticeGroup, offering.students)}
                     lecturerName={offering.lecturers?.users?.full_name}
@@ -425,10 +424,10 @@ export default function ClassDetail() {
             <div className="rounded-3xl border border-border/60 bg-background/70 p-4 shadow-[0_24px_80px_-50px_rgba(15,23,42,0.45)] backdrop-blur">
               <StudentTable
                 classId={offering.id}
-                type="theory"
-                enrollments={offering.students
-                  .filter((e) => e.students !== undefined)
-                  .map((e) => ({ id: e.id, students: e.students as Student }))}
+                // type="theory"
+                // enrollments={offering.students
+                //   .filter((e) => e.students !== undefined)
+                //   .map((e) => ({ id: e.id, students: e.students as Student }))}
                 practiceGroups={practiceGroups}
                 students={offering.students
                   .map((e) => e.students)
@@ -441,27 +440,6 @@ export default function ClassDetail() {
         </section>
       </div>
 
-      <CreateNotificationModal
-        open={notificationModalOpen}
-        onClose={() => setNotificationModalOpen(false)}
-        onSuccess={() => {
-          setNotificationModalOpen(false);
-          toast.success("Thông báo đã được gửi thành công");
-        }}
-        selectedStudentIds={
-          offering?.students
-            ?.map((e) => e.students?.id)
-            .filter((id): id is number => id !== undefined) || []
-        }
-        students={
-          offering?.students
-            ?.map((e) => e.students)
-            .filter((s): s is Student => !!s) || []
-        }
-        lecturerName={offering?.lecturers?.users?.full_name}
-        className={offering?.name}
-        practiceGroupNumber={myPracticeGroup?.group_number}
-      />
     </div>
   );
 }

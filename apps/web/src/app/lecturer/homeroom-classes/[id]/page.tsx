@@ -1,5 +1,5 @@
 import Navbar from "@/components/navbar";
-import ClassDetail from "@/components/lecturer/classes/class-detail";
+import HomeroomClassesDetail from "@/components/lecturer/homeroom-classes/homeroom-classes-detail";
 
 export default async function HomeroomClassDetailPage() {
   return (
@@ -7,7 +7,7 @@ export default async function HomeroomClassDetailPage() {
       <Navbar />
 
       <div className="flex-1 p-6 max-w-6xl mx-auto w-full">
-        <ClassDetail />
+        <HomeroomClassesDetail />
       </div>
     </div>
   );

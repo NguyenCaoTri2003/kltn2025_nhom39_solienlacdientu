@@ -103,6 +103,35 @@ export interface StudentDetailData {
   }
 }
 
+export interface StudentDetailDataForClass {
+    class: string;
+    id: number
+    student_code: string
+    academic_status: string
+    academic_year: string
+    date_of_birth?: string
+    place_of_birth?: string
+    contact_address?: string
+    type_of_tranning: string
+    training_level: string
+    user: {
+        full_name: string
+        email?: string
+        phone?: string
+        address?: string
+        avatar_url?: string
+    }
+    parents: {
+        relationship: string
+        occupation?: string
+        user: {
+            full_name: string
+            phone?: string
+            email?: string
+        }
+    }[]
+}
+
 export interface StudentAttendance {
   id: number;
   student_code: string;
