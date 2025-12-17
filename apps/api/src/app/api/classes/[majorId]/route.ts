@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getClassesByMajor } from "@packages/core/usecases/ClassesUseCase";
+import { ClassesUseCase } from "@packages/core/usecases/ClassesUseCase";
 import { authenticate } from "@packages/utils/auth";
 
+const usecase = new ClassesUseCase();
 
 // http://localhost:3000/api/classes/[majorId]
 
@@ -13,7 +14,7 @@ export async function GET(
     const user = await authenticate(req);
     const resolvedParams = await Promise.resolve(params);
     const majorId = Number(resolvedParams.majorId);
-    const classesList = await getClassesByMajor(majorId, user);
+    const classesList = await usecase.getClassesByMajor(majorId, user);
 
     if (!classesList || (Array.isArray(classesList) && classesList.length === 0)) {
       return NextResponse.json(
