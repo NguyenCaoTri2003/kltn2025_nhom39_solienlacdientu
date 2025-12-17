@@ -88,9 +88,10 @@ export function AdminPermissionsFilters({
             <SelectContent className="bg-popover border-border">
               <SelectItem value="all">Tất cả</SelectItem>
               <SelectItem value="super_admin">Toàn quyền Quản trị</SelectItem>
-              <SelectItem value="admin_account">Quản trị Tài khoản</SelectItem>
+              <SelectItem value="admin">Quản trị viên (admin)</SelectItem>
+              {/* <SelectItem value="admin_account">Quản trị Tài khoản</SelectItem>
               <SelectItem value="admin_academic">Quản trị Học vụ</SelectItem>
-              <SelectItem value="admin_finance">Quản trị Tài chính</SelectItem>
+              <SelectItem value="admin_finance">Quản trị Tài chính</SelectItem> */}
             </SelectContent>
           </Select>
         </div>

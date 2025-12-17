@@ -7,6 +7,7 @@ import {
   TextInput,
   StyleSheet,
   Alert,
+  ScrollView,
 } from "react-native";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
 import { Calendar, Clock, MapPin, X, Check } from "lucide-react-native";
@@ -71,79 +72,104 @@ export default function AppointmentCreateModal({ visible, onClose, onSubmit }: P
     <Modal visible={visible} animationType="slide" transparent>
       <View style={styles.overlay}>
         <View style={styles.modal}>
-          {/* Header */}
-          <View style={styles.headerContainer}>
-            <Text style={styles.header}>Tạo lịch hẹn</Text>
-            <TouchableOpacity onPress={onClose}>
-              <X size={22} color="#6B7280" />
-            </TouchableOpacity>
-          </View>
+          <ScrollView
+            style={styles.scroll}
+            contentContainerStyle={{ paddingBottom: 8 }}
+            keyboardShouldPersistTaps="handled"
+          >
+            {/* Header */}
+            <View style={styles.headerContainer}>
+              <Text style={styles.header}>Tạo lịch hẹn</Text>
+              <TouchableOpacity onPress={onClose}>
+                <X size={22} color="#6B7280" />
+              </TouchableOpacity>
+            </View>
 
-          {/* Inputs */}
-          <TextInput
-            style={styles.input}
-            placeholder="* Tiêu đề"
-            value={title}
-            onChangeText={setTitle}
-          />
-          <TextInput
-            style={[styles.input, { height: 60 }]}
-            placeholder="Nội dung (không bắt buộc)"
-            multiline
-            value={content}
-            onChangeText={setContent}
-          />
+            {/* Inputs */}
+            <View style={styles.field}>
+              <Text style={styles.label}>Tiêu đề *</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Nhập tiêu đề lịch hẹn"
+                value={title}
+                onChangeText={setTitle}
+              />
+            </View>
 
-          <View style={styles.iconInput}>
-            <MapPin size={18} color="#007AFF" style={{ marginRight: 6 }} />
-            <TextInput
-              style={{ flex: 1 }}
-              placeholder="Địa điểm (nếu có)"
-              value={location}
-              onChangeText={setLocation}
+            <View style={styles.field}>
+              <Text style={styles.label}>Nội dung</Text>
+              <TextInput
+                style={[styles.input, { height: 60 }]}
+                placeholder="Mô tả ngắn nội dung buổi hẹn (không bắt buộc)"
+                multiline
+                value={content}
+                onChangeText={setContent}
+              />
+            </View>
+
+            <View style={styles.field}>
+              <Text style={styles.label}>Địa điểm</Text>
+              <View style={styles.iconInput}>
+                <MapPin size={18} color="#007AFF" style={{ marginRight: 6 }} />
+                <TextInput
+                  style={{ flex: 1 }}
+                  placeholder="Ví dụ: Phòng B201, online, ..."
+                  value={location}
+                  onChangeText={setLocation}
+                />
+              </View>
+            </View>
+
+            {/* Date & Time Pickers */}
+            <View style={styles.field}>
+              <Text style={styles.label}>Ngày hẹn *</Text>
+              <TouchableOpacity
+                style={styles.iconInput}
+                onPress={() => setPickerType("date")}
+              >
+                <Calendar size={18} color="#007AFF" style={{ marginRight: 6 }} />
+                <Text style={{ flex: 1, color: date ? "#111827" : "#9CA3AF" }}>
+                  {date ? date.toLocaleDateString("vi-VN") : "Chọn ngày"}
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.field}>
+              <Text style={styles.label}>Giờ bắt đầu *</Text>
+              <TouchableOpacity
+                style={styles.iconInput}
+                onPress={() => setPickerType("start")}
+              >
+                <Clock size={18} color="#007AFF" style={{ marginRight: 6 }} />
+                <Text style={{ flex: 1, color: startTime ? "#111827" : "#9CA3AF" }}>
+                  {startTime ? startTime.toLocaleTimeString("vi-VN") : "Chọn giờ bắt đầu"}
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.field}>
+              <Text style={styles.label}>Giờ kết thúc *</Text>
+              <TouchableOpacity
+                style={styles.iconInput}
+                onPress={() => setPickerType("end")}
+              >
+                <Clock size={18} color="#007AFF" style={{ marginRight: 6 }} />
+                <Text style={{ flex: 1, color: endTime ? "#111827" : "#9CA3AF" }}>
+                  {endTime ? endTime.toLocaleTimeString("vi-VN") : "Chọn giờ kết thúc"}
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Modal Datetime Picker */}
+            <DateTimePickerModal
+              isVisible={pickerType !== null}
+              mode={pickerType === "date" ? "date" : "time"}
+              is24Hour
+              onConfirm={handlePickerConfirm}
+              onCancel={() => setPickerType(null)}
+              locale="vi_VN"
             />
-          </View>
-
-          {/* Date & Time Pickers */}
-          <TouchableOpacity
-            style={styles.iconInput}
-            onPress={() => setPickerType("date")}
-          >
-            <Calendar size={18} color="#007AFF" style={{ marginRight: 6 }} />
-            <Text style={{ flex: 1, color: date ? "#111827" : "#9CA3AF" }}>
-              {date ? date.toLocaleDateString("vi-VN") : "Chọn ngày"}
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.iconInput}
-            onPress={() => setPickerType("start")}
-          >
-            <Clock size={18} color="#007AFF" style={{ marginRight: 6 }} />
-            <Text style={{ flex: 1, color: startTime ? "#111827" : "#9CA3AF" }}>
-              {startTime ? startTime.toLocaleTimeString("vi-VN") : "Giờ bắt đầu"}
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.iconInput}
-            onPress={() => setPickerType("end")}
-          >
-            <Clock size={18} color="#007AFF" style={{ marginRight: 6 }} />
-            <Text style={{ flex: 1, color: endTime ? "#111827" : "#9CA3AF" }}>
-              {endTime ? endTime.toLocaleTimeString("vi-VN") : "Giờ kết thúc"}
-            </Text>
-          </TouchableOpacity>
-
-          {/* Modal Datetime Picker */}
-          <DateTimePickerModal
-            isVisible={pickerType !== null}
-            mode={pickerType === "date" ? "date" : "time"}
-            is24Hour
-            onConfirm={handlePickerConfirm}
-            onCancel={() => setPickerType(null)}
-            locale="vi_VN"
-          />
+          </ScrollView>
 
           {/* Footer */}
           <View style={styles.footer}>
@@ -171,8 +197,14 @@ const styles = StyleSheet.create({
   modal: {
     backgroundColor: "#fff",
     borderRadius: 12,
-    padding: 16,
     width: "90%",
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 10,
+    maxHeight: "85%",
+  },
+  scroll: {
+    maxHeight: "100%",
   },
   headerContainer: {
     flexDirection: "row",
@@ -181,6 +213,14 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   header: { fontSize: 18, fontWeight: "700" },
+  field: {
+    marginVertical: 4,
+  },
+  label: {
+    fontSize: 13,
+    color: "#4B5563",
+    marginBottom: 4,
+  },
   input: {
     borderWidth: 1,
     borderColor: "#E5E7EB",

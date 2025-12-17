@@ -19,6 +19,8 @@ import { getStatusAppointmentLabel } from "../utils/getStatusLabel";
 import { useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
+import { conversationService } from "../services/conversationService";
+import { useMessageContext } from "../context/MessageProvider";
 
 export default function AppointmentsScreen() {
   const { token } = useAuth();
@@ -31,10 +33,50 @@ export default function AppointmentsScreen() {
   const [actionLoading, setActionLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const navigation = useNavigation<any>();
+  const { refresh } = useMessageContext();
 
   const [searchText, setSearchText] = useState("");
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [datePickerVisible, setDatePickerVisible] = useState(false);
+
+  const handleOpenChat = async (
+    receiverId: number,
+    receiverName: string,
+    receiverRole?: string
+  ) => {
+    try {
+      if (!token) {
+        alert("Bạn cần đăng nhập để nhắn tin.");
+        return;
+      }
+      if (!receiverId) {
+        alert("Không tìm được thông tin người nhận.");
+        return;
+      }
+
+      const conv = await conversationService.getOrCreateConversation(
+        token,
+        receiverId
+      );
+      const conversationId = conv.conversation_id || conv.id;
+
+      // Cập nhật lại danh sách hội thoại
+      refresh?.();
+
+      navigation.navigate("Messages" as never, {
+        screen: "Chat",
+        params: {
+          conversationId,
+          receiverId,
+          receiverName,
+          receiverRole,
+        },
+      } as never);
+    } catch (error) {
+      console.error("Open chat from appointment error:", error);
+      alert("Không thể mở khung chat. Vui lòng thử lại.");
+    }
+  };
 
   useEffect(() => {
     fetchAppointments();
@@ -217,34 +259,54 @@ export default function AppointmentsScreen() {
               filteredAppointments.map((item) => {
                 const { label, color } = getStatusAppointmentLabel(item.status);
 
-                return (
-                  <TouchableOpacity
-                    key={item.id}
-                    style={styles.card}
-                    onPress={() => {
-                      setSelected(item);
-                      setDetailVisible(true);
-                    }}
-                  >
-                    <Text style={styles.title}>{item.title}</Text>
-                    <Text style={styles.subText}>
-                      Giảng viên: {item.lecturer?.users?.full_name || "—"}
-                    </Text>
-                    <Text style={styles.subText}>
-                      Sinh viên: {item.student?.users?.full_name || "—"}
-                    </Text>
-                    <Text style={styles.subText}>
-                      {new Date(item.start_time).toLocaleString("vi-VN")} →{" "}
-                      {new Date(item.end_time).toLocaleString("vi-VN")}
-                    </Text>
+                // Với parent: luôn nhắn tin cho giảng viên của lịch hẹn
+                const lecturerUser = item.lecturer?.users;
+                const lecturerId = item.lecturer?.id;
 
-                    <View style={{ flexDirection: "row", marginTop: 4 }}>
-                      <Text style={styles.statusLabel}>Trạng thái: </Text>
-                      <Text style={[styles.statusText, { color }]}>
-                        {label}
+                return (
+                  <View key={item.id} style={styles.card}>
+                    <TouchableOpacity
+                      onPress={() => {
+                        setSelected(item);
+                        setDetailVisible(true);
+                      }}
+                    >
+                      <Text style={styles.title}>{item.title}</Text>
+                      <Text style={styles.subText}>
+                        Giảng viên: {lecturerUser?.full_name || "—"}
                       </Text>
-                    </View>
-                  </TouchableOpacity>
+                      <Text style={styles.subText}>
+                        Sinh viên: {item.student?.users?.full_name || "—"}
+                      </Text>
+                      <Text style={styles.subText}>
+                        {new Date(item.start_time).toLocaleString("vi-VN")} →{" "}
+                        {new Date(item.end_time).toLocaleString("vi-VN")}
+                      </Text>
+
+                      <View style={{ flexDirection: "row", marginTop: 4 }}>
+                        <Text style={styles.statusLabel}>Trạng thái: </Text>
+                        <Text style={[styles.statusText, { color }]}>
+                          {label}
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
+
+                    {/* Nút nhắn tin ngay trong item lịch hẹn (parent -> giảng viên) */}
+                    {lecturerId && (
+                      <TouchableOpacity
+                        style={styles.chatButton}
+                        onPress={() =>
+                          handleOpenChat(
+                            lecturerId,
+                            lecturerUser?.full_name || "Giảng viên",
+                            "lecturer"
+                          )
+                        }
+                      >
+                        <Text style={styles.chatButtonText}>Nhắn tin</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
                 );
               })
             )}
@@ -304,6 +366,19 @@ const styles = StyleSheet.create({
   subText: { fontSize: 14, color: "#374151", marginTop: 2 },
   statusLabel: { color: "#6B7280", fontSize: 14 },
   statusText: { fontSize: 14, fontWeight: "600" },
+  chatButton: {
+    marginTop: 10,
+    alignSelf: "flex-end",
+    backgroundColor: "#005BAC",
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 20,
+  },
+  chatButtonText: {
+    color: "#fff",
+    fontSize: 13,
+    fontWeight: "600",
+  },
   goButton: {
     backgroundColor: "#005BAC",
     paddingVertical: 10,

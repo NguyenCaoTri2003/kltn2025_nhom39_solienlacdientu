@@ -69,23 +69,22 @@ export default function NavbarClient({ userRole, userName, avatarUrl, userId, ad
     { icon: BellIcon, label: "Tạo thông báo", href: "/admin/notifications-management", requiredPermission: null }, // Có thể cho tất cả admin
   ];
 
-  // Filter menu items dựa trên admin_type
   const adminNavItems = useMemo(() => {
-    if (userRole !== "admin") return [];
-    
-    // Super admin thấy tất cả
-    if (adminType === "super_admin") {
-      return allAdminNavItems;
-    }
-    
-    // Filter theo quyền
-    return allAdminNavItems.filter(item => {
-      // Menu không yêu cầu quyền cụ thể thì luôn hiển thị
-      if (item.requiredPermission === null) return true;
-      // Menu yêu cầu quyền cụ thể thì chỉ hiển thị nếu admin có quyền đó
-      return item.requiredPermission === adminType;
+    if (userRole !== "admin" || !adminType) return [];
+  
+    if (adminType === "super_admin") return allAdminNavItems;
+  
+    return allAdminNavItems.filter(({ requiredPermission }) => {
+      if (!requiredPermission) return true;
+  
+      if (requiredPermission === "admin_academic") {
+        return ["admin_academic", "admin", "super_admin"].includes(adminType);
+      }
+  
+      return requiredPermission === adminType;
     });
   }, [userRole, adminType]);
+  
 
   const teacherNavItems = [
     { icon: Home, label: "Trang chủ", href: "/lecturer" },

@@ -365,10 +365,21 @@ export class ScheduleRepository {
     if (startDate) query = query.gte("schedule_date", startDate);
     if (endDate) query = query.lte("schedule_date", endDate);
 
-    const { data: schedules, error } = await query;
+    const { data: schedules, error } = await query.returns<ActualSchedule[]>();
     if (error) throw error;
 
-    return schedules;
+    const filtered = (schedules ?? []).filter((s) => {
+      if (s.type !== "exam") return true;
+
+      if ((s as any).offering_id && theoryOfferingIds.includes((s as any).offering_id)) {
+        return true;
+      }
+
+      if (!Array.isArray(s.exam_lecturer_ids)) return false;
+      return s.exam_lecturer_ids.includes(lecturerId);
+    });
+
+    return filtered;
   }
 
   async getLecturerSchedulesOfferingByDate(
