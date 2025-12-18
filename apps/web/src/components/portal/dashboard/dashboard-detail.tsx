@@ -63,11 +63,35 @@ export default function Dashboard() {
     async function fetchToday() {
       try {
         setLoadingToday(true);
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/schedules/today/student?student_id=${studentId}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/api/schedules/today/student?student_id=${studentId}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+
         const json = await res.json();
-        setTodayClasses(json.data || []);
+
+        const sorted = (json.data || []).sort((a: any, b: any) => {
+          if (a.start_period !== b.start_period) {
+            return a.start_period - b.start_period;
+          }
+
+          if (a.type === "exam" && b.type === "exam") {
+            const groupA = a.exam_group_number ?? Infinity;
+            const groupB = b.exam_group_number ?? Infinity;
+            return groupA - groupB;
+          }
+
+          if (a.type !== b.type) {
+            return a.type === "exam" ? 1 : -1;
+          }
+
+          return 0;
+        });
+
+        setTodayClasses(sorted);
       } catch (error) {
         console.error("Failed to load today's schedule:", error);
       } finally {
@@ -76,7 +100,7 @@ export default function Dashboard() {
     }
 
     fetchToday();
-  }, [studentId]);
+  }, [studentId, token]);
 
   console.log("Today Classes:", todayClasses);
 
@@ -382,12 +406,32 @@ export default function Dashboard() {
                                     <GraduationCap className="w-4 h-4" />
                                     Mã lớp: {c?.course_offering?.class_code}
                                   </span>
-                                  <span className="flex items-center gap-1">
-                                    <User className="w-4 h-4" />
-                                    Giảng viên:{" "}
-                                    {c?.course_offering?.lecturers?.users?.full_name ||
-                                      "Chưa rõ"}
+                                  <span className="flex items-start gap-1">
+                                    <User className="w-4 h-4 mt-[2px] flex-shrink-0" />
+                                    <span className="leading-relaxed">
+                                      {type !== "exam" ? (
+                                        <>
+                                          Giảng viên:{" "}
+                                          {c?.course_offering?.lecturers?.users?.full_name || "Chưa rõ"}
+                                        </>
+                                      ) : (
+                                        <>
+                                          Giám thị:{" "}
+                                          {c?.exam_lecturers && c.exam_lecturers.length > 0
+                                            ? c.exam_lecturers
+                                              .map((l: any) => l.users?.full_name)
+                                              .join(", ")
+                                            : "Chưa phân công"}
+                                        </>
+                                      )}
+                                    </span>
                                   </span>
+                                  {type === "exam" && c?.exam_group_number && (
+                                    <div className="flex items-center gap-1">
+                                      <Book className="w-4 h-4 inline-block mr-1" />
+                                      Nhóm: {c.exam_group_number} ({c.exam_range_from} – {c.exam_range_to})
+                                    </div>
+                                  )}
                                   <span className="flex items-center gap-1">
                                     <Calendar className="w-4 h-4" />
                                     Tiết:{" "}
