@@ -22,6 +22,7 @@ import {
   User,
   Settings2,
   CalendarDays,
+  ArrowRight,
 } from "lucide-react";
 import { getAvatarColor } from "@/utils/color-hash";
 import Loading from "@/components/ui/loading";
@@ -29,6 +30,8 @@ import { motion } from "framer-motion";
 import { translateTrainingLevel, translateTrainingType } from "@/utils/get-status-profile";
 import { useRouter } from "next/navigation";
 import EmptyState from "@/components/empty-state";
+import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
 
 export default function Dashboard() {
   const { userData } = useUser();
@@ -60,11 +63,35 @@ export default function Dashboard() {
     async function fetchToday() {
       try {
         setLoadingToday(true);
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/schedules/today/student?student_id=${studentId}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/api/schedules/today/student?student_id=${studentId}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+
         const json = await res.json();
-        setTodayClasses(json.data || []);
+
+        const sorted = (json.data || []).sort((a: any, b: any) => {
+          if (a.start_period !== b.start_period) {
+            return a.start_period - b.start_period;
+          }
+
+          if (a.type === "exam" && b.type === "exam") {
+            const groupA = a.exam_group_number ?? Infinity;
+            const groupB = b.exam_group_number ?? Infinity;
+            return groupA - groupB;
+          }
+
+          if (a.type !== b.type) {
+            return a.type === "exam" ? 1 : -1;
+          }
+
+          return 0;
+        });
+
+        setTodayClasses(sorted);
       } catch (error) {
         console.error("Failed to load today's schedule:", error);
       } finally {
@@ -73,7 +100,9 @@ export default function Dashboard() {
     }
 
     fetchToday();
-  }, [studentId]);
+  }, [studentId, token]);
+
+  console.log("Today Classes:", todayClasses);
 
   const initial = useMemo(() => {
     const name = userData?.full_name?.trim() ?? "";
@@ -287,45 +316,159 @@ export default function Dashboard() {
               <>
                 {/* Môn học hôm nay */}
                 <motion.div
-                  className={`${cardStyle} xl:col-span-1 overflow-y-auto max-h-[400px]`}
+                  className={`${cardStyle} xl:col-span-1`}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.3 }}
                 >
                   <h3 className="font-semibold mb-3 flex items-center gap-2 text-gray-800 dark:text-gray-100">
-                    <BookOpen className="w-5 h-5 text-green-500" /> Môn học hôm nay
+                    <BookOpen className="w-5 h-5 text-green-500" />
+                    Môn học hôm nay
                   </h3>
-                  <div className="flex flex-col gap-3">
-                    {todayClasses.length > 0 ? (
-                      todayClasses.map((c) => (
-                        <motion.div
-                          key={c.id}
-                          className="p-4 border border-gray-200 dark:border-gray-700 rounded-md bg-gray-50 dark:bg-gray-700 cursor-pointer hover:bg-green-50 dark:hover:bg-green-900/20 hover:border-green-300 dark:hover:border-green-700 transition-all duration-150"
-                          whileHover={{ scale: 1.02, y: -2 }}
-                          transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                          onClick={() => router.push(`/portal/classes/${c?.course_offering?.id}`)}
-                        >
-                          <p className="font-semibold text-gray-900 dark:text-gray-100">
-                            {c?.course_offering?.name || "Không rõ tên"}
-                          </p>
-                          <p className="text-sm flex items-center gap-1">
-                            <GraduationCap className="w-4 h-4" /> Mã lớp: {c?.course_offering?.class_code}
-                          </p>
-                          <p className="text-sm flex items-center gap-1">
-                            Giảng viên:{" "}
-                            {c?.course_offering?.lecturers?.users?.full_name ||
-                              "Chưa rõ"}
-                          </p>
-                        </motion.div>
-                      ))
-                    ) : (
+
+                  <div className="space-y-3">
+                    {todayClasses.length === 0 ? (
                       <EmptyState
                         icon={<Book className="w-12 h-12 text-muted-foreground/50" />}
                         text="Không có lớp học phần hôm nay."
                       />
+                    ) : (
+                      todayClasses.map((c, i) => {
+                        const type = c.type ?? "theory";
+
+                        const hoverStyle: Record<string, string> = {
+                          theory:
+                            "hover:border-blue-400 hover:bg-blue-50/60 dark:hover:border-blue-700 dark:hover:bg-blue-950/20",
+                          practice:
+                            "hover:border-green-400 hover:bg-green-50/60 dark:hover:border-green-700 dark:hover:bg-green-950/20",
+                          exam:
+                            "hover:border-amber-400 hover:bg-amber-50/60 dark:hover:border-amber-700 dark:hover:bg-amber-950/20",
+                        };
+
+                        const arrowColor: Record<string, string> = {
+                          theory: "group-hover:text-blue-600 dark:group-hover:text-blue-400",
+                          practice: "group-hover:text-green-600 dark:group-hover:text-green-400",
+                          exam: "group-hover:text-amber-600 dark:group-hover:text-amber-400",
+                        };
+
+                        return (
+                          <motion.div
+                            key={c.id ?? i}
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: i * 0.05 }}
+                            className={cn(
+                              "group p-4 rounded-xl border-2 border-border/50 bg-card cursor-pointer transition-all duration-200 ease-out",
+                              hoverStyle[type]
+                            )}
+                            whileHover={{
+                              scale: 1.01,
+                              x: 4,
+                              transition: {
+                                type: "spring",
+                                stiffness: 500,
+                                damping: 18,
+                                duration: 0.15,
+                              },
+                            }}
+                            onClick={() =>
+                              router.push(`/portal/classes/${c?.course_offering?.id}`)
+                            }
+                          >
+                            <div className="flex items-start justify-between gap-4">
+                              <div className="flex-1 space-y-2">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span className="font-semibold text-base text-foreground">
+                                    {c?.course_offering?.name || "Không rõ tên môn học"}
+                                  </span>
+
+                                  <Badge
+                                    variant="outline"
+                                    className={cn(
+                                      "text-xs font-medium",
+                                      type === "theory"
+                                        ? "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/30 dark:text-blue-400 dark:border-blue-800"
+                                        : type === "practice"
+                                          ? "bg-green-50 text-green-700 border-green-200 dark:bg-green-950/30 dark:text-green-400 dark:border-green-800"
+                                          : "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-800"
+                                    )}
+                                  >
+                                    {type === "theory"
+                                      ? "Lý thuyết"
+                                      : type === "practice"
+                                        ? "Thực hành"
+                                        : "Thi"}
+                                  </Badge>
+                                </div>
+
+                                <div className="flex flex-col gap-1 text-sm text-muted-foreground">
+                                  <span className="flex items-center gap-1">
+                                    <GraduationCap className="w-4 h-4" />
+                                    Mã lớp: {c?.course_offering?.class_code}
+                                  </span>
+                                  <span className="flex items-start gap-1">
+                                    <User className="w-4 h-4 mt-[2px] flex-shrink-0" />
+                                    <span className="leading-relaxed">
+                                      {type !== "exam" ? (
+                                        <>
+                                          Giảng viên:{" "}
+                                          {c?.course_offering?.lecturers?.users?.full_name || "Chưa rõ"}
+                                        </>
+                                      ) : (
+                                        <>
+                                          Giám thị:{" "}
+                                          {c?.exam_lecturers && c.exam_lecturers.length > 0
+                                            ? c.exam_lecturers
+                                              .map((l: any) => l.users?.full_name)
+                                              .join(", ")
+                                            : "Chưa phân công"}
+                                        </>
+                                      )}
+                                    </span>
+                                  </span>
+                                  {type === "exam" && c?.exam_group_number && (
+                                    <div className="flex items-center gap-1">
+                                      <Book className="w-4 h-4 inline-block mr-1" />
+                                      Nhóm: {c.exam_group_number} ({c.exam_range_from} – {c.exam_range_to})
+                                    </div>
+                                  )}
+                                  <span className="flex items-center gap-1">
+                                    <Calendar className="w-4 h-4" />
+                                    Tiết:{" "}
+                                    {c.start_period} - {c.start_period + c.period_count - 1} tại {c.classroom} ({c.building})
+                                  </span>
+                                </div>
+                              </div>
+
+                              <motion.div
+                                initial={{ opacity: 0.5, x: -4 }}
+                                whileHover={{
+                                  opacity: 1,
+                                  x: 0,
+                                  transition: {
+                                    type: "spring",
+                                    stiffness: 600,
+                                    damping: 15,
+                                    duration: 0.1,
+                                  },
+                                }}
+                                className="flex-shrink-0"
+                              >
+                                <ArrowRight
+                                  className={cn(
+                                    "w-5 h-5 text-muted-foreground transition-colors duration-200 ease-out",
+                                    arrowColor[type]
+                                  )}
+                                />
+                              </motion.div>
+                            </div>
+                          </motion.div>
+                        );
+                      })
                     )}
                   </div>
                 </motion.div>
+
 
                 {/* Tất cả lớp học phần */}
                 <motion.div
@@ -355,6 +498,7 @@ export default function Dashboard() {
                             <GraduationCap className="w-4 h-4" /> Mã lớp: {c.class_code}
                           </p>
                           <p className="text-sm flex items-center gap-1">
+                            <User className="w-4 h-4" />
                             Giảng viên:{" "}
                             {c.lecturer?.full_name ||
                               c.detail?.lecturer?.full_name ||

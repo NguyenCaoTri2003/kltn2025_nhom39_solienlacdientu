@@ -312,10 +312,10 @@ export class StudentRepository {
   }
 
   async getTheoryAbsentByStudent(studentId: number) {
-    const { data, error } = await supabase.rpc(
-      "get_theory_absent_violations",
-      { student_id: studentId }
-    );
+    const { data, error } = await supabase.rpc
+    ("get_theory_absent_violations", {
+      p_student_id: studentId
+    });
 
     if (error) throw error;
     return data ?? [];
@@ -324,7 +324,7 @@ export class StudentRepository {
   async getPracticeAbsentByStudent(studentId: number) {
     const { data, error } = await supabase.rpc(
       "get_practice_absent_violations",
-      { student_id: studentId }
+      { p_student_id: studentId }
     );
 
     if (error) throw error;

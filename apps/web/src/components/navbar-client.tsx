@@ -20,6 +20,7 @@ import {
   Book,
   BellIcon,
   Shield,
+  CalendarDays,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -90,7 +91,7 @@ export default function NavbarClient({ userRole, userName, avatarUrl, userId, ad
     { icon: Home, label: "Trang chủ", href: "/lecturer" },
     { icon: Users, label: "Lớp học", href: "/lecturer/classes" },
     { icon: Book, label: "Lớp chủ nhiệm", href: "/lecturer/homeroom-classes" },
-    { icon: Calendar, label: "Lịch dạy", href: "/lecturer/schedule" },
+    { icon: CalendarDays, label: "Lịch dạy", href: "/lecturer/schedules" },
     { icon: Calendar, label: "Lịch hẹn", href: "/lecturer/appointments" },
     { icon: MessageSquare, label: "Nhắn tin", href: "/lecturer/communications" },
   ];
@@ -99,7 +100,7 @@ export default function NavbarClient({ userRole, userName, avatarUrl, userId, ad
   const studentNavItems = [
     { icon: Home, label: "Trang chủ", href: "/portal" },
     { icon: Book, label: "Lớp học phần", href: "/portal/classes" },
-    { icon: Calendar, label: "Lịch học", href: "/portal/schedules" },
+    { icon: CalendarDays, label: "Lịch học", href: "/portal/schedules" },
     // { icon: User, label: "Điểm danh", href: "/portal/attendances" },
     { icon: BarChart3, label: "Kết quả học tập", href: "/portal/grades" },
     { icon: MessageSquare, label: "Nhắn tin", href: "/portal/communications" },
@@ -109,7 +110,7 @@ export default function NavbarClient({ userRole, userName, avatarUrl, userId, ad
   const parentNavItems = [
     { icon: Home, label: "Trang chủ", href: "/portal" },
     { icon: Book, label: "Lớp học phần", href: "/portal/classes" },
-    { icon: Calendar, label: "Lịch học", href: "/portal/schedules" },
+    { icon: CalendarDays, label: "Lịch học", href: "/portal/schedules" },
     // { icon: User, label: "Điểm danh", href: "/portal/attendances" },
     { icon: BarChart3, label: "Kết quả học tập", href: "/portal/grades" },
     { icon: Calendar, label: "Lịch hẹn", href: "/portal/appointments" },

@@ -14,7 +14,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { notificationService } from '../../services/notificationService';
-import { useRouter, usePathname } from 'next/navigation';
+import { useRouter, usePathname, useParams } from 'next/navigation';
 import Image from "next/image";
 import Loading from "@/components/ui/loading";
 
@@ -33,13 +33,12 @@ interface Notification {
   url?: string | null;
 }
 
-interface NotificationDetailProps {
-  notificationId: string;
-}
-
-export default function NotificationDetail({ notificationId }: NotificationDetailProps) {
+export default function NotificationDetail() {
   const router = useRouter();
   const pathname = usePathname();
+  const params = useParams();
+  const { id } = params;
+
   const [notification, setNotification] = useState<Notification | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -70,7 +69,7 @@ export default function NotificationDetail({ notificationId }: NotificationDetai
         const response = await notificationService.getNotifications(1, 100);
         
         if (response.returnCode === 0) {
-          const foundNotification = response.data?.find((n: Notification) => n.id === parseInt(notificationId));
+          const foundNotification = response.data?.find((n: Notification) => n.id === parseInt(String(id)));
           if (foundNotification) {
             setNotification(foundNotification);
 
@@ -91,10 +90,10 @@ export default function NotificationDetail({ notificationId }: NotificationDetai
       }
     };
 
-    if (notificationId) {
+    if (id) {
       fetchNotification();
     }
-  }, [notificationId]);
+  }, [id]);
 
   const handleDeleteNotification = async () => {
     if (!notification) return;
