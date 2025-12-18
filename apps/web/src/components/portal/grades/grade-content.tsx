@@ -10,13 +10,16 @@ import { getClassificationLabel } from "@/utils/get-classification-label";
 import Loading from "@/components/ui/loading";
 import type { Semester } from "@/services/semesterService";
 import { Grade } from "@packages/core/entities/Grade";
+import * as XLSX from "xlsx";
 
 export default function GradeContent({
   studentId,
   studentYear,
+  onExportReady
 }: {
   studentId: number;
   studentYear: number | null;
+  onExportReady?: (fn: () => void) => void;
 }) {
   const [semesters, setSemesters] = useState<Semester[]>([]);
   const [expandedIds, setExpandedIds] = useState<number[]>([]);
@@ -49,8 +52,6 @@ export default function GradeContent({
     semesters
   );
 
-  console.log("gradesBySemester:", gradesBySemester);
-
   const semesterIdsWithGrades = useMemo(
     () =>
       semesters
@@ -75,6 +76,105 @@ export default function GradeContent({
 
   const formatScore = (v?: number | null) => (v != null ? v.toFixed(2) : "-");
 
+  const exportAllSemesters = () => {
+    const wb = XLSX.utils.book_new();
+
+    semesters.forEach((semester) => {
+      const grades = gradesBySemester[semester.id] || [];
+      if (grades.length === 0) return;
+
+      const rows: any[] = [];
+
+      grades.forEach((course: any) => {
+        const getScores = (type: string) =>
+          course.theoryScores
+            ?.filter((s: Grade) => s.score_type === type)
+            .map((s: Grade) => s.score?.toFixed(2))
+            .join(", ") || "-";
+
+        rows.push({
+          "Môn học": course.offering_name,
+          "Thường kỳ": getScores("regular"),
+          "Giữa kỳ": getScores("midterm"),
+          "Cuối kỳ": getScores("final"),
+          "GPA hệ 4": course.summary?.gpa4 ?? "-",
+          "Điểm chữ": course.summary?.letter_grade ?? "-",
+          "Xếp loại": getClassificationLabel(course.summary?.classification) || "-",
+          "Kết quả": course.summary?.passed ? "Đạt" : "Không đạt",
+        });
+      });
+
+      const summary = summaries[semester.id];
+      if (summary) {
+        rows.push({});
+
+        rows.push({ "Môn học": "TỔNG KẾT HỌC KỲ" });
+
+        rows.push({
+          "Môn học": "Điểm TB tích lũy hệ 10",
+          "GPA hệ 4": summary.cum_avg_score_10?.toFixed(2),
+        });
+
+        rows.push({
+          "Môn học": "Điểm TB tích lũy hệ 4",
+          "GPA hệ 4": summary.cum_avg_score_4?.toFixed(2),
+        });
+
+        rows.push({
+          "Môn học": "Xếp loại tích lũy",
+          "GPA hệ 4": getClassificationLabel(
+            summary.cumulative_classification
+          ),
+        });
+
+        rows.push({
+          "Môn học": "Điểm TB học kỳ hệ 10",
+          "GPA hệ 4": summary.avg_score_10?.toFixed(2),
+        });
+
+        rows.push({
+          "Môn học": "Điểm TB học kỳ hệ 4",
+          "GPA hệ 4": summary.avg_score_4?.toFixed(2),
+        });
+
+        rows.push({
+          "Môn học": "Xếp loại học kỳ",
+          "GPA hệ 4": getClassificationLabel(
+            summary.semester_classification
+          ),
+        });
+
+        rows.push({
+          "Môn học": "Tổng tín chỉ đạt",
+          "GPA hệ 4": summary.total_credit_passed ?? 0,
+        });
+
+        rows.push({
+          "Môn học": "Tổng tín chỉ rớt",
+          "GPA hệ 4": summary.total_credit_failed ?? 0,
+        });
+      }
+
+      const ws = XLSX.utils.json_to_sheet(rows);
+      XLSX.utils.book_append_sheet(
+        wb,
+        ws,
+        `${semester.name}_${semester.academic_year}`
+      );
+    });
+
+    XLSX.writeFile(
+      wb,
+      `Bang_diem_${studentId}.xlsx`
+    );
+  };
+
+  useEffect(() => {
+    if (onExportReady) {
+      onExportReady(() => exportAllSemesters);
+    }
+  }, [semesters, gradesBySemester, summaries]);
+
   if (loadingSemesters || loadingGrades)
     return <Loading text="Đang tải kết quả học tập..." />;
 
@@ -92,6 +192,7 @@ export default function GradeContent({
             key={semester.id}
             className="border border-indigo-100 dark:border-indigo-800 rounded-xl overflow-hidden bg-white dark:bg-gray-900"
           >
+
             <button
               onClick={() => toggleExpand(semester.id)}
               className="cursor-pointer w-full flex justify-between items-center bg-blue-50 dark:bg-blue-900/30 px-4 py-2 text-blue-800 dark:text-blue-200 font-medium"
