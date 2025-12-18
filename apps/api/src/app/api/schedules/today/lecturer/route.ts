@@ -1,4 +1,3 @@
-// apps/api/app/api/teacher/schedule/today/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { authenticate } from "@packages/utils/auth";
 import { ScheduleRepository } from "@packages/data/repositories/ScheduleRepository";

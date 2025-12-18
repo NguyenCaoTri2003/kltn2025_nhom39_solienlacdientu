@@ -246,8 +246,6 @@ export default function LecturerDashboard() {
         fetchToday();
     }, [user?.id]);
 
-    console.log("Today's classes:", todayClasses);
-
     const groupedAppointments = Object.values(
         appointments.reduce((acc, a) => {
             const key = `${a.student.users.full_name}-${a.start_time}-${a.end_time}-${a.title}`;
@@ -259,6 +257,21 @@ export default function LecturerDashboard() {
             return acc;
         }, {} as Record<string, Appointment & { parents: string[] }>)
     );
+
+    const hoverStyle: Record<string, string> = {
+        theory:
+            "hover:border-blue-400 hover:bg-blue-50/60 dark:hover:border-blue-700 dark:hover:bg-blue-950/20",
+        practice:
+            "hover:border-green-400 hover:bg-green-50/60 dark:hover:border-green-700 dark:hover:bg-green-950/20",
+        exam:
+            "hover:border-amber-400 hover:bg-amber-50/60 dark:hover:border-amber-700 dark:hover:bg-amber-950/20",
+    };
+
+    const arrowColor: Record<string, string> = {
+        theory: "group-hover:text-blue-600 dark:group-hover:text-blue-400",
+        practice: "group-hover:text-green-600 dark:group-hover:text-green-400",
+        exam: "group-hover:text-amber-600 dark:group-hover:text-amber-400",
+    };
 
     return (
         <div className="py-1 px-6 sm:px-6 lg:px-8">
@@ -408,7 +421,7 @@ export default function LecturerDashboard() {
                                                     <div className="p-1.5 bg-blue-100 dark:bg-blue-900/40 rounded-lg">
                                                         <Calendar className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                                                     </div>
-                                                    Lịch học hôm nay
+                                                    Lớp dạy hôm nay
                                                 </CardTitle>
                                                 <Badge variant="secondary" className="text-xs">
                                                     {todayClasses.length} tiết
@@ -422,85 +435,115 @@ export default function LecturerDashboard() {
                                                     text="Hôm nay không có lịch học nào."
                                                 />
                                             ) : (
-                                                todayClasses.map((s, i) => (
-                                                    <motion.div
-                                                        key={i}
-                                                        initial={{ opacity: 0, y: 10 }}
-                                                        animate={{ opacity: 1, y: 0 }}
-                                                        transition={{ delay: i * 0.1 }}
-                                                        className="group p-4 rounded-xl border-2 border-border/50 hover:border-primary/50 bg-card hover:bg-accent/50 transition-all duration-200 ease-out cursor-pointer"
-                                                        whileHover={{
-                                                            scale: 1.01,
-                                                            x: 4,
-                                                            transition: {
-                                                                type: "spring",
-                                                                stiffness: 500,
-                                                                damping: 18,
-                                                                duration: 0.15
-                                                            }
-                                                        }}
-                                                        onClick={() => router.push(`/lecturer/classes/${s?.course_offerings?.id}`)}
-                                                    >
-                                                        <div className="flex items-start justify-between gap-4">
-                                                            <div className="flex-1 space-y-2">
-                                                                <div className="flex flex-wrap items-center gap-2">
-                                                                    <span className="font-semibold text-base text-foreground">
-                                                                        {s?.course_offerings?.name || "Chưa có tên môn học"}
-                                                                    </span>
-                                                                    <Badge
-                                                                        variant="outline"
-                                                                        className={cn(
-                                                                            "text-xs font-medium",
-                                                                            s.type === "practice"
-                                                                                ? "bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950/30 dark:text-orange-400 dark:border-orange-800"
-                                                                                : s.type === "theory"
-                                                                                    ? "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/30 dark:text-blue-400 dark:border-blue-800"
-                                                                                    : s.type === "exam"
-                                                                                        ? "bg-red-50 text-red-700 border-red-200 dark:bg-red-950/30 dark:text-red-400 dark:border-red-800"
-                                                                                        : ""
-                                                                        )}
-                                                                    >
-                                                                        {s.type === "practice"
-                                                                            ? "Thực hành"
-                                                                            : s.type === "theory"
-                                                                                ? "Lý thuyết"
-                                                                                : s.type === "exam"
-                                                                                    ? "Thi"
-                                                                                    : ""}
-                                                                    </Badge>
-                                                                    {s.isPractice && s.groupNumber && s.isMyPractice && (
-                                                                        <Badge className="text-xs bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-800">
-                                                                            Nhóm {s.groupNumber}
-                                                                        </Badge>
-                                                                    )}
-                                                                </div>
-                                                                <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                                                                    <span className="font-medium">{s?.course_offerings?.class_code}</span>
-                                                                    <span>•</span>
-                                                                    <span>{s.building}-{s.classroom}</span>
-                                                                    <span>•</span>
-                                                                    <span className="font-medium">Tiết {s.start_period}-{s.start_period + s.period_count - 1}</span>
-                                                                </div>
-                                                            </div>
-                                                            <motion.div
-                                                                initial={{ opacity: 0.5, x: -4 }}
-                                                                whileHover={{
-                                                                    opacity: 1,
-                                                                    x: 0,
-                                                                    transition: {
-                                                                        type: "spring",
-                                                                        stiffness: 600,
-                                                                        damping: 15,
-                                                                        duration: 0.1
+                                                todayClasses.map((s, i) => {
+                                                    const isExam = s.type === "exam";
+
+                                                    return (
+                                                        <motion.div
+                                                            key={i}
+                                                            initial={{ opacity: 0, y: 10 }}
+                                                            animate={{ opacity: 1, y: 0 }}
+                                                            transition={{ delay: i * 0.1 }}
+                                                            className={cn(
+                                                                "group p-4 rounded-xl border-2 border-border/50 bg-card transition-all duration-200 ease-out",
+                                                                hoverStyle[s.type],
+                                                                isExam ? "cursor-default" : "cursor-pointer"
+                                                            )}
+                                                            whileHover={
+                                                                isExam
+                                                                    ? undefined
+                                                                    : {
+                                                                        scale: 1.01,
+                                                                        x: 4,
+                                                                        transition: {
+                                                                            type: "spring",
+                                                                            stiffness: 500,
+                                                                            damping: 18,
+                                                                            duration: 0.15,
+                                                                        },
                                                                     }
-                                                                }}
-                                                                className="flex-shrink-0"
-                                                            >
-                                                                <ArrowRight className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors duration-200 ease-out" />
-                                                            </motion.div>
-                                                        </div>
-                                                    </motion.div>
-                                                ))
+                                                            }
+                                                            onClick={() => {
+                                                                if (isExam) {
+                                                                    router.push("/lecturer/schedules");
+                                                                } else {
+                                                                    router.push(`/lecturer/classes/${s?.course_offerings?.id}`);
+                                                                }
+                                                            }}
+                                                        >
+                                                            <div className="flex items-start justify-between gap-4">
+                                                                <div className="flex-1 space-y-2">
+                                                                    <div className="flex flex-wrap items-center gap-2">
+                                                                        <span className="font-semibold text-base text-foreground">
+                                                                            {s?.course_offerings?.name || "Chưa có tên môn học"}
+                                                                        </span>
+
+                                                                        <Badge
+                                                                            variant="outline"
+                                                                            className={cn(
+                                                                                "text-xs font-medium",
+                                                                                s.type === "theory"
+                                                                                    ? "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/30 dark:text-blue-400 dark:border-blue-800"
+                                                                                    : s.type === "practice"
+                                                                                        ? "bg-green-50 text-green-700 border-green-200 dark:bg-green-950/30 dark:text-green-400 dark:border-green-800"
+                                                                                        : "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-800"
+                                                                            )}
+                                                                        >
+                                                                            {s.type === "theory"
+                                                                                ? "Lý thuyết"
+                                                                                : s.type === "practice"
+                                                                                    ? "Thực hành"
+                                                                                    : "Thi"}
+                                                                        </Badge>
+
+                                                                        {s.isPractice && s.groupNumber && s.isMyPractice && (
+                                                                            <Badge className="text-xs bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-800">
+                                                                                Nhóm {s.groupNumber}
+                                                                            </Badge>
+                                                                        )}
+                                                                    </div>
+
+                                                                    <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                                                                        <span className="font-medium">
+                                                                            {s?.course_offerings?.class_code}
+                                                                        </span>
+                                                                        <span>•</span>
+                                                                        <span>
+                                                                            {s.building}-{s.classroom}
+                                                                        </span>
+                                                                        <span>•</span>
+                                                                        <span className="font-medium">
+                                                                            Tiết {s.start_period}-
+                                                                            {s.start_period + s.period_count - 1}
+                                                                        </span>
+                                                                    </div>
+                                                                </div>
+
+                                                                <motion.div
+                                                                    initial={{ opacity: 0.5, x: -4 }}
+                                                                    whileHover={{
+                                                                        opacity: 1,
+                                                                        x: 0,
+                                                                        transition: {
+                                                                            type: "spring",
+                                                                            stiffness: 600,
+                                                                            damping: 15,
+                                                                            duration: 0.1,
+                                                                        },
+                                                                    }}
+                                                                    className="flex-shrink-0"
+                                                                >
+                                                                    <ArrowRight
+                                                                        className={cn(
+                                                                            "w-5 h-5 text-muted-foreground transition-colors duration-200 ease-out",
+                                                                            arrowColor[s.type]
+                                                                        )}
+                                                                    />
+                                                                </motion.div>
+                                                            </div>
+                                                        </motion.div>
+                                                    );
+                                                })
                                             )}
                                         </CardContent>
                                     </Card>

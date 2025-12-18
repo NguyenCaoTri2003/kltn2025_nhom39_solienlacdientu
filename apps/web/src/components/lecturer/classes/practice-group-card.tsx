@@ -44,9 +44,6 @@ export default function PracticeGroupCard({
               <h3 className="text-lg font-semibold text-foreground">
                 Nhóm thực hành {groupNumber}
               </h3>
-              <p className="text-xs uppercase tracking-[0.18em] text-primary/70">
-                Practice group
-              </p>
             </div>
           </div>
           <Users className="h-5 w-5 text-primary" />
