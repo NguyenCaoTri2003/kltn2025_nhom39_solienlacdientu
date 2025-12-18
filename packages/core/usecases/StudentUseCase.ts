@@ -194,24 +194,24 @@ export class StudentUseCase {
 
             theoryViolations: theory.map((t: any) => ({
                 offeringId: t.offering_id,
-                offeringName: t.offering_name,
+                offeringName: t.course_name,
                 classCode: t.class_code,
                 lecturerName: t.lecturer_name,
-                absentDays: t.absent_days,
+                absentDays: t.absent_count,
                 type: "theory",
-                reason: `Vắng ${t.absent_days} buổi lý thuyết`,
+                reason: `Vắng ${t.absent_count} buổi lý thuyết`,
             })),
 
             practiceViolations: practice.map((p: any) => ({
                 offeringId: p.offering_id,
-                offeringName: p.offering_name,
+                offeringName: p.course_name,
                 classCode: p.class_code,
                 lecturerName: p.lecturer_name,
                 practiceGroupId: p.practice_group_id,
                 groupNumber: p.group_number,
-                absentDays: p.absent_days,
+                absentDays: p.absent_count,
                 type: "practice",
-                reason: `Vắng ${p.absent_days} buổi thực hành (Nhóm ${p.group_number})`,
+                reason: `Vắng ${p.absent_count} buổi thực hành (Nhóm ${p.group_number})`,
             })),
         };
     }

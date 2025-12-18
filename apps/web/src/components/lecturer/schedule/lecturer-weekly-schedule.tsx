@@ -16,12 +16,22 @@ import { Button } from "@/components/ui/button";
 import EmptyState from "@/components/empty-state";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import Loading from "@/components/ui/loading";
 
 dayjs.locale("vi");
 
 export default function LecturerWeeklySchedule() {
-  const { userData } = useUser();
+  const [userData, setUserData] = useState<any>(null);
+  const [authLoading, setAuthLoading] = useState(true);
   const lecturerId = userData?.id ?? null;
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const user = JSON.parse(localStorage.getItem("user") || "null");
+      setUserData(user);
+      setAuthLoading(false);
+    }
+  }, []);
 
   const {
     schedules,
@@ -36,6 +46,8 @@ export default function LecturerWeeklySchedule() {
     baseDate,
   } = useLecturerSchedule(lecturerId);
 
+  console.log("schedules", schedules);
+
   const [selectedDate, setSelectedDate] = useState(
     dayjs().format("YYYY-MM-DD")
   );
@@ -44,6 +56,20 @@ export default function LecturerWeeklySchedule() {
     if (period <= 6) return "morning";
     if (period <= 12) return "afternoon";
     return "evening";
+  };
+
+  const sortSchedules = (a: any, b: any) => {
+    if (a.start_period !== b.start_period) {
+      return a.start_period - b.start_period;
+    }
+
+    if (a.type === "exam" && b.type === "exam") {
+      const groupA = a.exam_group_number ?? 0;
+      const groupB = b.exam_group_number ?? 0;
+      return groupA - groupB;
+    }
+
+    return 0;
   };
 
   const groupedSchedules = weekDays.map((day) => {
@@ -56,13 +82,13 @@ export default function LecturerWeeklySchedule() {
       day,
       morning: dailySchedules
         .filter((s) => getSession(s.start_period) === "morning")
-        .sort((a, b) => a.start_period - b.start_period),
+        .sort(sortSchedules),
       afternoon: dailySchedules
         .filter((s) => getSession(s.start_period) === "afternoon")
-        .sort((a, b) => a.start_period - b.start_period),
+        .sort(sortSchedules),
       evening: dailySchedules
         .filter((s) => getSession(s.start_period) === "evening")
-        .sort((a, b) => a.start_period - b.start_period),
+        .sort(sortSchedules),
     };
   });
 
@@ -95,6 +121,14 @@ export default function LecturerWeeklySchedule() {
       setSelectedDate(dayjs(baseDate).format("YYYY-MM-DD"));
     }
   }, [baseDate]);
+
+  if (authLoading) {
+    return (
+      <div className="p-6">
+        <Loading text="Đang xác thực tài khoản..." />;
+      </div>
+    );
+  }
 
   if (!userData || userData.role !== "lecturer") {
     return (
@@ -223,11 +257,10 @@ export default function LecturerWeeklySchedule() {
                       return (
                         <th
                           key={day.format("YYYY-MM-DD")}
-                          className={`p-3 text-center font-semibold border-l border-border/40 ${
-                            isToday
-                              ? "bg-primary/5 text-primary"
-                              : "text-foreground"
-                          }`}
+                          className={`p-3 text-center font-semibold border-l border-border/40 ${isToday
+                            ? "bg-primary/5 text-primary"
+                            : "text-foreground"
+                            }`}
                         >
                           <div className="flex flex-col gap-1">
                             <span className="text-base">{day.format("ddd")}</span>
@@ -258,9 +291,8 @@ export default function LecturerWeeklySchedule() {
                         return (
                           <td
                             key={day.format("YYYY-MM-DD")}
-                            className={`p-2 border-l border-border/40 ${
-                              isToday ? "bg-primary/5" : ""
-                            }`}
+                            className={`p-2 border-l border-border/40 ${isToday ? "bg-primary/5" : ""
+                              }`}
                           >
                             {items.length === 0 ? (
                               <p className="text-muted-foreground text-center text-xs italic py-2">
@@ -310,15 +342,27 @@ export default function LecturerWeeklySchedule() {
                                         </p>
 
                                         {item.type === "exam" && (
-                                          <p className="text-[11px] text-muted-foreground dark:text-gray-400">
-                                            <span className="font-medium">Nhóm:</span>{" "}
-                                            {item.exam_group_number ?? "-"}
-                                            {item.exam_range_from != null &&
-                                            item.exam_range_to != null
-                                              ? ` (${item.exam_range_from} - ${item.exam_range_to})`
-                                              : ""}
-                                          </p>
+                                          <div className="space-y-0.5 text-[11px] text-muted-foreground dark:text-gray-400">
+                                            <p>
+                                              <span className="font-medium">Nhóm:</span>{" "}
+                                              {item.exam_group_number ?? "-"}
+                                              {item.exam_range_from != null && item.exam_range_to != null
+                                                ? ` (${item.exam_range_from} - ${item.exam_range_to})`
+                                                : ""}
+                                            </p>
+
+                                            <p>
+                                              <span className="font-medium">Giám thị:</span>{" "}
+                                              {item.exam_lecturers && item.exam_lecturers.length > 0
+                                                ? item.exam_lecturers
+                                                  .map((lec: any) => lec.users?.full_name)
+                                                  .filter(Boolean)
+                                                  .join(", ")
+                                                : "-"}
+                                            </p>
+                                          </div>
                                         )}
+
                                       </div>
                                     </CardContent>
                                   </Card>

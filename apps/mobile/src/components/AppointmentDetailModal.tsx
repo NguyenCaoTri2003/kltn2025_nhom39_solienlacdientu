@@ -40,7 +40,6 @@ export default function AppointmentDetailModal({
   if (!data) return null;
   const { label, color } = getStatusAppointmentLabel(data.status);
 
-  // Đối với parent: ưu tiên nhắn cho giảng viên trong lịch hẹn
   const lecturerUser = data.lecturer?.users;
   const lecturerId = data.lecturer?.id;
 
@@ -150,7 +149,6 @@ export default function AppointmentDetailModal({
               </TouchableOpacity>
             )}
 
-            {/* Nút nhắn tin trong chi tiết lịch hẹn (parent -> giảng viên) */}
             {lecturerId && (
               <TouchableOpacity
                 style={styles.chatBtn}

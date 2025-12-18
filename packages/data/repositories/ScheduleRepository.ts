@@ -309,35 +309,127 @@ export class ScheduleRepository {
     return { weekly, actual };
   }
 
+  // async getLecturerSchedulesByDate(
+  //   lecturerId: number,
+  //   startDate?: string,
+  //   endDate?: string
+  // ) {
+  //   // Lấy các học phần mà giảng viên dạy LT
+  //   const { data: theoryOfferings } = await supabase
+  //     .from("course_offerings")
+  //     .select("id")
+  //     .eq("lecturer_id", lecturerId);
+
+  //   const theoryOfferingIds = theoryOfferings?.map(o => o.id) ?? [];
+
+  //   const { data: practiceGroups } = await supabase
+  //     .from("practice_groups")
+  //     .select("id, offering_id")
+  //     .eq("lecturer_id", lecturerId);
+
+  //   const practiceOfferingIds = practiceGroups?.map(pg => pg.offering_id) ?? [];
+  //   const practiceGroupIds = practiceGroups?.map(pg => pg.id) ?? [];
+
+  //   const allOfferingIds = Array.from(new Set([...theoryOfferingIds, ...practiceOfferingIds]));
+
+  //   if (allOfferingIds.length === 0) return [];
+
+  //   let query = supabase
+  //     .from("actual_schedules")
+  //     .select(`
+  //     *,
+  //     course_offering:offering_id (
+  //       id,
+  //       name,
+  //       class_code,
+  //       class_id,
+  //       class:class_id (
+  //         id,
+  //         name,
+  //         class_code
+  //       )
+  //     )
+  //   `)
+  //     .in("offering_id", allOfferingIds);
+
+  //   if (practiceGroupIds.length > 0 && theoryOfferingIds.length > 0) {
+  //     query = query.or(
+  //       `practice_group_id.is.null,practice_group_id.in.(${practiceGroupIds.join(",")})`
+  //     );
+  //   } else if (practiceGroupIds.length > 0) {
+  //     query = query.in("practice_group_id", practiceGroupIds);
+  //   } else {
+  //     query = query.is("practice_group_id", null);
+  //   }
+
+  //   if (startDate) query = query.gte("schedule_date", startDate);
+  //   if (endDate) query = query.lte("schedule_date", endDate);
+
+  //   const { data: schedules, error } = await query.returns<ActualSchedule[]>();
+  //   if (error) throw error;
+
+  //   const filtered = (schedules ?? []).filter((s) => {
+  //     if (s.type !== "exam") return true;
+
+  //     if ((s as any).offering_id && theoryOfferingIds.includes((s as any).offering_id)) {
+  //       return true;
+  //     }
+
+  //     if (!Array.isArray(s.exam_lecturer_ids)) return false;
+  //     return s.exam_lecturer_ids.includes(lecturerId);
+  //   });
+
+  //   return filtered;
+  // }
+
   async getLecturerSchedulesByDate(
     lecturerId: number,
     startDate?: string,
     endDate?: string
   ) {
-    // Lấy các học phần mà giảng viên dạy LT
-    const { data: theoryOfferings } = await supabase
+    const { data: theoryOfferings, error: theoryErr } = await supabase
       .from("course_offerings")
       .select("id")
       .eq("lecturer_id", lecturerId);
 
+    if (theoryErr) throw theoryErr;
+
     const theoryOfferingIds = theoryOfferings?.map(o => o.id) ?? [];
 
-    const { data: practiceGroups } = await supabase
+    const { data: practiceGroups, error: practiceErr } = await supabase
       .from("practice_groups")
       .select("id, offering_id")
       .eq("lecturer_id", lecturerId);
 
+    if (practiceErr) throw practiceErr;
+
     const practiceOfferingIds = practiceGroups?.map(pg => pg.offering_id) ?? [];
     const practiceGroupIds = practiceGroups?.map(pg => pg.id) ?? [];
 
-    const allOfferingIds = Array.from(new Set([...theoryOfferingIds, ...practiceOfferingIds]));
+    const allOfferingIds = Array.from(
+      new Set([...theoryOfferingIds, ...practiceOfferingIds])
+    );
 
     if (allOfferingIds.length === 0) return [];
 
     let query = supabase
       .from("actual_schedules")
       .select(`
-      *,
+      id,
+      offering_id,
+      practice_group_id,
+      schedule_date,
+      start_period,
+      period_count,
+      classroom,
+      building,
+      type,
+      status,
+      note,
+      exam_group_number,
+      exam_range_from,
+      exam_range_to,
+      exam_lecturer_ids,
       course_offering:offering_id (
         id,
         name,
@@ -368,18 +460,68 @@ export class ScheduleRepository {
     const { data: schedules, error } = await query.returns<ActualSchedule[]>();
     if (error) throw error;
 
-    const filtered = (schedules ?? []).filter((s) => {
+    if (!schedules || schedules.length === 0) return [];
+
+    const filtered = schedules.filter((s) => {
       if (s.type !== "exam") return true;
 
-      if ((s as any).offering_id && theoryOfferingIds.includes((s as any).offering_id)) {
+      if (theoryOfferingIds.includes(s.course_offering?.id ?? -1)) {
         return true;
       }
 
-      if (!Array.isArray(s.exam_lecturer_ids)) return false;
-      return s.exam_lecturer_ids.includes(lecturerId);
+      return Array.isArray(s.exam_lecturer_ids)
+        && s.exam_lecturer_ids.includes(lecturerId);
     });
 
-    return filtered;
+    const examLecturerIds = Array.from(
+      new Set(
+        filtered
+          .filter(s => s.type === "exam" && Array.isArray(s.exam_lecturer_ids))
+          .flatMap(s => s.exam_lecturer_ids!)
+      )
+    );
+
+    if (examLecturerIds.length === 0) {
+      return filtered;
+    }
+
+    const { data: examLecturers, error: lecErr } = await supabase
+      .from("lecturers")
+      .select(`
+      id,
+      lecturer_code,
+      users:users!lecturers_id_fkey (
+        full_name,
+        email
+      )
+    `)
+      .in("id", examLecturerIds);
+
+    if (lecErr) throw lecErr;
+
+    const lecturerMap = new Map<number, Lecturer>();
+    (examLecturers ?? []).forEach((lec: any) => {
+      lecturerMap.set(lec.id, {
+        id: lec.id,
+        lecturer_code: lec.lecturer_code,
+        users: Array.isArray(lec.users)
+          ? lec.users[0] ?? null
+          : lec.users ?? null,
+      });
+    });
+
+    return filtered.map((s) => {
+      if (s.type !== "exam" || !Array.isArray(s.exam_lecturer_ids)) {
+        return s;
+      }
+
+      return {
+        ...s,
+        exam_lecturers: s.exam_lecturer_ids
+          .map(id => lecturerMap.get(id))
+          .filter(Boolean) as Lecturer[],
+      };
+    });
   }
 
   async getLecturerSchedulesOfferingByDate(
@@ -538,92 +680,100 @@ export class ScheduleRepository {
     const todayStart = dayjs().startOf("day").toISOString();
     const todayEnd = dayjs().endOf("day").toISOString();
 
-    const { data: theory, error: theoryErr } = await supabase
-      .from("actual_schedules")
-      .select(
-        `
-        *,
-        course_offerings (
-          id,
-          course_id,
-          name,
-          class_code,
-          lecturer_id,
-          courses (id, name, course_code)
-        )
-      `
-      )
-      .eq("status", "scheduled")
-      .gte("schedule_date", todayStart)
-      .lte("schedule_date", todayEnd)
-      .eq("course_offerings.lecturer_id", lecturerId)
-      .order("schedule_date", { ascending: true });
+    const { data: offerings, error: offeringErr } = await supabase
+      .from("course_offerings")
+      .select("id")
+      .eq("lecturer_id", lecturerId);
+
+    if (offeringErr) throw offeringErr;
+
+    const offeringIds = offerings?.map((o) => o.id) ?? [];
+
+    const { data: theory, error: theoryErr } =
+      offeringIds.length > 0
+        ? await supabase
+          .from("actual_schedules")
+          .select(`
+            *,
+            course_offerings (
+              id,
+              name,
+              class_code,
+              courses (id, name, course_code)
+            )
+          `)
+          .eq("status", "scheduled")
+          .eq("type", "theory")
+          .in("offering_id", offeringIds)
+          .gte("schedule_date", todayStart)
+          .lte("schedule_date", todayEnd)
+          .order("schedule_date", { ascending: true })
+        : { data: [], error: null };
+
     if (theoryErr) throw theoryErr;
 
-    const { data: practice, error: practiceErr } = await supabase
-      .from("actual_schedules")
-      .select(
-        `
-        *,
-        practice_groups (
-          id,
-          group_number,
-          lecturer_id
-        ),
-        course_offerings (
-          id,
-          course_id,
-          name,
-          class_code
-        )
-      `
-      )
-      .eq("status", "scheduled")
-      .gte("schedule_date", todayStart)
-      .lte("schedule_date", todayEnd)
-      .eq("practice_groups.lecturer_id", lecturerId)
-      .order("schedule_date", { ascending: true });
+    const { data: groups, error: groupErr } = await supabase
+      .from("practice_groups")
+      .select("id")
+      .eq("lecturer_id", lecturerId);
+
+    if (groupErr) throw groupErr;
+
+    const groupIds = groups?.map((g) => g.id) ?? [];
+
+    const { data: practice, error: practiceErr } =
+      groupIds.length > 0
+        ? await supabase
+          .from("actual_schedules")
+          .select(`
+            *,
+            practice_groups (
+              id,
+              group_number
+            ),
+            course_offerings (
+              id,
+              name,
+              class_code
+            )
+          `)
+          .eq("status", "scheduled")
+          .eq("type", "practice")
+          .in("practice_group_id", groupIds)
+          .gte("schedule_date", todayStart)
+          .lte("schedule_date", todayEnd)
+          .order("schedule_date", { ascending: true })
+        : { data: [], error: null };
+
     if (practiceErr) throw practiceErr;
 
     const { data: exam, error: examErr } = await supabase
       .from("actual_schedules")
-      .select(
-        `
-        *,
-        course_offerings (
-          id,
-          course_id,
-          name,
-          class_code
-        )
-      `
+      .select(`
+      *,
+      course_offerings (
+        id,
+        name,
+        class_code
       )
+    `)
       .eq("status", "scheduled")
       .gte("schedule_date", todayStart)
       .lte("schedule_date", todayEnd)
       .contains("exam_lecturer_ids", [lecturerId])
       .order("schedule_date", { ascending: true });
+
     if (examErr) throw examErr;
 
     const allSchedules = [...theory, ...practice, ...exam];
 
-    const uniqueSchedulesMap = new Map<number, any>();
-    allSchedules.forEach((s) => {
-      if (!uniqueSchedulesMap.has(s.id)) {
-        uniqueSchedulesMap.set(s.id, s);
-      } else {
-        const existing = uniqueSchedulesMap.get(s.id);
-        uniqueSchedulesMap.set(s.id, { ...existing, ...s });
-      }
-    });
-
-    const uniqueSchedules = Array.from(uniqueSchedulesMap.values());
-
-    uniqueSchedules.sort(
-      (a, b) => new Date(a.schedule_date).getTime() - new Date(b.schedule_date).getTime()
+    allSchedules.sort(
+      (a, b) =>
+        new Date(a.schedule_date).getTime() -
+        new Date(b.schedule_date).getTime()
     );
 
-    return uniqueSchedules;
+    return allSchedules;
   }
 
   async getOfferingScheduleToAttendance(

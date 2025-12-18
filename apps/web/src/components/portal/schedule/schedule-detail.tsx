@@ -54,6 +54,20 @@ export default function ScheduleDetail() {
 
     console.log("schedules", schedules);
 
+    const sortSchedules = (a: any, b: any) => {
+        if (a.start_period !== b.start_period) {
+            return a.start_period - b.start_period;
+        }
+
+        if (a.type === "exam" && b.type === "exam") {
+            const groupA = a?.exam_info?.exam_group_number ?? 0;
+            const groupB = b?.exam_info?.exam_group_number ?? 0;
+            return groupA - groupB;
+        }
+
+        return 0;
+    };
+
     const groupedSchedules = weekDays.map((day) => {
         const dateStr = day.format("YYYY-MM-DD");
         const dailySchedules = schedules.filter(
@@ -64,15 +78,15 @@ export default function ScheduleDetail() {
             day,
             morning: dailySchedules
                 .filter((s) => getSession(s.start_period) === "morning")
-                .sort((a, b) => a.start_period - b.start_period),
+                .sort(sortSchedules),
 
             afternoon: dailySchedules
                 .filter((s) => getSession(s.start_period) === "afternoon")
-                .sort((a, b) => a.start_period - b.start_period),
+                .sort(sortSchedules),
 
             evening: dailySchedules
                 .filter((s) => getSession(s.start_period) === "evening")
-                .sort((a, b) => a.start_period - b.start_period),
+                .sort(sortSchedules),
         }
     });
 
