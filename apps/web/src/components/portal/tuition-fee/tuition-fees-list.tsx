@@ -36,8 +36,12 @@ export default function TuitionFeesList() {
   const studentId = isParent ? activeChild?.id : userData?.student?.id;
   const studentYear = isParent ? activeChild?.academic_year : userData?.student?.academic_year;
 
+  console.log("Rendering TuitionFeesList for studentId in list:", studentId, "studentYear:", studentYear);
+
   const { semester, setSemester, semesters, fees, loading, error, loadFeesBySemester } =
     useTuitionFees(studentYear, studentId);
+
+  console.log("TuitionFeesList - semesters:", semesters);
 
   const topRef = useRef<HTMLDivElement | null>(null);
 
@@ -96,6 +100,7 @@ export default function TuitionFeesList() {
               <SemesterSelector
                 onChange={handleSelectSemester}
                 className="min-w-[240px] rounded-full border border-border/60 bg-background/70 shadow-[0_12px_32px_-18px_rgba(15,23,42,0.55)] backdrop-blur"
+                studentYear={studentYear}
               />
             )}
           </div>

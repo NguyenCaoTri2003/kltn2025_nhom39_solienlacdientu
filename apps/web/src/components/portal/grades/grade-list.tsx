@@ -13,9 +13,11 @@ export default function GradesList() {
 
   const [selectedStudentId, setSelectedStudentId] = useState<number | null>(null);
 
+  const [exportAll, setExportAll] = useState<(() => void) | null>(null);
+
   useEffect(() => {
     if (!userData) return;
-    if (selectedStudentId) return; 
+    if (selectedStudentId) return;
 
     if (isParent && children.length > 0) {
       setSelectedStudentId(children[0].id);
@@ -38,15 +40,33 @@ export default function GradesList() {
     return yearStr ? parseInt(yearStr.split(" - ")[0]) : null;
   }, [isParent, activeChild, userData]);
 
-  console.log("Selected Student ID:", selectedStudentId);
+  useEffect(() => {
+    setExportAll(null);
+  }, [selectedStudentId]);
 
   if (!userData)
     return (
-      <Loading text="Đang tải dữ liệu..." />
+      <Loading text="Đang tải dữ liệu kết quả học tập..." />
     );
 
   return (
     <div className="space-y-6">
+
+      <div className="space-y-1">
+        <h1 className="text-2xl font-semibold text-foreground">
+          Bảng điểm học tập
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          Tra cứu kết quả học tập theo từng học kỳ
+        </p>
+      </div>
+
+      <Button
+        disabled={!exportAll}
+        onClick={() => exportAll?.()}
+      >
+        Xuất Excel kết quả học tập
+      </Button>
 
       {isParent && children.length > 0 && (
         <div className="flex flex-wrap gap-2 bg-indigo-50 p-2 rounded-lg">
@@ -70,6 +90,7 @@ export default function GradesList() {
           key={selectedStudentId}
           studentId={selectedStudentId}
           studentYear={studentYear}
+          onExportReady={setExportAll}
         />
       )}
     </div>

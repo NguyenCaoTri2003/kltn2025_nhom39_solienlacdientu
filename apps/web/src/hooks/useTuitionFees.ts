@@ -52,6 +52,8 @@ export function useTuitionFees(studentYear?: string, studentId?: number) {
           if (match) fromYear = Number(match[1]);
         }
 
+        console.log("Fetching semesters for year in useTuitionFee:", fromYear);
+
         const semesters = await fetchSemestersByStudentYear(fromYear);
         setSemesters(semesters);
 
