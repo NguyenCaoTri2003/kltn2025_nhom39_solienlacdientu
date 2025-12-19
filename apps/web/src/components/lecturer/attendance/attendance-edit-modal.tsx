@@ -125,7 +125,29 @@ export default function AttendanceEditModal({
     };
 
     loadAttendanceForDate();
-  }, [selectedDate, type, groupId, offeringId, lecturerId, students, enrollmentMap, open]);
+  }, [selectedDate, type, groupId, offeringId, lecturerId, open]);
+
+  useEffect(() => {
+    if (!open || !selectedDate) return;
+
+    setRecords(prev => {
+      const next: Record<number, any> = {};
+
+      students.forEach(s => {
+        next[s.id] = prev[s.id] ?? {
+          student: s,
+          status: undefined,
+          note: "",
+          enrollment_id: enrollmentMap?.[s.id] ?? null,
+          type,
+          practice_group_id: type === "practice" ? groupId ?? null : null,
+          attendance_date: selectedDate,
+        };
+      });
+
+      return next;
+    });
+  }, [students, enrollmentMap]);
 
   const sortedStudents = [...students].sort((a, b) => {
     const lastA = a.fullName.trim().split(" ").slice(-1)[0].toLowerCase();
