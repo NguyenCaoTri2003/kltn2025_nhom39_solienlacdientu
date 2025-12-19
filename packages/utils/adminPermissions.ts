@@ -15,6 +15,10 @@ export function isSuperAdmin(user: JwtPayload): boolean {
 export function canManageAccounts(user: JwtPayload): boolean {
   if (!isAdmin(user)) return false;
   if (isSuperAdmin(user)) return true;
+  // admin thường (admin_type = "admin") cũng được phép quản lý tài khoản (xem chi tiết người dùng, v.v.)
+  if (user.admin_type === "admin") {
+    return true;
+  }
   return user.admin_type === "admin_account" || user.admin_type === "super_admin";
 }
 

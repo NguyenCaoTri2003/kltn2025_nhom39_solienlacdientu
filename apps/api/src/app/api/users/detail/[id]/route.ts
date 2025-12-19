@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { UserRepository } from '@packages/data/repositories/UserRepository';
 import { authenticate } from "@packages/utils/auth";
+import { canManageAccounts } from "@packages/utils/adminPermissions";
 
 const repo = new UserRepository();
 
@@ -9,7 +10,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     const { id } = await params;
     const userPayload = await authenticate(req);
 
-    if (userPayload.id !== Number(id) && userPayload.role !== "admin") {
+    // User can view their own profile, or admin with account management permission
+    if (userPayload.id !== Number(id) && !canManageAccounts(userPayload)) {
       return new Response(JSON.stringify({ error: "Forbidden" }), { status: 403 });
     }
 
@@ -26,7 +28,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     const { id } = await params;
     const userPayload = await authenticate(req);
 
-    if (userPayload.id !== Number(id) && userPayload.role !== "admin") {
+    // User can update their own profile, or admin with account management permission
+    if (userPayload.id !== Number(id) && !canManageAccounts(userPayload)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
